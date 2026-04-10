@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r \"expense\\\\|split\\\\|debt\\\\|settlement\" /c/Users/tomic/Proyectos/ronda/src --include=*.ts --include=*.tsx -l)"
+    ]
+  }
+}

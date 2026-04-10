@@ -1,26 +1,80 @@
 @import "tailwindcss";
 
+/* ─── Dark mode por clase (next-themes agrega .dark al <html>) ─── */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─── Variables de color por tema ────────────────────────────────
+   Usamos CSS custom properties para que cambien en runtime
+   cuando next-themes alterna la clase .dark
+─────────────────────────────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background:        #FAFAF8;
+  --surface:           #FFFFFF;
+  --surface-2:         #F0EFEC;
+  --foreground:        #1A1A1A;
+  --muted:             #787672;
+  --border:            #E5E4E0;
+  --accent:            #E85D3A;
+  --accent-hover:      #CF4F2D;
+  --accent-foreground: #FFFFFF;
+  --ring:              #E85D3A66;
 }
 
+.dark {
+  --background:        #121212;
+  --surface:           #1C1C1C;
+  --surface-2:         #252525;
+  --foreground:        #F0EFEC;
+  --muted:             #9E9C98;
+  --border:            #303030;
+  --accent:            #FF7F5C;
+  --accent-hover:      #FF6241;
+  --accent-foreground: #FFFFFF;
+  --ring:              #FF7F5C66;
+}
+
+/* ─── Tailwind theme inline ──────────────────────────────────────
+   Mapea las CSS vars a utilidades de Tailwind.
+   Ejemplo: bg-background, text-foreground, border-border, etc.
+─────────────────────────────────────────────────────────────── */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Colores */
+  --color-background:        var(--background);
+  --color-surface:           var(--surface);
+  --color-surface-2:         var(--surface-2);
+  --color-foreground:        var(--foreground);
+  --color-muted:             var(--muted);
+  --color-border:            var(--border);
+  --color-accent:            var(--accent);
+  --color-accent-hover:      var(--accent-hover);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-ring:              var(--ring);
+
+  /* Fuentes — las variables las inyecta Next.js desde layout.tsx */
+  --font-heading: var(--font-outfit);
+  --font-body:    var(--font-source-sans);
+  --font-mono:    var(--font-jetbrains-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* ─── Estilos base ────────────────────────────────────────────── */
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), system-ui, sans-serif;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), system-ui, sans-serif;
+}
+
+code, kbd, pre, samp {
+  font-family: var(--font-mono), ui-monospace, monospace;
+}
+
+/* Transición suave al cambiar de tema */
+*, *::before, *::after {
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+/* Scrollbar en modo oscuro */
+.dark { color-scheme: dark; }

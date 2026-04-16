@@ -1,80 +1,55 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-/* ─── Dark mode por clase (next-themes agrega .dark al <html>) ─── */
-@custom-variant dark (&:where(.dark, .dark *));
+@theme {
+  --color-fuego: #E85D3A;
+  --color-noche: #1A1625;
+  --color-noche-media: #252030;
+  --color-ambar: #F5A623;
+  --color-menta: #3ECFA0;
+  --color-uva: #8B5CF6;
+  --color-rosa: #F472B6;
+  --color-hueso: #FAF7F2;
+  --color-crema: #F0EBE3;
+  --color-gris-cal: #9B958A;
+  --color-carbon: #2D2926;
+  --color-niebla: #8E8A9A;
+  --color-humo: #EDEAF0;
+  --color-exito: #34C77B;
+  --color-alerta: #FAAD14;
+  --color-error: #EF4444;
+  --color-info: #60A5FA;
 
-/* ─── Variables de color por tema ────────────────────────────────
-   Usamos CSS custom properties para que cambien en runtime
-   cuando next-themes alterna la clase .dark
-─────────────────────────────────────────────────────────────── */
-:root {
-  --background:        #FAFAF8;
-  --surface:           #FFFFFF;
-  --surface-2:         #F0EFEC;
-  --foreground:        #1A1A1A;
-  --muted:             #787672;
-  --border:            #E5E4E0;
-  --accent:            #E85D3A;
-  --accent-hover:      #CF4F2D;
-  --accent-foreground: #FFFFFF;
-  --ring:              #E85D3A66;
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  /* Aliases semánticos — usados en los componentes existentes del app */
+  --color-background: #1A1625;
+  --color-surface:    #252030;
+  --color-surface-2:  #2E293C;
+  --color-foreground: #EDEAF0;
+  --color-muted:      #8E8A9A;
+  --color-border:     #352F45;
+  --color-ring:       #E85D3A40;
+  --color-accent:     #E85D3A;
 }
 
-.dark {
-  --background:        #121212;
-  --surface:           #1C1C1C;
-  --surface-2:         #252525;
-  --foreground:        #F0EFEC;
-  --muted:             #9E9C98;
-  --border:            #303030;
-  --accent:            #FF7F5C;
-  --accent-hover:      #FF6241;
-  --accent-foreground: #FFFFFF;
-  --ring:              #FF7F5C66;
+/* Dark mode (default) */
+html.dark body {
+  background-color: var(--color-noche);
+  color: var(--color-humo);
 }
 
-/* ─── Tailwind theme inline ──────────────────────────────────────
-   Mapea las CSS vars a utilidades de Tailwind.
-   Ejemplo: bg-background, text-foreground, border-border, etc.
-─────────────────────────────────────────────────────────────── */
-@theme inline {
-  /* Colores */
-  --color-background:        var(--background);
-  --color-surface:           var(--surface);
-  --color-surface-2:         var(--surface-2);
-  --color-foreground:        var(--foreground);
-  --color-muted:             var(--muted);
-  --color-border:            var(--border);
-  --color-accent:            var(--accent);
-  --color-accent-hover:      var(--accent-hover);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-ring:              var(--ring);
-
-  /* Fuentes — las variables las inyecta Next.js desde layout.tsx */
-  --font-heading: var(--font-outfit);
-  --font-body:    var(--font-source-sans);
-  --font-mono:    var(--font-jetbrains-mono);
+/* Light mode */
+html:not(.dark) body {
+  background-color: var(--color-hueso);
+  color: var(--color-carbon);
 }
 
-/* ─── Estilos base ────────────────────────────────────────────── */
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body), system-ui, sans-serif;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-
-h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-heading), system-ui, sans-serif;
-}
-
-code, kbd, pre, samp {
-  font-family: var(--font-mono), ui-monospace, monospace;
-}
-
-/* Transición suave al cambiar de tema */
-*, *::before, *::after {
-  transition: background-color 150ms ease, border-color 150ms ease;
-}
-
-/* Scrollbar en modo oscuro */
-.dark { color-scheme: dark; }

@@ -1,6 +1,8 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { assertGroupMember } from '@/lib/supabase/auth-utils'
 
 export async function createEvent(
   groupId: string,
@@ -13,6 +15,9 @@ export async function createEvent(
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return { error: 'No autenticado.' }
+
+  const memberError = await assertGroupMember(supabase, groupId, user.id)
+  if (memberError) return memberError
 
   const { data: event, error } = await supabase
     .from('events')
@@ -33,6 +38,7 @@ export async function createEvent(
     return { error: 'No se pudo crear la juntada. Intentá de nuevo.' }
   }
 
+  revalidatePath(`/groups/${groupId}`)
   return { eventId: event.id }
 }
 
@@ -68,6 +74,9 @@ export async function markAttendance(
     }
   }
 
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (ev) revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
+
   return null
 }
 
@@ -91,6 +100,9 @@ export async function upsertRsvp(
     console.error('Error saving RSVP:', error.message)
     return { error: 'No se pudo guardar tu respuesta.' }
   }
+
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (ev) revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
 
   return null
 }

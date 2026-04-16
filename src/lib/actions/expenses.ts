@@ -1,6 +1,8 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { assertGroupMember } from '@/lib/supabase/auth-utils'
 
 export async function createExpense(
   eventId: string,
@@ -15,32 +17,26 @@ export async function createExpense(
 
   if (!user) return { error: 'No autenticado.' }
 
-  const splitAmount = parseFloat((amount / splitUserIds.length).toFixed(2))
+  if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
+  if (splitUserIds.length === 0) return { error: 'Debe haber al menos un participante.' }
 
-  const { data: expense, error: expenseError } = await supabase
-    .from('expenses')
-    .insert({ event_id: eventId, paid_by: paidBy, amount, description, split_type: splitType })
-    .select('id')
-    .single()
+  const { data: expenseId, error } = await supabase
+    .rpc('create_expense_with_splits', {
+      p_event_id:       eventId,
+      p_description:    description,
+      p_amount:         amount,
+      p_paid_by:        paidBy,
+      p_split_type:     splitType,
+      p_split_user_ids: splitUserIds,
+    })
 
-  if (expenseError || !expense) {
-    console.error('Error creating expense:', expenseError?.message)
+  if (error || !expenseId) {
+    console.error('Error creating expense:', error?.message)
     return { error: 'No se pudo agregar el gasto.' }
   }
 
-  const { error: splitsError } = await supabase
-    .from('expense_splits')
-    .insert(splitUserIds.map((uid) => ({
-      expense_id: expense.id,
-      user_id: uid,
-      amount: splitAmount,
-      is_settled: false,
-    })))
-
-  if (splitsError) {
-    console.error('Error creating splits:', JSON.stringify(splitsError))
-    return { error: 'Gasto creado pero no se pudieron registrar las divisiones.' }
-  }
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (ev) revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
 
   return null
 }
@@ -55,6 +51,7 @@ export async function settleDebt(
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return { error: 'No autenticado.' }
+  if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
 
   const { error } = await supabase
     .from('settlements')
@@ -65,6 +62,7 @@ export async function settleDebt(
     return { error: 'No se pudo registrar el pago.' }
   }
 
+  revalidatePath(`/groups/${groupId}/events/${eventId}`)
   return null
 }
 
@@ -76,6 +74,21 @@ export async function deleteExpense(
 
   if (!user) return { error: 'No autenticado.' }
 
+  /* Resolver el group_id a través de expenses → events */
+  const { data: expenseData } = await supabase
+    .from('expenses')
+    .select('event_id, events ( group_id )')
+    .eq('id', expenseId)
+    .maybeSingle()
+
+  if (!expenseData) return { error: 'Gasto no encontrado.' }
+
+  const groupId = (expenseData.events as unknown as { group_id: string } | null)?.group_id
+  if (!groupId) return { error: 'No se pudo verificar el grupo.' }
+
+  const memberError = await assertGroupMember(supabase, groupId, user.id)
+  if (memberError) return memberError
+
   const { error } = await supabase
     .from('expenses')
     .delete()
@@ -86,5 +99,6 @@ export async function deleteExpense(
     return { error: 'No se pudo eliminar el gasto.' }
   }
 
+  revalidatePath(`/groups/${groupId}/events/${expenseData.event_id}`)
   return null
 }

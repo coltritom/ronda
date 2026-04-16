@@ -1,9 +1,27 @@
-import { redirect } from 'next/navigation'
+import { Navbar } from "@/components/landing/Navbar";
+import { Hero } from "@/components/landing/Hero";
+import { Testimonials } from "@/components/landing/Testimonials";
+import { Stats } from "@/components/landing/Stats";
+import { Features } from "@/components/landing/Features";
+import { HowItWorks } from "@/components/landing/HowItWorks";
+import { Pricing } from "@/components/landing/Pricing";
+import { FAQ } from "@/components/landing/FAQ";
+import { CTAFinal } from "@/components/landing/CTAFinal";
+import { Footer } from "@/components/landing/Footer";
 
-/*
-  La raíz "/" redirige a /groups.
-  Si el usuario no tiene sesión, el middleware lo redirige a /login.
-*/
-export default function Home() {
-  redirect('/groups')
+export default function LandingPage() {
+  return (
+    <main className="min-h-screen bg-noche text-humo overflow-x-hidden">
+      <Navbar />
+      <Hero />
+      <Testimonials />
+      <Stats />
+      <Features />
+      <HowItWorks />
+      <Pricing />
+      <FAQ />
+      <CTAFinal />
+      <Footer />
+    </main>
+  );
 }

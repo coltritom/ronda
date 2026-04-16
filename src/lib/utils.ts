@@ -2,6 +2,11 @@
   Utilidades generales de la app.
 */
 
+/** Formatea un número como pesos argentinos con separador de miles. Ej: 18200 → "18.200" */
+export function fmtARS(amount: number): string {
+  return new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(amount);
+}
+
 /**
  * Formatea una fecha ISO para mostrar en la UI.
  * Ej: "sábado 14 de junio · 20:00"

@@ -9,6 +9,16 @@ export async function getOrCreateInvite(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado.' }
 
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!membership) return { error: 'No tenés acceso a este grupo.' }
+  if (membership.role !== 'admin') return { error: 'Solo los admins pueden generar links de invitación.' }
+
   /* ¿Ya existe un invite para este grupo? */
   const { data: existing } = await supabase
     .from('invites')

@@ -1,37 +1,40 @@
 /*
-  Tarjeta de grupo para la lista.
-  Muestra emoji, nombre, descripción, cantidad de miembros y rol.
-  Al hacer clic navega a /groups/[id].
+  Tarjeta de grupo para la lista de Mis grupos.
+  Navega a /groups/[id] al hacer clic.
 */
 import Link from 'next/link'
+import { ChevronRight, Users } from 'lucide-react'
 import type { GroupWithMeta } from '@/types'
 
 interface GroupCardProps {
   group: GroupWithMeta
 }
 
+/* Color de avatar del grupo — rotativo basado en el id */
+const GROUP_COLORS = [
+  'bg-uva/20 text-uva',
+  'bg-menta/20 text-menta',
+  'bg-ambar/20 text-ambar',
+  'bg-fuego/20 text-fuego',
+  'bg-rosa/20 text-rosa',
+]
+
+function groupColorClass(id: string) {
+  return GROUP_COLORS[id.charCodeAt(0) % GROUP_COLORS.length]
+}
+
 export function GroupCard({ group }: GroupCardProps) {
-  const emoji = group.emoji ?? '👥'
+  const initial    = group.name.trim().charAt(0).toUpperCase()
+  const colorClass = groupColorClass(group.id)
 
   return (
     <Link
       href={`/groups/${group.id}`}
-      className="
-        group flex items-center gap-4
-        rounded-2xl border border-border bg-surface
-        p-4 sm:p-5
-        hover:bg-surface-2 hover:border-accent/30
-        transition-all duration-150
-      "
+      className="group flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 hover:border-fuego/30 hover:bg-surface-2 transition-all duration-150"
     >
-      {/* Emoji del grupo */}
-      <div className="
-        flex h-12 w-12 flex-shrink-0 items-center justify-center
-        rounded-xl bg-surface-2 text-2xl
-        group-hover:bg-background
-        transition-colors
-      ">
-        {emoji}
+      {/* Avatar del grupo */}
+      <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl font-heading text-xl font-bold transition-colors ${colorClass}`}>
+        {group.emoji ?? initial}
       </div>
 
       {/* Info */}
@@ -41,38 +44,31 @@ export function GroupCard({ group }: GroupCardProps) {
             {group.name}
           </h3>
           {group.role === 'admin' && (
-            <span className="flex-shrink-0 rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+            <span className="flex-shrink-0 rounded-full bg-fuego/10 px-2 py-0.5 font-body text-xs font-semibold text-fuego">
               Admin
             </span>
           )}
         </div>
 
         {group.description && (
-          <p className="mt-0.5 text-sm text-muted truncate">
+          <p className="mt-0.5 font-body text-sm text-muted truncate">
             {group.description}
           </p>
         )}
 
-        <p className="mt-1 text-xs text-muted">
-          {group.member_count} {group.member_count === 1 ? 'miembro' : 'miembros'}
-        </p>
+        <div className="mt-1.5 flex items-center gap-1.5 text-muted">
+          <Users size={12} />
+          <span className="font-body text-xs">
+            {group.member_count} {group.member_count === 1 ? 'miembro' : 'miembros'}
+          </span>
+        </div>
       </div>
 
       {/* Flecha */}
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="flex-shrink-0 text-muted group-hover:text-accent transition-colors"
-      >
-        <path d="M9 18l6-6-6-6"/>
-      </svg>
+      <ChevronRight
+        size={16}
+        className="flex-shrink-0 text-muted group-hover:text-fuego transition-colors"
+      />
     </Link>
   )
 }

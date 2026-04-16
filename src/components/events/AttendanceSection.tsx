@@ -4,23 +4,20 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { markAttendance } from '@/lib/actions/events'
 
-interface Attendee {
-  user_id: string
-  name: string
-}
+interface Attendee { user_id: string; name: string }
 
 interface Props {
-  eventId: string
+  eventId:       string
   currentUserId: string
-  myAttendance: boolean
-  attendees: Attendee[]
+  myAttendance:  boolean
+  attendees:     Attendee[]
 }
 
 export function AttendanceSection({ eventId, currentUserId, myAttendance, attendees }: Props) {
   const router = useRouter()
-  const [attended, setAttended] = useState(myAttendance)
+  const [attended, setAttended]   = useState(myAttendance)
   const [pending, startTransition] = useTransition()
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError]          = useState<string | null>(null)
 
   function handleToggle(value: boolean) {
     if (pending || value === attended) return
@@ -38,26 +35,21 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
     })
   }
 
-  /* Quiénes fueron (excluye al usuario actual — se muestra aparte) */
   const others = attendees.filter((a) => a.user_id !== currentUserId)
 
   return (
-    <section>
-      <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-foreground">
-        <span>✅</span>
-        <span>Asistencia real</span>
-      </p>
+    <div className="flex flex-col gap-4">
 
-      {/* Toggle del usuario actual */}
-      <div className="mb-4 flex items-center justify-between rounded-xl border border-border bg-surface px-4 py-3">
-        <span className="text-sm text-foreground">¿Fuiste a esta juntada?</span>
+      {/* Toggle del usuario */}
+      <div className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3.5">
+        <span className="font-body text-sm text-foreground">¿Fuiste a esta juntada?</span>
         <div className="flex gap-2">
           <button
             onClick={() => handleToggle(true)}
             disabled={pending}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+            className={`rounded-xl px-3.5 py-1.5 font-body text-xs font-semibold transition-colors disabled:opacity-50 ${
               attended
-                ? 'bg-green-500/20 text-green-500 ring-1 ring-green-500/40'
+                ? 'bg-exito/15 text-exito ring-1 ring-exito/30'
                 : 'border border-border text-muted hover:text-foreground'
             }`}
           >
@@ -66,9 +58,9 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
           <button
             onClick={() => handleToggle(false)}
             disabled={pending}
-            className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 ${
+            className={`rounded-xl px-3.5 py-1.5 font-body text-xs font-semibold transition-colors disabled:opacity-50 ${
               !attended
-                ? 'bg-red-500/20 text-red-500 ring-1 ring-red-500/40'
+                ? 'bg-error/10 text-error ring-1 ring-error/20'
                 : 'border border-border text-muted hover:text-foreground'
             }`}
           >
@@ -77,38 +69,43 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
         </div>
       </div>
 
-      {error && <p className="mb-3 text-xs text-red-500">{error}</p>}
+      {error && <p className="font-body text-xs text-error">{error}</p>}
 
-      {/* Lista de asistentes confirmados */}
-      {attendees.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
-          {attended && (
-            <div className="flex items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-3 py-1.5">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/20 text-xs font-semibold text-green-500">
-                Yo
+      {/* Lista de asistentes */}
+      {(attended || others.length > 0) && (
+        <div>
+          <p className="mb-2 font-body text-xs font-semibold uppercase tracking-wider text-muted">
+            Fueron ({attendees.length})
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {attended && (
+              <div className="flex items-center gap-2 rounded-full border border-exito/30 bg-exito/10 px-3 py-1.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-exito/20 font-body text-[10px] font-bold text-exito">
+                  Yo
+                </div>
+                <span className="font-body text-sm text-foreground">
+                  Yo <span className="text-xs text-muted">(vos)</span>
+                </span>
               </div>
-              <span className="text-sm text-foreground">
-                Yo <span className="text-xs text-muted">(vos)</span>
-              </span>
-            </div>
-          )}
-          {others.map((a) => (
-            <div
-              key={a.user_id}
-              className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5"
-            >
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-accent/20 text-xs font-semibold text-accent">
-                {a.name.charAt(0).toUpperCase()}
+            )}
+            {others.map((a) => (
+              <div
+                key={a.user_id}
+                className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5"
+              >
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 font-body text-[10px] font-bold text-fuego">
+                  {a.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="font-body text-sm text-foreground">{a.name}</span>
               </div>
-              <span className="text-sm text-foreground">{a.name}</span>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      ) : (
-        !attended && (
-          <p className="text-sm text-muted">Nadie confirmó asistencia todavía.</p>
-        )
       )}
-    </section>
+
+      {!attended && others.length === 0 && (
+        <p className="font-body text-sm text-muted">Nadie confirmó asistencia todavía.</p>
+      )}
+    </div>
   )
 }

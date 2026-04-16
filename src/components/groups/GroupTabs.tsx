@@ -16,7 +16,7 @@ export function GroupTabs({ groupId, isAdmin }: { groupId: string; isAdmin: bool
   const base = `/groups/${groupId}`
 
   return (
-    <nav className="-mb-px flex gap-6 overflow-x-auto">
+    <nav className="-mb-px flex gap-1 overflow-x-auto">
       {TABS.filter((t) => !t.adminOnly || isAdmin).map(({ label, path }) => {
         const href = `${base}${path}`
         const isActive = path === '' ? pathname === base : pathname.startsWith(href)
@@ -26,10 +26,10 @@ export function GroupTabs({ groupId, isAdmin }: { groupId: string; isAdmin: bool
             key={label}
             href={href}
             className={`
-              flex-shrink-0 border-b-2 pb-3 pt-3 text-sm font-medium
+              flex-shrink-0 border-b-2 px-3 pb-3 pt-3 font-body text-sm font-medium
               transition-colors whitespace-nowrap
               ${isActive
-                ? 'border-accent text-accent'
+                ? 'border-fuego text-fuego'
                 : 'border-transparent text-muted hover:text-foreground'
               }
             `}

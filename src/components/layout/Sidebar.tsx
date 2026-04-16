@@ -1,211 +1,147 @@
-'use client'
+"use client";
 
-/*
-  Sidebar principal de la app.
+import { usePathname, useRouter } from "next/navigation";
+import { Plus, Moon, Sun, HelpCircle, MessageSquare, Home } from "lucide-react";
+import { MOCK_GROUPS } from "@/lib/constants";
+import { useTheme } from "@/lib/theme-context";
 
-  Comportamiento:
-  - Desktop (lg+): siempre visible a la izquierda, fijo
-  - Mobile: oculto por defecto, se abre como panel lateral con overlay
-
-  Recibe los datos del usuario como props desde el Server Component
-  del layout (que los obtiene de Supabase).
-*/
-import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ThemeToggle } from '@/components/ui/ThemeToggle'
-import { LogoutButton } from '@/components/layout/LogoutButton'
-
-interface SidebarProps {
-  user: {
-    email: string
-    displayName: string
-    avatarUrl?: string | null
-  }
-}
-
-/* ─── Ítem de navegación ─────────────────────────────────────── */
-interface NavItem {
-  href: string
-  label: string
-  icon: React.ReactNode
-}
-
-const navItems: NavItem[] = [
-  {
-    href: '/groups',
-    label: 'Mis grupos',
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    ),
-  },
-]
-
-/* ─── Contenido interno del sidebar ─────────────────────────── */
-function SidebarContent({
-  user,
-  onClose,
-}: {
-  user: SidebarProps['user']
-  onClose?: () => void
-}) {
-  const pathname = usePathname()
-  const initial = user.displayName.charAt(0).toUpperCase()
+export function Sidebar() {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { theme, toggle } = useTheme();
 
   return (
-    <div className="flex h-full flex-col">
-      {/* Logo */}
-      <div className="flex items-center justify-between border-b border-border px-4 py-4">
-        <Link
-          href="/groups"
-          onClick={onClose}
-          className="flex items-center gap-2.5"
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent">
-            <span className="font-heading text-sm font-bold text-white">R</span>
-          </div>
-          <span className="font-heading text-lg font-bold text-foreground">
-            Ronda
-          </span>
-        </Link>
+    <aside className="hidden md:flex flex-col w-60 h-screen fixed left-0 top-0 bg-noche-media border-r border-white/[0.06] z-40">
 
-        {/* Botón cerrar — solo visible en mobile */}
-        {onClose && (
+      {/* ─── TOP SECTION ─── */}
+      <div className="px-5 pt-5 pb-3">
+        <span
+          onClick={() => router.push("/home")}
+          className="font-display font-extrabold text-xl text-fuego tracking-tight cursor-pointer"
+        >
+          ronda
+        </span>
+      </div>
+
+      <div className="px-3 flex flex-col gap-0.5 mb-2">
+        {/* Inicio */}
+        <button
+          onClick={() => router.push("/home")}
+          className={`
+            flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm w-full text-left
+            border-none cursor-pointer transition-colors
+            ${pathname === "/home"
+              ? "bg-fuego/10 text-fuego font-medium"
+              : "bg-transparent text-niebla hover:bg-white/5"
+            }
+          `}
+        >
+          <Home size={16} />
+          <span>Inicio</span>
+        </button>
+
+        {/* Perfil */}
+        <button
+          onClick={() => router.push("/perfil")}
+          className={`
+            flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm w-full text-left
+            border-none cursor-pointer transition-colors
+            ${pathname === "/perfil"
+              ? "bg-fuego/10 text-fuego font-medium"
+              : "bg-transparent text-niebla hover:bg-white/5"
+            }
+          `}
+        >
+          <div className="w-7 h-7 rounded-full bg-fuego/15 flex items-center justify-center text-sm">🙋‍♂️</div>
+          <span>Tomi</span>
+        </button>
+      </div>
+
+      {/* ─── GRUPOS ─── */}
+      <div className="px-3 flex-1 overflow-y-auto">
+        <div className="flex items-center justify-between px-3 mb-2 mt-2">
+          <span className="text-[11px] font-semibold text-niebla uppercase tracking-wider">
+            Tus grupos
+          </span>
           <button
-            onClick={onClose}
-            aria-label="Cerrar menú"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-surface-2 transition-colors lg:hidden"
+            onClick={() => {}}
+            className="w-6 h-6 rounded-lg bg-fuego/10 flex items-center justify-center text-fuego cursor-pointer border-none hover:bg-fuego/20 transition-colors"
+            title="Crear grupo"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
+            <Plus size={14} />
           </button>
+        </div>
+
+        {MOCK_GROUPS.length === 0 ? (
+          <div className="px-3 py-6 text-center">
+            <p className="text-xs text-niebla mb-2">Todavía no tenés grupos.</p>
+            <button className="text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer">
+              Crear grupo
+            </button>
+          </div>
+        ) : (
+          MOCK_GROUPS.map((g) => {
+            const active = pathname === `/grupo/${g.id}` || pathname.startsWith(`/grupo/${g.id}/`);
+            return (
+              <button
+                key={g.id}
+                onClick={() => router.push(`/grupo/${g.id}`)}
+                className={`
+                  flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm w-full text-left
+                  transition-colors cursor-pointer border-none mb-0.5
+                  ${active
+                    ? "bg-fuego/10 text-humo font-medium"
+                    : "bg-transparent text-niebla hover:bg-white/5"
+                  }
+                `}
+              >
+                <span className="text-base">{g.emoji}</span>
+                <span className="truncate flex-1">{g.name}</span>
+                {g.pendingCount > 0 && (
+                  <span className="w-5 h-5 rounded-full bg-alerta/20 text-alerta text-[10px] font-bold flex items-center justify-center shrink-0">
+                    {g.pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })
         )}
       </div>
 
-      {/* Navegación */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
-        <ul className="flex flex-col gap-0.5">
-          {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href)
-            return (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  onClick={onClose}
-                  className={`
-                    flex items-center gap-3 rounded-lg px-3 py-2.5
-                    text-sm font-medium transition-colors duration-150
-                    ${isActive
-                      ? 'bg-accent/10 text-accent'
-                      : 'text-muted hover:text-foreground hover:bg-surface-2'
-                    }
-                  `}
-                >
-                  <span className={isActive ? 'text-accent' : ''}>
-                    {item.icon}
-                  </span>
-                  {item.label}
-                </Link>
-              </li>
-            )
-          })}
-        </ul>
-      </nav>
-
-      {/* Usuario + acciones */}
-      <div className="border-t border-border px-3 py-3">
-        {/* Info del usuario */}
-        <div className="flex items-center gap-1 mb-1">
-          <Link
-            href="/perfil"
-            onClick={onClose}
-            className="flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors"
-          >
-            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-accent/20 text-accent">
-              <span className="text-sm font-semibold">{initial}</span>
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-foreground">
-                {user.displayName}
-              </p>
-              <p className="truncate text-xs text-muted">{user.email}</p>
-            </div>
-          </Link>
-          <ThemeToggle />
-        </div>
-
-        <LogoutButton />
-      </div>
-    </div>
-  )
-}
-
-/* ─── Sidebar principal ──────────────────────────────────────── */
-export function Sidebar({ user }: SidebarProps) {
-  const [mobileOpen, setMobileOpen] = useState(false)
-
-  return (
-    <>
-      {/* ── Desktop: sidebar fijo a la izquierda ── */}
-      <aside className="hidden lg:flex w-60 flex-shrink-0 flex-col border-r border-border bg-surface h-screen sticky top-0">
-        <SidebarContent user={user} />
-      </aside>
-
-      {/* ── Mobile: header con botón hamburguesa ── */}
-      <header className="lg:hidden fixed top-0 inset-x-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-surface px-4">
+      {/* ─── BOTTOM SECTION ─── */}
+      <div className="px-3 pb-3 flex flex-col gap-0.5 border-t border-white/[0.06] pt-3">
+        {/* Toggle dark/light */}
         <button
-          onClick={() => setMobileOpen(true)}
-          aria-label="Abrir menú"
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted hover:text-foreground hover:bg-surface-2 transition-colors"
+          onClick={toggle}
+          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm w-full text-left bg-transparent border-none cursor-pointer text-niebla hover:bg-white/5 transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6"/>
-            <line x1="4" y1="12" x2="20" y2="12"/>
-            <line x1="4" y1="18" x2="20" y2="18"/>
-          </svg>
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          {theme === "dark" ? "Modo claro" : "Modo oscuro"}
         </button>
 
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-accent">
-            <span className="font-heading text-xs font-bold text-white">R</span>
-          </div>
-          <span className="font-heading text-base font-bold text-foreground">
-            Ronda
-          </span>
-        </div>
+        {/* Ayuda */}
+        <button
+          onClick={() => router.push("/ayuda")}
+          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm w-full text-left bg-transparent border-none cursor-pointer text-niebla hover:bg-white/5 transition-colors"
+        >
+          <HelpCircle size={16} />
+          Ayuda
+        </button>
 
-        <div className="ml-auto">
-          <ThemeToggle />
-        </div>
-      </header>
+        {/* Feedback */}
+        <button
+          onClick={() => router.push("/feedback")}
+          className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm w-full text-left bg-transparent border-none cursor-pointer text-niebla hover:bg-white/5 transition-colors"
+        >
+          <MessageSquare size={16} />
+          Mandanos feedback
+        </button>
+      </div>
 
-      {/* ── Mobile: overlay oscuro al abrir el menú ── */}
-      {mobileOpen && (
-        <div
-          className="lg:hidden fixed inset-0 z-30 bg-black/60 backdrop-blur-sm"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* ── Mobile: panel lateral deslizante ── */}
-      <aside
-        className={`
-          lg:hidden fixed inset-y-0 left-0 z-40 w-72 flex-col
-          border-r border-border bg-surface
-          transform transition-transform duration-300 ease-in-out
-          ${mobileOpen ? 'flex translate-x-0' : '-translate-x-full'}
-        `}
-      >
-        <SidebarContent user={user} onClose={() => setMobileOpen(false)} />
-      </aside>
-    </>
-  )
+      {/* Version */}
+      <div className="px-5 pb-3">
+        <p className="text-[10px] text-niebla/40">Ronda v1.0</p>
+      </div>
+    </aside>
+  );
 }

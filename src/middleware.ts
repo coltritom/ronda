@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   // Rutas públicas: no requieren sesión
-  const publicPaths = ["/login", "/register", "/forgot-password", "/auth", "/invite"]
+  const publicPaths = ["/login", "/registro", "/forgot", "/onboarding", "/auth", "/invite", "/crear-grupo"]
   const isPublic =
     request.nextUrl.pathname === "/" ||
     publicPaths.some((p) => request.nextUrl.pathname.startsWith(p))
@@ -51,8 +51,8 @@ export async function middleware(request: NextRequest) {
   if (
     user &&
     (request.nextUrl.pathname === "/login" ||
-      request.nextUrl.pathname === "/register" ||
-      request.nextUrl.pathname === "/forgot-password")
+      request.nextUrl.pathname === "/registro" ||
+      request.nextUrl.pathname === "/forgot")
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/home";

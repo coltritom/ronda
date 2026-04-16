@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Eye, EyeOff } from "lucide-react";
+import { createClient } from "@/lib/supabase/clients";
 
 export default function RegistroPage() {
   const router = useRouter();
@@ -13,8 +14,9 @@ export default function RegistroPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     setError("");
     if (!name || !email || !password) {
       setError("Completá todos los campos.");
@@ -25,17 +27,45 @@ export default function RegistroPage() {
       return;
     }
     setLoading(true);
-    // TODO: conectar con Supabase Auth
-    setTimeout(() => {
-      setLoading(false);
-      router.push("/onboarding");
-    }, 800);
+    const supabase = createClient();
+    const { error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
+      },
+    });
+    setLoading(false);
+    if (authError) {
+      setError(authError.message === "User already registered"
+        ? "Ya existe una cuenta con ese email. ¿Querés entrar?"
+        : "No se pudo crear la cuenta. Intentá de nuevo.");
+      return;
+    }
+    setSuccess(true);
   };
 
-  const handleGoogle = () => {
-    // TODO: Supabase OAuth con Google
-    router.push("/onboarding");
+  const handleGoogle = async () => {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: `${window.location.origin}/auth/callback?next=/onboarding` },
+    });
   };
+
+  if (success) {
+    return (
+      <div className="w-full max-w-sm text-center">
+        <span className="font-display font-extrabold text-3xl text-fuego tracking-tight">ronda</span>
+        <div className="mt-10 mb-6 text-5xl">📬</div>
+        <h2 className="font-heading text-xl font-bold text-humo mb-2">Revisá tu email</h2>
+        <p className="font-body text-sm text-niebla leading-relaxed max-w-[260px] mx-auto">
+          Te mandamos un link a <span className="text-humo font-medium">{email}</span> para confirmar tu cuenta.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm">

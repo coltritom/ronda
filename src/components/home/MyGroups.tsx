@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MOCK_GROUPS } from "@/lib/constants";
+import { CreateGroupSheet } from "@/components/grupo/CreateGroupSheet";
 
 export function MyGroups() {
   const router = useRouter();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   return (
     <div className="px-4 md:px-6 mb-3">
@@ -12,7 +15,7 @@ export function MyGroups() {
         <p className="font-display font-semibold text-[15px] text-carbon dark:text-humo m-0">
           Tus grupos
         </p>
-        <button className="text-xs font-semibold text-fuego bg-transparent border-none cursor-pointer">
+        <button onClick={() => setSheetOpen(true)} className="text-xs font-semibold text-fuego bg-transparent border-none cursor-pointer">
           + Crear
         </button>
       </div>
@@ -48,6 +51,8 @@ export function MyGroups() {
           </button>
         ))}
       </div>
+
+      <CreateGroupSheet open={sheetOpen} onClose={() => setSheetOpen(false)} />
     </div>
   );
 }

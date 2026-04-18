@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/ui/Avatar";
@@ -47,6 +47,17 @@ export default function PerfilPage() {
   const [displayName, setDisplayName] = useState("Tomi");
   const [email, setEmail] = useState("tomi@email.com");
   const [avatarEmoji, setAvatarEmoji] = useState("🙋‍♂️");
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return;
+      if (user.user_metadata?.full_name) setDisplayName(user.user_metadata.full_name);
+      if (user.email) setEmail(user.email);
+      const saved = user.user_metadata?.avatar_emoji || localStorage.getItem("ronda_avatar");
+      if (saved) setAvatarEmoji(saved);
+    });
+  }, []);
 
   // Modales
   const [editModal, setEditModal] = useState<"nombre" | "email" | "password" | "avatar" | null>(null);

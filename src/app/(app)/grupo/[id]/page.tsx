@@ -21,6 +21,8 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [extraJuntadas, setExtraJuntadas] = useState<JuntadaItem[]>(() => getNewJuntadas(id));
   const [copied, setCopied] = useState(false);
+  const [showAllPast, setShowAllPast] = useState(false);
+  const PAST_PREVIEW = 3;
 
   const handleCopyInvite = () => {
     const link = `${window.location.origin}/invite/${id}`;
@@ -122,9 +124,18 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
           </p>
         )}
 
-        {pastJuntadas.map((j) => (
+        {(showAllPast ? pastJuntadas : pastJuntadas.slice(0, PAST_PREVIEW)).map((j) => (
           <JuntadaCard key={j.id} id={j.id} date={j.date} name={j.name} attendees={j.attendees} totalSpent={j.totalSpent} closed={j.closed} lugarId={j.lugarId} hostName={j.hostName} />
         ))}
+
+        {!showAllPast && pastJuntadas.length > PAST_PREVIEW && (
+          <button
+            onClick={() => setShowAllPast(true)}
+            className="w-full py-3 text-sm font-semibold text-fuego bg-transparent border-none cursor-pointer text-center"
+          >
+            Ver todas ({pastJuntadas.length}) →
+          </button>
+        )}
 
         <div className="bg-noche-media rounded-2xl p-4 text-center mt-1">
           <p className="text-sm text-niebla mb-3">
@@ -145,6 +156,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
             topPresente={detail.wrapped.topPresente}
             topFantasma={detail.wrapped.topFantasma}
             fantasmaFaltas={detail.wrapped.fantasmaFaltas}
+            onJuntadasClick={() => router.push(`/grupo/${id}/historial`)}
           />
         )}
       </div>

@@ -9,11 +9,12 @@ interface WrappedCardProps {
   topPresente: string;
   topFantasma: string;
   fantasmaFaltas: number;
+  onJuntadasClick?: () => void;
 }
 
 export function WrappedCard({
   groupName, year, totalJuntadas, totalSpent,
-  topPresente, topFantasma, fantasmaFaltas,
+  topPresente, topFantasma, fantasmaFaltas, onJuntadasClick,
 }: WrappedCardProps) {
   return (
     <div className="bg-noche-media rounded-2xl p-5 relative overflow-hidden">
@@ -32,10 +33,16 @@ export function WrappedCard({
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-4 relative">
-        <div className="bg-noche rounded-xl p-3 text-center">
+        <button
+          onClick={onJuntadasClick}
+          disabled={!onJuntadasClick}
+          className="bg-noche rounded-xl p-3 text-center border-none w-full disabled:cursor-default cursor-pointer group transition-opacity hover:opacity-80 disabled:hover:opacity-100"
+        >
           <p className="font-display font-bold text-2xl text-humo">{totalJuntadas}</p>
-          <p className="text-[11px] text-niebla">juntadas</p>
-        </div>
+          <p className="text-[11px] text-niebla">
+            juntadas{onJuntadasClick && <span className="text-fuego"> →</span>}
+          </p>
+        </button>
         <div className="bg-noche rounded-xl p-3 text-center">
           <p className="font-display font-bold text-2xl text-humo">
             ${(totalSpent / 1000).toFixed(0)}k

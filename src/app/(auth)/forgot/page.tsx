@@ -4,21 +4,29 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, Mail } from "lucide-react";
+import { createClient } from "@/lib/supabase/clients";
 
 export default function ForgotPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSend = () => {
-    if (!email) return;
+  const handleSend = async () => {
+    if (!email.trim()) return;
     setLoading(true);
-    // TODO: Supabase resetPasswordForEmail
-    setTimeout(() => {
-      setLoading(false);
-      setSent(true);
-    }, 800);
+    setError("");
+    const supabase = createClient();
+    const { error: sbError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/callback?next=/perfil`,
+    });
+    setLoading(false);
+    if (sbError) {
+      setError("No se pudo enviar el link. Verificá que el email sea correcto.");
+      return;
+    }
+    setSent(true);
   };
 
   return (
@@ -75,7 +83,8 @@ export default function ForgotPage() {
               />
             </div>
 
-            <Button full big onClick={handleSend}>
+            {error && <p className="text-[13px] text-error">{error}</p>}
+            <Button full big onClick={handleSend} disabled={loading || !email.trim()}>
               {loading ? "Enviando..." : "Enviar link"}
             </Button>
           </div>

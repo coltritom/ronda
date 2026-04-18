@@ -5,6 +5,7 @@ import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/ui/Avatar";
 import { MOCK_GROUPS } from "@/lib/constants";
 import { LogOut, ChevronRight, MessageSquare } from "lucide-react";
+import { createClient } from "@/lib/supabase/clients";
 
 function SettingRow({ label, value, onClick }: { label: string; value?: string; onClick?: () => void }) {
   return (
@@ -24,6 +25,13 @@ function SettingRow({ label, value, onClick }: { label: string; value?: string; 
 export default function PerfilPage() {
   const router = useRouter();
   const { theme, toggle } = useTheme();
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <div className="max-w-lg mx-auto pb-8">
@@ -97,7 +105,7 @@ export default function PerfilPage() {
         </button>
 
         {/* Cerrar sesión */}
-        <button className="flex items-center justify-center gap-2 py-3 text-error font-semibold text-sm bg-transparent border-none cursor-pointer mt-2">
+        <button onClick={handleLogout} className="flex items-center justify-center gap-2 py-3 text-error font-semibold text-sm bg-transparent border-none cursor-pointer mt-2">
           <LogOut size={16} />
           Cerrar sesión
         </button>

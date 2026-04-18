@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 
 const STATS = [
@@ -19,7 +20,9 @@ export function PersonalSummary() {
             Así venís esta semana
           </p>
         </div>
-        <Avatar emoji="🙋‍♂️" name="Tomi" colorIndex={1} size="md" selected />
+        <Link href="/perfil" className="rounded-full">
+          <Avatar emoji="🙋‍♂️" name="Tomi" colorIndex={1} size="md" selected />
+        </Link>
       </div>
 
       {/* Stats rápidos */}

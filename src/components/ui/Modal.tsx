@@ -14,9 +14,10 @@ interface ModalProps {
   onClose:  () => void
   title:    string
   children: React.ReactNode
+  footer?:  React.ReactNode
 }
 
-export function Modal({ open, onClose, title, children }: ModalProps) {
+export function Modal({ open, onClose, title, children, footer }: ModalProps) {
   useEffect(() => {
     if (!open) return
     const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -67,9 +68,16 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         </div>
 
         {/* Contenido */}
-        <div className="px-6 py-5 overflow-y-auto">
+        <div className="px-6 py-5 overflow-y-auto flex-1">
           {children}
         </div>
+
+        {/* Footer sticky (botones de acción) */}
+        {footer && (
+          <div className="px-6 pb-8 pt-3 shrink-0 border-t border-border">
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   )

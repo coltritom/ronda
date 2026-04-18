@@ -220,8 +220,21 @@ export default function PerfilPage() {
       </div>
 
       {/* Modal: Editar nombre */}
-      <Modal open={editModal === "nombre"} onClose={closeModal} title="Editar nombre">
-        <div className="flex flex-col gap-4">
+      <Modal
+        open={editModal === "nombre"}
+        onClose={closeModal}
+        title="Editar nombre"
+        footer={
+          <button
+            onClick={handleSaveName}
+            disabled={saving}
+            className="w-full py-3 rounded-xl font-semibold text-[15px] bg-fuego text-white disabled:opacity-60 transition-all active:scale-[0.98]"
+          >
+            {saving ? "Guardando..." : "Guardar"}
+          </button>
+        }
+      >
+        <div className="flex flex-col gap-3">
           <input
             type="text"
             value={tmpName}
@@ -231,18 +244,24 @@ export default function PerfilPage() {
             autoFocus
           />
           {fieldError && <p className="text-[13px] text-error">{fieldError}</p>}
+        </div>
+      </Modal>
+
+      {/* Modal: Editar email */}
+      <Modal
+        open={editModal === "email"}
+        onClose={closeModal}
+        title="Editar email"
+        footer={
           <button
-            onClick={handleSaveName}
+            onClick={handleSaveEmail}
             disabled={saving}
             className="w-full py-3 rounded-xl font-semibold text-[15px] bg-fuego text-white disabled:opacity-60 transition-all active:scale-[0.98]"
           >
             {saving ? "Guardando..." : "Guardar"}
           </button>
-        </div>
-      </Modal>
-
-      {/* Modal: Editar email */}
-      <Modal open={editModal === "email"} onClose={closeModal} title="Editar email">
+        }
+      >
         <div className="flex flex-col gap-3">
           <p className="text-[13px] text-niebla">
             Te enviaremos un link de confirmación a la nueva dirección.
@@ -256,18 +275,24 @@ export default function PerfilPage() {
             autoFocus
           />
           {fieldError && <p className="text-[13px] text-error">{fieldError}</p>}
-          <button
-            onClick={handleSaveEmail}
-            disabled={saving}
-            className="w-full py-3 rounded-xl font-semibold text-[15px] bg-fuego text-white disabled:opacity-60 transition-all active:scale-[0.98]"
-          >
-            {saving ? "Guardando..." : "Guardar"}
-          </button>
         </div>
       </Modal>
 
       {/* Modal: Cambiar contraseña */}
-      <Modal open={editModal === "password"} onClose={closeModal} title="Cambiar contraseña">
+      <Modal
+        open={editModal === "password"}
+        onClose={closeModal}
+        title="Cambiar contraseña"
+        footer={
+          <button
+            onClick={handleSavePassword}
+            disabled={saving}
+            className="w-full py-3 rounded-xl font-semibold text-[15px] bg-fuego text-white disabled:opacity-60 transition-all active:scale-[0.98]"
+          >
+            {saving ? "Cambiando..." : "Cambiar contraseña"}
+          </button>
+        }
+      >
         <div className="flex flex-col gap-3">
           {/* Contraseña actual */}
           <div>
@@ -324,14 +349,6 @@ export default function PerfilPage() {
           </div>
 
           {fieldError && <p className="text-[13px] text-error">{fieldError}</p>}
-
-          <button
-            onClick={handleSavePassword}
-            disabled={saving}
-            className="w-full py-3 rounded-xl font-semibold text-[15px] bg-fuego text-white disabled:opacity-60 transition-all active:scale-[0.98] mt-1"
-          >
-            {saving ? "Cambiando..." : "Cambiar contraseña"}
-          </button>
         </div>
       </Modal>
 

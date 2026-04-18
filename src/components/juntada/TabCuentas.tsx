@@ -17,6 +17,8 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId }: Props) 
   const [deudas, setDeudas] = useState<Deuda[]>(() => getDeudas(juntadaId));
 
   const markPaid = (index: number) => {
+    const ok = window.confirm("¿Seguro que querés marcar esto como pagado? No se puede deshacer.");
+    if (!ok) return;
     markDeudaPaid(juntadaId, index);
     setDeudas([...getDeudas(juntadaId)]);
   };

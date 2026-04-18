@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { X, Plus, ChevronDown } from "lucide-react";
@@ -50,7 +51,8 @@ export function TabAportes({ isNew = false }: TabAportesProps) {
   }).sort((a, b) => b.total - a.total);
 
   const handleAdd = () => {
-    if (!newMember || !newCategory) return;
+    if (!newMember) { toast.error("Seleccioná quién aportó."); return; }
+    if (!newCategory) { toast.error("Elegí qué llevó."); return; }
     setAportes([...aportes, { memberId: newMember, categoryId: newCategory, note: newNote || undefined }]);
     setNewMember(null);
     setNewCategory(null);

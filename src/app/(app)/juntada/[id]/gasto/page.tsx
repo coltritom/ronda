@@ -60,9 +60,14 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
             <span className="opacity-40">$</span>
             <input
               type="text"
-              inputMode="numeric"
+              inputMode="decimal"
               value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
+              onChange={(e) => {
+                const val = e.target.value.replace(/[^0-9.]/g, "");
+                // prevent multiple dots
+                const dots = val.split(".").length - 1;
+                if (dots <= 1) setAmount(val);
+              }}
               placeholder="0"
               className="bg-transparent border-none outline-none font-display font-bold text-[40px] text-humo text-center placeholder:text-niebla/30"
               style={{ width: Math.max(40, (amount.length || 1) * 24) }}
@@ -143,7 +148,9 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
           "
         />
 
-        <Button full>Agregar gasto</Button>
+        <Button full disabled={!amount || parseFloat(amount) <= 0 || isNaN(parseFloat(amount))}>
+          Agregar gasto
+        </Button>
       </div>
     </div>
   );

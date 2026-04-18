@@ -136,19 +136,21 @@ export function CreateJuntadaSheet({ open, onClose, groupId, onCreated }: Create
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-niebla mb-1.5 block">
-                ¿Cuándo?
+                ¿Cuándo? <span className="text-fuego">*</span>
               </label>
               <input
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="
+                required
+                className={`
                   w-full px-3.5 py-3 rounded-[10px]
-                  border-[1.5px] border-white/[0.08]
+                  border-[1.5px]
                   bg-noche text-[15px] text-humo
                   outline-none font-body focus:border-fuego/50 transition-colors
                   [color-scheme:dark]
-                "
+                  ${!date ? "border-white/[0.08]" : "border-fuego/30"}
+                `}
               />
             </div>
             <div>
@@ -170,7 +172,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, onCreated }: Create
             </div>
           </div>
 
-          <Button full big onClick={handleCreate}>Crear juntada</Button>
+          <Button full big onClick={handleCreate} disabled={!date}>Crear juntada</Button>
         </div>
       </div>
     </>

@@ -6,8 +6,15 @@ import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { MOCK_GROUPS } from "@/lib/constants";
-import { LogOut, ChevronRight, MessageSquare, Eye, EyeOff } from "lucide-react";
+import { LogOut, ChevronRight, MessageSquare, Eye, EyeOff, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+
+const AVATAR_EMOJIS = [
+  "🙋‍♂️","🙋‍♀️","🧑","👦","👧","🧔","👱","🧓","🧑‍🦰","🧑‍🦱","🧑‍🦳","🧑‍🦲",
+  "😎","🤓","🥸","😏","🤩","😜","🤪","😈","👻","🤖","👾","🦊",
+  "🐻","🐼","🐨","🦁","🐯","🐸","🐧","🦋","🐙","🦄","🐲","🦖",
+  "🍕","🌮","🍣","☕","🍺","🎸","⚽","🏀","🎮","🎯","🚀","🔥",
+];
 
 function SettingRow({ label, value, onClick }: { label: string; value?: string; onClick?: () => void }) {
   return (
@@ -39,9 +46,10 @@ export default function PerfilPage() {
   // Datos (mock por ahora, luego vendrá de Supabase)
   const [displayName, setDisplayName] = useState("Tomi");
   const [email, setEmail] = useState("tomi@email.com");
+  const [avatarEmoji, setAvatarEmoji] = useState("🙋‍♂️");
 
   // Modales
-  const [editModal, setEditModal] = useState<"nombre" | "email" | "password" | null>(null);
+  const [editModal, setEditModal] = useState<"nombre" | "email" | "password" | "avatar" | null>(null);
 
   // Campos temporales mientras se edita
   const [tmpName, setTmpName] = useState("");
@@ -55,7 +63,14 @@ export default function PerfilPage() {
   const [saving, setSaving] = useState(false);
   const [fieldError, setFieldError] = useState("");
 
-  const openModal = (type: "nombre" | "email" | "password") => {
+  const handleSaveAvatar = async (emoji: string) => {
+    const supabase = createClient();
+    await supabase.auth.updateUser({ data: { avatar_emoji: emoji } });
+    setAvatarEmoji(emoji);
+    closeModal();
+  };
+
+  const openModal = (type: "nombre" | "email" | "password" | "avatar") => {
     setFieldError("");
     if (type === "nombre") setTmpName(displayName);
     if (type === "email") setTmpEmail(email);
@@ -118,9 +133,16 @@ export default function PerfilPage() {
     <div className="max-w-lg mx-auto pb-8">
       {/* Avatar + Info */}
       <div className="text-center pt-8 mb-6 px-4">
-        <div className="mx-auto mb-3 flex justify-center">
-          <Avatar emoji="🙋‍♂️" name={displayName} colorIndex={1} size="lg" selected />
-        </div>
+        <button
+          onClick={() => openModal("avatar")}
+          className="relative mx-auto mb-3 flex justify-center bg-transparent border-none cursor-pointer p-0 group"
+          aria-label="Cambiar avatar"
+        >
+          <Avatar emoji={avatarEmoji} name={displayName} colorIndex={1} size="lg" selected />
+          <span className="absolute bottom-0 right-0 w-6 h-6 rounded-full bg-fuego flex items-center justify-center shadow-md">
+            <Pencil size={12} className="text-white" />
+          </span>
+        </button>
         <h1 className="font-display font-bold text-[22px] text-humo">{displayName}</h1>
         <p className="text-sm text-niebla mt-0.5">{email}</p>
       </div>
@@ -309,6 +331,25 @@ export default function PerfilPage() {
           >
             {saving ? "Cambiando..." : "Cambiar contraseña"}
           </button>
+        </div>
+      </Modal>
+
+      {/* Modal: Selector de avatar */}
+      <Modal open={editModal === "avatar"} onClose={closeModal} title="Elegí tu avatar">
+        <div className="grid grid-cols-8 gap-2">
+          {AVATAR_EMOJIS.map((e) => (
+            <button
+              key={e}
+              onClick={() => handleSaveAvatar(e)}
+              className={`
+                w-full aspect-square rounded-xl text-2xl flex items-center justify-center
+                border-none cursor-pointer transition-all active:scale-90
+                ${avatarEmoji === e ? "bg-fuego/20 ring-2 ring-fuego" : "bg-white/[0.06] hover:bg-white/10"}
+              `}
+            >
+              {e}
+            </button>
+          ))}
         </div>
       </Modal>
     </div>

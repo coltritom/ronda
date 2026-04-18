@@ -6,9 +6,9 @@ import { Pill } from "@/components/ui/Pill";
 import { PhoneMockup } from "@/components/landing/PhoneMockup";
 
 const MINI_STATS = [
-  { emoji: "📸", label: "El historial definitivo de todas sus juntadas" },
-  { emoji: "🏆", label: "Rankings y estadísticas para picantear en WhatsApp" },
-  { emoji: "💸", label: "Cuentas claras en segundos, sin calculadoras" },
+  { emoji: "📸", highlight: "El historial definitivo", rest: "de todas tus juntadas" },
+  { emoji: "🏆", highlight: "Rankings y estadísticas", rest: "para picantear en WhatsApp" },
+  { emoji: "💸", highlight: "Cuentas claras", rest: "sin calculadoras" },
 ];
 
 export function Hero() {
@@ -39,11 +39,14 @@ export function Hero() {
           </span>
         </div>
 
-        <div className="mt-7 flex flex-col gap-2 justify-center md:justify-start">
+        <div className="mt-7 flex flex-col gap-3 justify-center md:justify-start">
           {MINI_STATS.map((s) => (
-            <div key={s.label} className="flex items-center gap-2.5">
-              <span className="text-base">{s.emoji}</span>
-              <span className="text-[13px] md:text-[14px] text-niebla">{s.label}</span>
+            <div key={s.highlight} className="flex items-start gap-2.5">
+              <span className="text-base mt-0.5">{s.emoji}</span>
+              <div>
+                <p className="text-[14px] font-semibold text-fuego leading-tight">{s.highlight}</p>
+                <p className="text-[13px] text-humo leading-tight">{s.rest}</p>
+              </div>
             </div>
           ))}
         </div>

@@ -39,13 +39,13 @@ export function Hero() {
           </span>
         </div>
 
-        <div className="mt-7 flex flex-col gap-3 justify-center md:justify-start">
+        <div className="mt-7 flex flex-row gap-5 md:gap-7 justify-center md:justify-start flex-wrap">
           {MINI_STATS.map((s) => (
-            <div key={s.highlight} className="flex items-start gap-2.5">
+            <div key={s.highlight} className="flex items-start gap-2">
               <span className="text-base mt-0.5">{s.emoji}</span>
               <div>
-                <p className="text-[14px] font-semibold text-fuego leading-tight">{s.highlight}</p>
-                <p className="text-[13px] text-humo leading-tight">{s.rest}</p>
+                <p className="text-[13px] font-semibold text-fuego leading-tight">{s.highlight}</p>
+                <p className="text-[12px] text-humo leading-tight">{s.rest}</p>
               </div>
             </div>
           ))}

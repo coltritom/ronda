@@ -94,7 +94,7 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
         </div>
 
         {/* Sticky button */}
-        <div className="px-5 pb-8 pt-3 shrink-0">
+        <div className="px-5 pt-3 shrink-0" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
           <Button full big onClick={handleCreate}>Crear grupo</Button>
         </div>
       </div>

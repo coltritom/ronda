@@ -74,7 +74,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
         {/* Footer sticky (botones de acción) */}
         {footer && (
-          <div className="px-6 pb-8 pt-3 shrink-0 border-t border-border">
+          <div className="px-6 pt-3 shrink-0 border-t border-border" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
             {footer}
           </div>
         )}

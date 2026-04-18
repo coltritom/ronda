@@ -4,34 +4,33 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { JuntadaCard } from "@/components/juntada/JuntadaCard";
+import { MOCK_GROUP_DETAILS, MOCK_GROUPS } from "@/lib/constants";
+import { getNewJuntadas } from "@/lib/store";
 import { fmtARS } from "@/lib/utils";
 
 type Filtro = "todas" | "abiertas" | "cerradas";
-
-const MOCK_HISTORIAL = [
-  { id: "j1", date: "Sáb 29 mar", name: "Asado en lo de Mati", attendees: 6, totalSpent: 18200, closed: true, lugarId: "casa", hostName: "Mati" },
-  { id: "j2", date: "Sáb 22 mar", name: "Pizzas + fútbol", attendees: 7, totalSpent: 12400, closed: false, lugarId: "restaurant" },
-  { id: "j3", date: "Sáb 15 mar", name: "Birras en casa de Nico", attendees: 5, totalSpent: 8600, closed: true, lugarId: "casa", hostName: "Nico" },
-  { id: "j4", date: "Sáb 8 mar", name: "Asado pre-feriado", attendees: 8, totalSpent: 22300, closed: true, lugarId: "casa", hostName: "Mati" },
-  { id: "j5", date: "Sáb 1 mar", name: "Pádel + birras", attendees: 4, totalSpent: 6800, closed: true, lugarId: "padel" },
-  { id: "j6", date: "Sáb 22 feb", name: "Cumple de Lucía", attendees: 8, totalSpent: 31500, closed: true, lugarId: "restaurant" },
-  { id: "j7", date: "Sáb 15 feb", name: "After office", attendees: 6, totalSpent: 9200, closed: true, lugarId: "oficina" },
-  { id: "j8", date: "Sáb 8 feb", name: "Fútbol 5 + asado", attendees: 7, totalSpent: 19800, closed: true, lugarId: "futbol5" },
-];
 
 export default function HistorialPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [filtro, setFiltro] = useState<Filtro>("todas");
 
-  const filtered = MOCK_HISTORIAL.filter((j) => {
+  const group = MOCK_GROUPS.find((g) => g.id === id) ?? MOCK_GROUPS[0];
+  const detail = MOCK_GROUP_DETAILS[id] ?? MOCK_GROUP_DETAILS["g1"];
+  const TODAY = new Date().toISOString().slice(0, 10);
+
+  const allPast = [...getNewJuntadas(id), ...detail.juntadas]
+    .filter((j) => j.isoDate < TODAY)
+    .sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+
+  const filtered = allPast.filter((j) => {
     if (filtro === "abiertas") return !j.closed;
     if (filtro === "cerradas") return j.closed;
     return true;
   });
 
-  const totalJuntadas = MOCK_HISTORIAL.length;
-  const totalGastado = MOCK_HISTORIAL.reduce((s, j) => s + j.totalSpent, 0);
+  const totalJuntadas = allPast.length;
+  const totalGastado = allPast.reduce((s, j) => s + j.totalSpent, 0);
 
   return (
     <div className="max-w-2xl mx-auto pb-8">
@@ -41,7 +40,7 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
         >
           <ChevronLeft size={16} />
-          Los del asado
+          {group.name}
         </button>
         <h1 className="font-display font-bold text-[22px] text-humo">
           Historial de juntadas
@@ -84,7 +83,7 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
               {f.label}
               {f.value === "abiertas" && (
                 <span className="ml-1.5 text-[11px]">
-                  {MOCK_HISTORIAL.filter((j) => !j.closed).length}
+                  {allPast.filter((j) => !j.closed).length}
                 </span>
               )}
             </button>
@@ -98,8 +97,7 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
             <p className="text-sm text-niebla">
               {filtro === "abiertas"
                 ? "No hay juntadas abiertas. Todo al día."
-                : "No hay juntadas cerradas todavía."
-              }
+                : "No hay juntadas cerradas todavía."}
             </p>
           </div>
         ) : (

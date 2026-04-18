@@ -6,7 +6,7 @@ export function Footer() {
       <div className="max-w-[1080px] mx-auto px-4 md:px-8 flex flex-col md:flex-row justify-between items-center gap-5 text-center md:text-left">
         <div>
           <span className="font-display font-extrabold text-xl text-fuego">ronda</span>
-          <p className="text-[13px] text-niebla mt-1">El tracker de tu grupo.</p>
+          <p className="text-[13px] text-niebla mt-1">La memoria de tus juntadas.</p>
         </div>
 
         <div className="hidden md:flex gap-6">

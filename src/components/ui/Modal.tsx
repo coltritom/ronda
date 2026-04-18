@@ -45,15 +45,15 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative z-10 w-full sm:max-w-md rounded-t-[20px] sm:rounded-[20px] bg-surface border border-border shadow-2xl"
+        className="relative z-10 w-full sm:max-w-md rounded-t-[20px] sm:rounded-[20px] bg-surface border border-border shadow-2xl max-h-[90vh] flex flex-col"
       >
         {/* Handle — solo visible en mobile */}
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+        <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
           <div className="h-1 w-10 rounded-full bg-muted/40" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4 shrink-0">
           <h2 id="modal-title" className="font-heading text-lg font-semibold text-foreground">
             {title}
           </h2>
@@ -67,7 +67,7 @@ export function Modal({ open, onClose, title, children }: ModalProps) {
         </div>
 
         {/* Contenido */}
-        <div className="px-6 py-5">
+        <div className="px-6 py-5 overflow-y-auto">
           {children}
         </div>
       </div>

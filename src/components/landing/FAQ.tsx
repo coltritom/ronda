@@ -24,7 +24,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 }
 
 const ITEMS = [
-  { q: "¿Qué es Ronda exactamente?", a: "Ronda es el tracker social de tu grupo. Registra juntadas, divide gastos, arma rankings con datos reales y guarda la memoria colectiva. No es una app de finanzas ni una agenda: es una herramienta social que resuelve la plata como efecto secundario." },
+  { q: "¿Qué es Ronda exactamente?", a: "Ronda es la memoria de tus juntadas. Registra cada encuentro, divide gastos, arma rankings con datos reales y guarda la historia colectiva de tu grupo. No es una app de finanzas ni una agenda: es una herramienta social que resuelve la plata como efecto secundario." },
   { q: "¿Es gratis?", a: "Sí. Podés crear hasta 2 grupos de 10 integrantes con gastos ilimitados. El plan Pro cuesta $2.99/mes por grupo y lo paga solo el admin. Los demás no ponen nada." },
   { q: "¿Qué pasa si el admin deja de pagar Pro?", a: "El grupo vuelve al plan gratuito. Toda la información, historial y rankings se mantienen. Nunca perdés datos." },
   { q: "¿Cómo invito a mi grupo?", a: "Creás el grupo, copiás el link y lo mandás al chat de WhatsApp. Cada persona entra, se pone su nombre y listo. En 2 minutos ya están todos adentro." },

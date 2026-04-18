@@ -1,3 +1,6 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Avatar } from "@/components/ui/Avatar";
 
@@ -8,6 +11,13 @@ const STATS = [
 ];
 
 export function PersonalSummary() {
+  const [avatarEmoji, setAvatarEmoji] = useState("🙋‍♂️");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("ronda_avatar");
+    if (saved) setAvatarEmoji(saved);
+  }, []);
+
   return (
     <div className="px-4 md:px-6 pt-5 pb-1">
       {/* Saludo */}
@@ -21,7 +31,7 @@ export function PersonalSummary() {
           </p>
         </div>
         <Link href="/perfil" className="rounded-full">
-          <Avatar emoji="🙋‍♂️" name="Tomi" colorIndex={1} size="md" selected />
+          <Avatar emoji={avatarEmoji} name="Tomi" colorIndex={1} size="md" selected />
         </Link>
       </div>
 

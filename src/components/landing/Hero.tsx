@@ -20,7 +20,7 @@ export function Hero() {
 
       {/* Texto */}
       <div className="flex-1 relative z-10 text-center md:text-left">
-        <Pill>✨ El tracker social de tu grupo</Pill>
+        <Pill>✨ La memoria de tus juntadas</Pill>
 
         <h1 className="font-display font-extrabold text-[38px] md:text-[46px] lg:text-[56px] leading-[1.08] mt-5 mb-4 tracking-tight">
           Tu grupo<br />tiene historia.

@@ -108,7 +108,7 @@ export function Features() {
             <span className="text-[22px]">👻</span>
             <p className="font-display font-bold text-[15px] text-humo mt-1">FANTASMA OFICIAL</p>
             <p className="text-[11px] text-niebla mt-0.5">Nico — faltó 5 de 8</p>
-            <p className="mt-2 text-[10px] text-fuego font-semibold">ronda · el tracker de tu grupo</p>
+            <p className="mt-2 text-[10px] text-fuego font-semibold">ronda · la memoria de tus juntadas</p>
           </div>
         </div>
 

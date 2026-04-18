@@ -26,3 +26,42 @@ export function getRSVP(juntadaId: string): RSVPStatus {
 export function setRSVP(juntadaId: string, status: RSVPStatus): void {
   rsvpStore[juntadaId] = status;
 }
+
+// ─── Deudas store ─────────────────────────────────────────────────────────────
+export interface Deuda {
+  fromId: string;
+  toId: string;
+  amount: number;
+}
+
+const DEFAULT_DEUDAS: Deuda[] = [
+  { fromId: "2", toId: "1", amount: 2400 },
+  { fromId: "5", toId: "3", amount: 2400 },
+];
+
+const deudasStore: Record<string, Deuda[]> = {};
+
+export function getDeudas(juntadaId: string): Deuda[] {
+  if (!(juntadaId in deudasStore)) {
+    deudasStore[juntadaId] = [...DEFAULT_DEUDAS];
+  }
+  return deudasStore[juntadaId];
+}
+
+export function markDeudaPaid(juntadaId: string, index: number): void {
+  if (!(juntadaId in deudasStore)) {
+    deudasStore[juntadaId] = [...DEFAULT_DEUDAS];
+  }
+  deudasStore[juntadaId] = deudasStore[juntadaId].filter((_, i) => i !== index);
+}
+
+// ─── Avatar store ─────────────────────────────────────────────────────────────
+let _avatarEmoji = "🙋‍♂️";
+
+export function getAvatarEmoji(): string {
+  return _avatarEmoji;
+}
+
+export function setAvatarEmoji(emoji: string): void {
+  _avatarEmoji = emoji;
+}

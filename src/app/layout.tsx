@@ -3,7 +3,7 @@ import { ThemeProvider } from "@/lib/theme-context";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Ronda — El tracker de tu grupo",
+  title: "Ronda — La memoria de tus juntadas",
   description: "Registrá juntadas, cerrá cuentas, exponé al fantasma del grupo y guardá la historia.",
 };
 

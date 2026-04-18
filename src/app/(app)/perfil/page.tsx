@@ -67,6 +67,7 @@ export default function PerfilPage() {
     const supabase = createClient();
     await supabase.auth.updateUser({ data: { avatar_emoji: emoji } });
     setAvatarEmoji(emoji);
+    localStorage.setItem("ronda_avatar", emoji);
     closeModal();
   };
 

@@ -4,24 +4,21 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
+import { getDeudas, markDeudaPaid, type Deuda } from "@/lib/store";
 import { fmtARS } from "@/lib/utils";
 
-interface Deuda {
-  fromId: string;
-  toId: string;
-  amount: number;
+interface Props {
+  closed?: boolean;
+  isNew?: boolean;
+  juntadaId: string;
 }
 
-const INITIAL_DEUDAS: Deuda[] = [
-  { fromId: "2", toId: "1", amount: 2400 },
-  { fromId: "5", toId: "3", amount: 2400 },
-];
-
-export function TabCuentas({ closed = false, isNew = false }: { closed?: boolean; isNew?: boolean }) {
-  const [deudas, setDeudas] = useState<Deuda[]>(INITIAL_DEUDAS);
+export function TabCuentas({ closed = false, isNew = false, juntadaId }: Props) {
+  const [deudas, setDeudas] = useState<Deuda[]>(() => getDeudas(juntadaId));
 
   const markPaid = (index: number) => {
-    setDeudas((prev) => prev.filter((_, i) => i !== index));
+    markDeudaPaid(juntadaId, index);
+    setDeudas([...getDeudas(juntadaId)]);
   };
 
   if (isNew) {
@@ -54,7 +51,7 @@ export function TabCuentas({ closed = false, isNew = false }: { closed?: boolean
           const from = MOCK_MEMBERS.find((m) => m.id === d.fromId)!;
           const to = MOCK_MEMBERS.find((m) => m.id === d.toId)!;
           return (
-            <div key={`${d.fromId}-${d.toId}`} className="bg-noche-media rounded-2xl p-4">
+            <div key={`${d.fromId}-${d.toId}-${i}`} className="bg-noche-media rounded-2xl p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Avatar emoji={from.emoji} name={from.name} colorIndex={from.colorIndex} />
                 <span className="text-lg text-niebla">→</span>

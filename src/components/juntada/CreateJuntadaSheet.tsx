@@ -86,9 +86,9 @@ export function CreateJuntadaSheet({ open, onClose, groupId, onCreated }: Create
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-50" onClick={handleClose} />
+      <div className="fixed inset-0 bg-black/50 z-[60]" onClick={handleClose} />
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-noche-media rounded-t-[20px] pt-3 max-h-[90vh] flex flex-col">
+      <div className="fixed bottom-0 left-0 right-0 z-[60] bg-noche-media rounded-t-[20px] pt-3 max-h-[90vh] flex flex-col">
         {/* Handle */}
         <div className="flex justify-center mb-4 shrink-0">
           <div className="w-10 h-1 rounded-full bg-niebla/30" />

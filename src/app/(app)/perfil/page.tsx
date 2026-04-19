@@ -6,7 +6,7 @@ import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { MOCK_GROUPS } from "@/lib/constants";
-import { LogOut, ChevronRight, MessageSquare, Eye, EyeOff, Pencil } from "lucide-react";
+import { LogOut, ChevronRight, MessageSquare, HelpCircle, Eye, EyeOff, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
 
 const AVATAR_EMOJIS = [
@@ -210,14 +210,23 @@ export default function PerfilPage() {
           ))}
         </div>
 
-        {/* Feedback — solo mobile */}
-        <button
-          onClick={() => router.push("/feedback")}
-          className="md:hidden flex items-center justify-center gap-2 py-3 text-fuego font-semibold text-sm bg-transparent border-none cursor-pointer"
-        >
-          <MessageSquare size={16} />
-          Mandanos feedback
-        </button>
+        {/* Ayuda y Feedback — solo mobile */}
+        <div className="md:hidden flex flex-col">
+          <button
+            onClick={() => router.push("/ayuda")}
+            className="flex items-center justify-center gap-2 py-3 text-niebla font-semibold text-sm bg-transparent border-none cursor-pointer"
+          >
+            <HelpCircle size={16} />
+            Ayuda
+          </button>
+          <button
+            onClick={() => router.push("/feedback")}
+            className="flex items-center justify-center gap-2 py-3 text-fuego font-semibold text-sm bg-transparent border-none cursor-pointer"
+          >
+            <MessageSquare size={16} />
+            Mandanos feedback
+          </button>
+        </div>
 
         {/* Cerrar sesión */}
         <button onClick={handleLogout} className="flex items-center justify-center gap-2 py-3 text-error font-semibold text-sm bg-transparent border-none cursor-pointer mt-2">

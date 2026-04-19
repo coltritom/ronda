@@ -11,7 +11,7 @@ export function Features() {
           Todo lo que tu grupo necesita
         </h2>
         <p className="text-[15px] md:text-[17px] text-niebla leading-relaxed max-w-[520px] mx-auto">
-          Gastos, asistencia, rankings y memoria grupal en una sola experiencia con alma social.
+          Asistencia, rankings, split de gastos y memoria grupal en una sola experiencia con alma social.
         </p>
       </div>
 
@@ -75,7 +75,7 @@ export function Features() {
           <div className="text-[28px] mb-3.5 w-[52px] h-[52px] rounded-[14px] bg-fuego/[0.1] flex items-center justify-center">💸</div>
           <h3 className="font-display font-bold text-[22px] md:text-[28px] mb-2.5 tracking-tight">Cuentas claras, grupo unido</h3>
           <p className="text-sm md:text-base text-niebla leading-relaxed mb-4">
-            Cargá un gasto en 30 segundos. Ronda calcula cuánto le toca a cada uno y simplifica
+            Cargá un gasto en 10 segundos. Ronda calcula cuánto le toca a cada uno y simplifica
             las deudas para que haya la menor cantidad de transferencias. Sin planillas, sin capturas
             de Mercado Pago, sin quilombo.
           </p>

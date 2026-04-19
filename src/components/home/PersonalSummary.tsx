@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Avatar } from "@/components/ui/Avatar";
 
 const STATS = [
@@ -20,6 +21,11 @@ export function PersonalSummary() {
 
   return (
     <div className="px-4 md:px-6 pt-5 pb-1">
+      {/* Isotipo */}
+      <div className="flex justify-center mb-5">
+        <Image src="/isotipo.svg" alt="Ronda" width={48} height={48} className="opacity-40" />
+      </div>
+
       {/* Saludo */}
       <div className="flex items-center justify-between mb-4">
         <div>

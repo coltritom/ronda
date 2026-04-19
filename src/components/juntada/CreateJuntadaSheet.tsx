@@ -11,10 +11,11 @@ interface CreateJuntadaSheetProps {
   open: boolean;
   onClose: () => void;
   groupId: string;
+  groupName?: string;
   onCreated?: (juntada: any) => void;
 }
 
-export function CreateJuntadaSheet({ open, onClose, groupId, onCreated }: CreateJuntadaSheetProps) {
+export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreated }: CreateJuntadaSheetProps) {
   const router = useRouter();
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
@@ -72,6 +73,8 @@ export function CreateJuntadaSheet({ open, onClose, groupId, onCreated }: Create
     if (name) params.set("n", name);
     if (displayDate) params.set("d", displayDate);
     if (lugarDisplay) params.set("l", lugarDisplay);
+    if (groupId) params.set("g", groupId);
+    if (groupName) params.set("gn", groupName);
 
     onCreated?.(newJuntada);
     resetForm();

@@ -40,15 +40,18 @@ function JuntadaContent({ id }: { id: string }) {
   });
   const displayLugar = searchParams.get("l");
 
+  const backGroupId = searchParams.get("g") ?? "g1";
+  const backGroupName = searchParams.get("gn") ?? "Grupo";
+
   return (
     <div className="max-w-2xl mx-auto pb-8">
       <div className="px-4 md:px-6 pt-4 pb-2">
         <button
-          onClick={() => router.push("/grupo/g1")}
+          onClick={() => router.push(`/grupo/${backGroupId}`)}
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
         >
           <ChevronLeft size={16} />
-          Los del asado
+          {backGroupName}
         </button>
 
         <div className="flex justify-between items-start">

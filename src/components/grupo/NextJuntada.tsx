@@ -16,6 +16,8 @@ interface NextJuntadaProps {
   lugarId?: string;
   hostName?: string;
   isoDate?: string;
+  groupId?: string;
+  groupName?: string;
 }
 
 const CHIPS: { id: RSVPStatus; label: string; icon: typeof Check; activeClasses: string; iconColor: string; bgConfirmed: string }[] = [
@@ -36,7 +38,7 @@ const CHIPS: { id: RSVPStatus; label: string; icon: typeof Check; activeClasses:
   },
 ];
 
-export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, juntadaName, lugarId, hostName, isoDate }: NextJuntadaProps) {
+export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, juntadaName, lugarId, hostName, isoDate, groupId, groupName }: NextJuntadaProps) {
   const router = useRouter();
 
   const goToDetail = () => {
@@ -54,6 +56,8 @@ export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, ju
         params.set("l", lugarDisplay);
       }
     }
+    if (groupId) params.set("g", groupId);
+    if (groupName) params.set("gn", groupName);
     router.push(`/juntada/${juntadaId}?${params.toString()}`);
   };
   const [status, setStatus] = useState<RSVPStatus>(() => getRSVP(juntadaId ?? ""));

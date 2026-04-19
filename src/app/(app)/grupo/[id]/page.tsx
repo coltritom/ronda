@@ -105,6 +105,8 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
             noResponse={j.noResponse ?? 0}
             lugarId={j.lugarId}
             hostName={j.hostName}
+            groupId={id}
+            groupName={group.name}
           />
         ))}
 
@@ -131,7 +133,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
         )}
 
         {(showAllPast ? pastJuntadas : pastJuntadas.slice(0, PAST_PREVIEW)).map((j) => (
-          <JuntadaCard key={j.id} id={j.id} date={j.date} name={j.name} attendees={j.attendees} totalSpent={j.totalSpent} closed={j.closed} lugarId={j.lugarId} hostName={j.hostName} />
+          <JuntadaCard key={j.id} id={j.id} date={j.date} name={j.name} attendees={j.attendees} totalSpent={j.totalSpent} closed={j.closed} lugarId={j.lugarId} hostName={j.hostName} groupId={id} groupName={group.name} />
         ))}
 
         {!showAllPast && pastJuntadas.length > PAST_PREVIEW && (
@@ -184,6 +186,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         groupId={id}
+        groupName={group.name}
         onCreated={handleJuntadaCreated}
       />
     </div>

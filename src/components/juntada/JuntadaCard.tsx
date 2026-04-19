@@ -13,15 +13,25 @@ interface JuntadaCardProps {
   closed: boolean;
   lugarId?: string;
   hostName?: string;
+  groupId?: string;
+  groupName?: string;
 }
 
-export function JuntadaCard({ id, date, name, attendees, totalSpent, closed, lugarId, hostName }: JuntadaCardProps) {
+export function JuntadaCard({ id, date, name, attendees, totalSpent, closed, lugarId, hostName, groupId, groupName }: JuntadaCardProps) {
   const router = useRouter();
   const lugar = LUGAR_OPTIONS.find((l) => l.id === lugarId);
 
+  const handleClick = () => {
+    const params = new URLSearchParams();
+    if (groupId) params.set("g", groupId);
+    if (groupName) params.set("gn", groupName);
+    const qs = params.toString();
+    router.push(`/juntada/${id}${qs ? `?${qs}` : ""}`);
+  };
+
   return (
     <button
-      onClick={() => router.push(`/juntada/${id}`)}
+      onClick={handleClick}
       className="w-full text-left bg-noche-media rounded-2xl p-4 border-none cursor-pointer transition-all active:scale-[0.98] hover:opacity-90"
     >
       <div className="flex justify-between items-start">

@@ -152,10 +152,14 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
             groupName={group.name}
             year={2026}
             totalJuntadas={detail.wrapped.totalJuntadas}
-            totalSpent={detail.wrapped.totalSpent}
+            totalSies={detail.wrapped.totalSies}
             topPresente={detail.wrapped.topPresente}
             topFantasma={detail.wrapped.topFantasma}
             fantasmaFaltas={detail.wrapped.fantasmaFaltas}
+            topMisterioso={detail.wrapped.topMisterioso}
+            topMisteriosoDetalle={detail.wrapped.topMisteriosoDetalle}
+            topSede={detail.wrapped.topSede}
+            sedeVeces={detail.wrapped.sedeVeces}
             onJuntadasClick={() => router.push(`/grupo/${id}/historial`)}
           />
         )}

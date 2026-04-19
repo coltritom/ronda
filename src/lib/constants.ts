@@ -80,7 +80,17 @@ type GroupDetail = {
   pending: { count: number; amount: number } | null;
   juntadas: JuntadaItem[];
   ranking: RankingEntry[];
-  wrapped: { totalJuntadas: number; totalSpent: number; topPresente: string; topFantasma: string; fantasmaFaltas: number } | null;
+  wrapped: {
+    totalJuntadas: number;
+    totalSies: number;
+    topPresente: string;
+    topFantasma: string;
+    fantasmaFaltas: number;
+    topMisterioso: string;
+    topMisteriosoDetalle: string;
+    topSede: string;
+    sedeVeces: number;
+  } | null;
 };
 
 export const MOCK_GROUP_DETAILS: Record<string, GroupDetail> = {
@@ -102,7 +112,7 @@ export const MOCK_GROUP_DETAILS: Record<string, GroupDetail> = {
       { emoji: "👻", label: "Fantasma oficial", name: "Nico", detail: "faltó 5/8", memberEmoji: "😎", memberColorIndex: 1, variant: "uva" },
       { emoji: "💰", label: "La billetera", name: "Lucía", detail: "$42.000 en total", memberEmoji: "👩", memberColorIndex: 2, variant: "ambar" },
     ],
-    wrapped: { totalJuntadas: 8, totalSpent: 128800, topPresente: "Mati", topFantasma: "Nico", fantasmaFaltas: 6 },
+    wrapped: { totalJuntadas: 8, totalSies: 47, topPresente: "Mati", topFantasma: "Nico", fantasmaFaltas: 6, topMisterioso: "Facu", topMisteriosoDetalle: "siempre el último en confirmar", topSede: "Mati", sedeVeces: 5 },
   },
   g2: {
     pending: null,
@@ -120,7 +130,7 @@ export const MOCK_GROUP_DETAILS: Record<string, GroupDetail> = {
       { emoji: "🦵", label: "El eterno lesionado", name: "Facu", detail: "faltó 4/10", memberEmoji: "🧑", memberColorIndex: 4, variant: "uva" },
       { emoji: "🥅", label: "El arquero del año", name: "Caro", detail: "siempre en el arco", memberEmoji: "👱‍♀️", memberColorIndex: 0, variant: "rosa" },
     ],
-    wrapped: { totalJuntadas: 6, totalSpent: 22200, topPresente: "Nico", topFantasma: "Facu", fantasmaFaltas: 8 },
+    wrapped: { totalJuntadas: 6, totalSies: 38, topPresente: "Nico", topFantasma: "Facu", fantasmaFaltas: 8, topMisterioso: "Caro", topMisteriosoDetalle: "nunca confirmaba a tiempo", topSede: "Nico", sedeVeces: 4 },
   },
   g3: {
     pending: { count: 1, amount: 3200 },

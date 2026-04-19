@@ -6,73 +6,88 @@ import { Share2 } from "lucide-react";
 import { ShareStoryModal } from "@/components/share/ShareStoryModal";
 import { StoryResumen } from "@/components/share/StoryResumen";
 
-interface WrappedCardProps {
+export interface WrappedCardProps {
   groupName: string;
   year: number;
   totalJuntadas: number;
-  totalSpent: number;
+  totalSies: number;
   topPresente: string;
   topFantasma: string;
   fantasmaFaltas: number;
+  topMisterioso: string;
+  topMisteriosoDetalle: string;
+  topSede: string;
+  sedeVeces: number;
   onJuntadasClick?: () => void;
 }
 
-export function WrappedCard({
-  groupName, year, totalJuntadas, totalSpent,
-  topPresente, topFantasma, fantasmaFaltas, onJuntadasClick,
-}: WrappedCardProps) {
+const AWARDS = (props: WrappedCardProps) => [
+  { icon: "🏆", label: "El Presente",     value: props.topPresente,   detail: null },
+  { icon: "👻", label: "El Fantasma",     value: props.topFantasma,   detail: `faltó ${props.fantasmaFaltas}` },
+  { icon: "⏳", label: "El Misterioso",   value: props.topMisterioso, detail: props.topMisteriosoDetalle },
+  { icon: "🏠", label: "La Sede Oficial", value: props.topSede,       detail: `puso la casa ${props.sedeVeces} veces` },
+];
+
+export function WrappedCard(props: WrappedCardProps) {
+  const { groupName, year, totalJuntadas, totalSies, onJuntadasClick } = props;
   const [shareOpen, setShareOpen] = useState(false);
 
   return (
     <>
       <div className="bg-noche-media rounded-2xl p-5 relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-fuego/[0.06] blur-[40px] pointer-events-none" />
+        {/* Glow deco */}
+        <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-fuego/[0.07] blur-[50px] pointer-events-none" />
 
-        <div className="flex items-center justify-between mb-4 relative">
-          <div>
-            <p className="text-[11px] text-fuego font-semibold uppercase tracking-wider">
-              {groupName} — {year}
-            </p>
-            <p className="font-display font-bold text-lg text-humo mt-0.5">
-              El año del grupo
-            </p>
-          </div>
-          <span className="text-2xl">📊</span>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3 mb-4 relative">
+        {/* Header */}
+        <div className="relative mb-4">
+          <p className="text-[10px] font-bold text-fuego uppercase tracking-[2px] mb-1">
+            El año del grupo
+          </p>
+          <p className="font-display font-bold text-xl text-humo leading-tight">
+            {groupName}
+          </p>
           <button
             onClick={onJuntadasClick}
             disabled={!onJuntadasClick}
-            className="bg-noche rounded-xl p-3 text-center border-none w-full disabled:cursor-default cursor-pointer group transition-opacity hover:opacity-80 disabled:hover:opacity-100"
+            className="mt-1 text-[13px] text-niebla bg-transparent border-none p-0 cursor-pointer disabled:cursor-default hover:text-humo transition-colors text-left"
           >
-            <p className="font-display font-bold text-2xl text-humo">{totalJuntadas}</p>
-            <p className="text-[11px] text-niebla">
-              juntadas{onJuntadasClick && <span className="text-fuego"> →</span>}
-            </p>
+            📅 {totalJuntadas} juntadas registradas{onJuntadasClick && <span className="text-fuego"> →</span>}
           </button>
-          <div className="bg-noche rounded-xl p-3 text-center">
-            <p className="font-display font-bold text-2xl text-humo">
-              ${(totalSpent / 1000).toFixed(0)}k
-            </p>
-            <p className="text-[11px] text-niebla">gastados</p>
-          </div>
         </div>
 
-        <div className="flex flex-col gap-2 mb-4 relative">
-          <div className="flex items-center justify-between py-1.5">
-            <span className="text-sm text-niebla">🏆 Más presente</span>
-            <span className="text-sm font-semibold text-humo">{topPresente}</span>
-          </div>
-          <div className="flex items-center justify-between py-1.5 border-t border-white/[0.04]">
-            <span className="text-sm text-niebla">👻 Fantasma del año</span>
-            <span className="text-sm font-semibold text-humo">
-              {topFantasma} (faltó {fantasmaFaltas})
-            </span>
-          </div>
+        {/* Métrica principal */}
+        <div className="bg-noche rounded-2xl px-4 py-5 mb-4 relative text-center border border-white/[0.05]">
+          <p className="text-[10px] font-bold text-niebla uppercase tracking-[2px] mb-3">
+            Confirmaciones &apos;Voy&apos;
+          </p>
+          <p className="font-display font-black text-[72px] leading-none text-humo">
+            {totalSies}
+          </p>
+          <p className="text-[12px] text-niebla mt-2">
+            Total de síes que dieron en el año
+          </p>
         </div>
 
-        <div className="relative">
+        {/* Premios */}
+        <div className="flex flex-col divide-y divide-white/[0.05]">
+          {AWARDS(props).map(({ icon, label, value, detail }) => (
+            <div key={label} className="flex items-center gap-3 py-2.5">
+              <span className="text-lg w-7 text-center shrink-0">{icon}</span>
+              <div className="flex-1 min-w-0">
+                <span className="text-[11px] text-niebla block leading-tight">{label}</span>
+                <span className="text-[14px] font-semibold text-humo leading-tight">{value}</span>
+              </div>
+              {detail && (
+                <span className="text-[12px] text-niebla shrink-0 text-right max-w-[130px] leading-snug">
+                  {detail}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="mt-4">
           <Button primary={false} full onClick={() => setShareOpen(true)}>
             <Share2 size={14} />
             Compartir resumen
@@ -85,15 +100,7 @@ export function WrappedCard({
         onClose={() => setShareOpen(false)}
         filename={`ronda-resumen-${groupName.toLowerCase().replace(/\s+/g, "-")}`}
       >
-        <StoryResumen
-          groupName={groupName}
-          year={year}
-          totalJuntadas={totalJuntadas}
-          totalSpent={totalSpent}
-          topPresente={topPresente}
-          topFantasma={topFantasma}
-          fantasmaFaltas={fantasmaFaltas}
-        />
+        <StoryResumen {...props} />
       </ShareStoryModal>
     </>
   );

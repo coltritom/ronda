@@ -1,17 +1,19 @@
 import React from "react";
+import type { WrappedCardProps } from "@/components/grupo/WrappedCard";
 
-export interface StoryResumenData {
-  groupName: string;
-  year: number;
-  totalJuntadas: number;
-  totalSpent: number;
-  topPresente: string;
-  topFantasma: string;
-  fantasmaFaltas: number;
-}
+export type StoryResumenData = WrappedCardProps;
+
+const AWARDS = (p: StoryResumenData) => [
+  { icon: "🏆", label: "El Presente",     value: p.topPresente,   detail: null },
+  { icon: "👻", label: "El Fantasma",     value: p.topFantasma,   detail: `faltó ${p.fantasmaFaltas}` },
+  { icon: "⏳", label: "El Misterioso",   value: p.topMisterioso, detail: p.topMisteriosoDetalle },
+  { icon: "🏠", label: "La Sede Oficial", value: p.topSede,       detail: `puso la casa ${p.sedeVeces} veces` },
+];
 
 export const StoryResumen = React.forwardRef<HTMLDivElement, StoryResumenData>(
-  ({ groupName, year, totalJuntadas, totalSpent, topPresente, topFantasma, fantasmaFaltas }, ref) => {
+  (props, ref) => {
+    const { groupName, year, totalJuntadas, totalSies } = props;
+
     return (
       <div
         ref={ref}
@@ -24,7 +26,7 @@ export const StoryResumen = React.forwardRef<HTMLDivElement, StoryResumenData>(
           fontFamily: '"Plus Jakarta Sans", Inter, sans-serif',
           display: "flex",
           flexDirection: "column",
-          padding: "36px 32px 28px",
+          padding: "36px 30px 28px",
           boxSizing: "border-box",
           flexShrink: 0,
         }}
@@ -40,12 +42,12 @@ export const StoryResumen = React.forwardRef<HTMLDivElement, StoryResumenData>(
         <div style={{
           position: "absolute", bottom: 40, left: -80,
           width: 280, height: 280, borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(139,92,246,0.10) 0%, transparent 70%)",
+          background: "radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%)",
           pointerEvents: "none",
         }} />
 
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 32 }}>
+        {/* Header row */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
           <span style={{ fontSize: 28, fontWeight: 900, color: "#E85D3A", letterSpacing: "-0.5px" }}>
             ronda
           </span>
@@ -54,79 +56,84 @@ export const StoryResumen = React.forwardRef<HTMLDivElement, StoryResumenData>(
           </span>
         </div>
 
-        {/* Body */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 20, position: "relative" }}>
-
-          {/* Group name */}
-          <div>
-            <div style={{
-              fontSize: 11, fontWeight: 700, color: "#E85D3A",
-              textTransform: "uppercase", letterSpacing: "2px", marginBottom: 8,
-            }}>
-              El año del grupo
-            </div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: "#EDEAF0", lineHeight: 1.1 }}>
-              {groupName}
-            </div>
-          </div>
-
-          {/* Big stats */}
-          <div style={{ display: "flex", gap: 10 }}>
-            {[
-              { value: String(totalJuntadas), label: "juntadas" },
-              { value: `$${(totalSpent / 1000).toFixed(0)}k`, label: "gastados" },
-            ].map(({ value, label }) => (
-              <div key={label} style={{
-                flex: 1,
-                background: "rgba(255,255,255,0.05)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                borderRadius: 16,
-                padding: "18px 12px",
-                textAlign: "center",
-              }}>
-                <div style={{
-                  fontSize: 50, fontWeight: 900, color: "#EDEAF0",
-                  lineHeight: 1, fontFamily: '"Plus Jakarta Sans", sans-serif',
-                }}>
-                  {value}
-                </div>
-                <div style={{ fontSize: 12, color: "#8E8A9A", marginTop: 6, fontWeight: 500 }}>
-                  {label}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Awards row */}
+        {/* Group title block */}
+        <div style={{ marginBottom: 20 }}>
           <div style={{
-            background: "rgba(255,255,255,0.04)",
-            border: "1px solid rgba(255,255,255,0.06)",
-            borderRadius: 16,
-            padding: "16px 18px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
+            fontSize: 10, fontWeight: 700, color: "#E85D3A",
+            textTransform: "uppercase", letterSpacing: "2.5px", marginBottom: 6,
           }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 13, color: "#8E8A9A" }}>🏆 Más presente</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#F5A623" }}>{topPresente}</span>
-            </div>
-            <div style={{ height: 1, background: "rgba(255,255,255,0.05)" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: 13, color: "#8E8A9A" }}>👻 Fantasma</span>
-              <span style={{ fontSize: 15, fontWeight: 700, color: "#8B5CF6" }}>
-                {topFantasma} · faltó {fantasmaFaltas}
-              </span>
-            </div>
+            El año del grupo
+          </div>
+          <div style={{ fontSize: 26, fontWeight: 800, color: "#EDEAF0", lineHeight: 1.1 }}>
+            {groupName}
+          </div>
+          <div style={{ fontSize: 13, color: "#8E8A9A", marginTop: 5 }}>
+            📅 {totalJuntadas} juntadas registradas
           </div>
         </div>
 
-        {/* Footer */}
-        <div style={{ textAlign: "center", paddingTop: 20 }}>
-          <span style={{
-            fontSize: 11, color: "rgba(142,138,154,0.35)",
-            letterSpacing: "1px", fontWeight: 500,
+        {/* Main metric card */}
+        <div style={{
+          background: "rgba(255,255,255,0.04)",
+          border: "1px solid rgba(255,255,255,0.07)",
+          borderRadius: 18,
+          padding: "20px 16px",
+          textAlign: "center",
+          marginBottom: 18,
+        }}>
+          <div style={{
+            fontSize: 10, fontWeight: 700, color: "#8E8A9A",
+            textTransform: "uppercase", letterSpacing: "2px", marginBottom: 10,
           }}>
+            Confirmaciones &apos;Voy&apos;
+          </div>
+          <div style={{
+            fontSize: 72, fontWeight: 900, color: "#EDEAF0",
+            lineHeight: 1, fontFamily: '"Plus Jakarta Sans", sans-serif',
+          }}>
+            {totalSies}
+          </div>
+          <div style={{ fontSize: 12, color: "#8E8A9A", marginTop: 8 }}>
+            Total de síes que dieron en el año
+          </div>
+        </div>
+
+        {/* Awards */}
+        <div style={{
+          background: "rgba(255,255,255,0.03)",
+          border: "1px solid rgba(255,255,255,0.06)",
+          borderRadius: 18,
+          padding: "4px 16px",
+          flex: 1,
+        }}>
+          {AWARDS(props).map(({ icon, label, value, detail }, i) => (
+            <div key={label} style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 0",
+              borderTop: i > 0 ? "1px solid rgba(255,255,255,0.05)" : "none",
+            }}>
+              <span style={{ fontSize: 18, width: 26, textAlign: "center", flexShrink: 0 }}>{icon}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, color: "#8E8A9A", fontWeight: 500, lineHeight: 1.2 }}>{label}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#EDEAF0", lineHeight: 1.3 }}>{value}</div>
+              </div>
+              {detail && (
+                <div style={{
+                  fontSize: 11, color: "#8E8A9A", textAlign: "right",
+                  maxWidth: 110, lineHeight: 1.3, flexShrink: 0,
+                }}>
+                  {detail}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{ textAlign: "center", paddingTop: 14 }}>
+          <span style={{ fontSize: 11, color: "rgba(142,138,154,0.3)", letterSpacing: "1px", fontWeight: 500 }}>
             ronda.app
           </span>
         </div>

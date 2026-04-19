@@ -49,7 +49,7 @@ export function GroupHeader({ groupId, name, emoji, members, showBack = false, b
             </button>
           </div>
           <button
-            onClick={() => router.push(`/groups/${groupId}/settings`)}
+            onClick={() => router.push(`/grupo/${groupId}/config`)}
             className="w-10 h-10 rounded-xl flex items-center justify-center bg-transparent border-none cursor-pointer text-niebla hover:bg-white/5 transition-colors"
           >
             <Settings size={20} />

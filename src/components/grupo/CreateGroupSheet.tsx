@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { X } from "lucide-react";
+import { addGroup } from "@/lib/store";
 
 const EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠"];
 
@@ -25,9 +26,18 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
       setError("Ponele un nombre al grupo.");
       return;
     }
-    // TODO: Supabase insert
+    const id = `grp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    addGroup({
+      id,
+      name: name.trim(),
+      emoji,
+      memberCount: 1,
+      lastActivity: "ahora mismo",
+      pendingCount: 0,
+      pendingAmount: 0,
+    });
     onClose();
-    router.push("/grupo/g1");
+    router.push(`/grupo/${id}`);
   };
 
   return (

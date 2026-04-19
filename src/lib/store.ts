@@ -65,3 +65,28 @@ export function getAvatarEmoji(): string {
 export function setAvatarEmoji(emoji: string): void {
   _avatarEmoji = emoji;
 }
+
+// ─── Dynamic groups store ─────────────────────────────────────────────────────
+export interface DynamicGroup {
+  id: string;
+  name: string;
+  emoji: string;
+  memberCount: number;
+  lastActivity: string;
+  pendingCount: number;
+  pendingAmount: number;
+}
+
+const dynamicGroups: DynamicGroup[] = [];
+
+export function addGroup(group: DynamicGroup): void {
+  dynamicGroups.unshift(group);
+}
+
+export function getDynamicGroup(id: string): DynamicGroup | undefined {
+  return dynamicGroups.find((g) => g.id === id);
+}
+
+export function getDynamicGroups(): DynamicGroup[] {
+  return [...dynamicGroups];
+}

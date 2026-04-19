@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Copy, Check, ChevronLeft } from "lucide-react";
+import { addGroup } from "@/lib/store";
 
 const EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠", "🚗", "🎂"];
 
@@ -16,6 +17,7 @@ export default function CrearGrupoPage() {
   const [emoji, setEmoji] = useState("🔥");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [groupId, setGroupId] = useState("");
 
   const handleCreate = () => {
     if (!name.trim()) {
@@ -23,18 +25,21 @@ export default function CrearGrupoPage() {
       return;
     }
     setError("");
-    // TODO: Supabase insert grupo
+    const id = `grp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    addGroup({ id, name: name.trim(), emoji, memberCount: 1, lastActivity: "ahora mismo", pendingCount: 0, pendingAmount: 0 });
+    setGroupId(id);
     setCurrentStep("invite");
   };
 
   const handleCopy = () => {
-    // TODO: copiar link real al clipboard
+    const link = `${window.location.origin}/invite/${groupId}`;
+    navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
   const handleDone = () => {
-    router.push("/grupo/g1"); // TODO: navegar al grupo creado
+    router.push(`/grupo/${groupId}`);
   };
 
   if (currentStep === "invite") {
@@ -59,7 +64,7 @@ export default function CrearGrupoPage() {
           <div className="w-full bg-noche-media rounded-2xl p-5 mb-4">
             <p className="text-xs text-niebla mb-1">Link de invitación</p>
             <p className="text-sm text-humo font-mono break-all mb-4">
-              ronda.app/invite/abc123
+              ronda.app/invite/{groupId}
             </p>
             <button
               onClick={handleCopy}

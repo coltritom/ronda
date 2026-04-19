@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { MOCK_GROUPS } from "@/lib/constants";
+import { getDynamicGroups, type DynamicGroup } from "@/lib/store";
 import { GroupCard } from "@/components/grupo/GroupCard";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { FAB } from "@/components/ui/FAB";
@@ -10,8 +11,14 @@ import { Button } from "@/components/ui/Button";
 import { CreateGroupSheet } from "@/components/grupo/CreateGroupSheet";
 
 export default function GruposPage() {
-  const [groups] = useState(MOCK_GROUPS);
+  const [dynamicGroups, setDynamicGroups] = useState<DynamicGroup[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  useEffect(() => {
+    setDynamicGroups(getDynamicGroups());
+  }, [sheetOpen]); // re-read store when sheet closes (after creation)
+
+  const groups = [...dynamicGroups, ...MOCK_GROUPS];
 
   return (
     <div className="max-w-2xl mx-auto">

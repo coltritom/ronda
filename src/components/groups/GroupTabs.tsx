@@ -8,7 +8,7 @@ const TABS = [
   { label: 'Rankings',      path: '/rankings',      adminOnly: false },
   { label: 'Etiquetas',     path: '/etiquetas',     adminOnly: false },
   { label: 'Miembros',      path: '/miembros',      adminOnly: false },
-  { label: 'Configuración', path: '/configuracion', adminOnly: true  },
+  { label: 'Configuración', path: '/settings',      adminOnly: true  },
 ]
 
 export function GroupTabs({ groupId, isAdmin }: { groupId: string; isAdmin: boolean }) {

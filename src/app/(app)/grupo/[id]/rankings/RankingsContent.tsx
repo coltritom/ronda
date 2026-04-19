@@ -5,6 +5,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Pill } from "@/components/ui/Pill";
 import { Button } from "@/components/ui/Button";
 import { Share2, ChevronDown } from "lucide-react";
+import { ShareStoryModal } from "@/components/share/ShareStoryModal";
+import { StoryRanking } from "@/components/share/StoryRanking";
 
 type RankingType = "asistencias" | "aportes" | "anfitrion";
 
@@ -79,6 +81,7 @@ function BadgeRow({ emoji, label, name, detail, memberEmoji, colorIndex, variant
 export default function RankingsContent() {
   const [active, setActive] = useState<RankingType>("asistencias");
   const [ddOpen, setDdOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const cur = RANKING_TYPES.find((r) => r.id === active)!;
   const podium = PODIUM_DATA[active];
@@ -179,9 +182,24 @@ export default function RankingsContent() {
         {DATOS.map((r, i) => <BadgeRow key={i} {...r} />)}
 
         <div className="mt-3">
-          <Button full><Share2 size={16} /> Compartir ranking</Button>
+          <Button full onClick={() => setShareOpen(true)}>
+            <Share2 size={16} /> Compartir ranking
+          </Button>
         </div>
       </div>
+
+      <ShareStoryModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        filename={`ronda-ranking-${active}`}
+      >
+        <StoryRanking
+          groupName="Los del asado"
+          rankingEmoji={cur.emoji}
+          rankingLabel={cur.label}
+          top3={podium.map((p) => ({ position: p.position, name: p.name, score: p.score }))}
+        />
+      </ShareStoryModal>
     </div>
   );
 }

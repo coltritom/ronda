@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Eye, EyeOff } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next") ?? "/home";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -28,14 +30,15 @@ export default function LoginPage() {
       setError("Email o contraseña incorrectos.");
       return;
     }
-    router.push("/home");
+    router.push(next);
   };
 
   const handleGoogle = async () => {
     const supabase = createClient();
+    const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`;
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo },
     });
   };
 
@@ -106,6 +109,7 @@ export default function LoginPage() {
               type={showPass ? "text" : "password"}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
               placeholder="••••••••"
               className="
                 w-full px-3.5 py-3 pr-10 rounded-[10px]
@@ -150,5 +154,13 @@ export default function LoginPage() {
         </button>
       </p>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }

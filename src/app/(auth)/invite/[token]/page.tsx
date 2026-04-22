@@ -1,30 +1,122 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/clients";
+import { acceptInvite } from "@/lib/actions/invites";
 import { Button } from "@/components/ui/Button";
+
+interface InviteData {
+  groupId: string;
+  groupName: string;
+  memberCount: number;
+  invitedBy: string;
+}
 
 export default function InvitePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const router = useRouter();
+  const [invite, setInvite] = useState<InviteData | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [joining, setJoining] = useState(false);
+  const [error, setError] = useState("");
 
-  // Mock data — en producción viene de Supabase
-  const group = {
-    name: "Los del asado",
-    emoji: "🔥",
-    memberCount: 7,
-    invitedBy: "Mati",
-    members: ["🧔", "😎", "👩", "💃", "🧑", "👱‍♀️", "🤙"],
-  };
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
 
-  const handleJoin = () => {
+      // Verificar si está logueado
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsLoggedIn(!!user);
+
+      // Cargar datos del invite
+      const { data, error: inviteError } = await supabase
+        .from("invites")
+        .select("group_id, group_name, created_by")
+        .eq("token", token)
+        .single();
+
+      if (inviteError || !data) {
+        setNotFound(true);
+        return;
+      }
+
+      // Cantidad de miembros
+      const { count } = await supabase
+        .from("group_members")
+        .select("*", { count: "exact", head: true })
+        .eq("group_id", data.group_id);
+
+      // Nombre del que invitó
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", data.created_by)
+        .maybeSingle();
+
+      setInvite({
+        groupId: data.group_id,
+        groupName: data.group_name,
+        memberCount: count ?? 0,
+        invitedBy: profile?.name ?? "Alguien",
+      });
+    }
+
+    load();
+  }, [token]);
+
+  const handleJoin = async () => {
+    if (!isLoggedIn) {
+      router.push(`/login?next=/invite/${token}`);
+      return;
+    }
+
     setJoining(true);
-    // TODO: Supabase join grupo con code
-    setTimeout(() => {
-      router.push("/grupo/g1");
-    }, 800);
+    setError("");
+
+    const result = await acceptInvite(token);
+
+    if ("error" in result) {
+      setError(result.error);
+      setJoining(false);
+      return;
+    }
+
+    router.push(`/groups/${result.groupId}`);
   };
+
+  // Token inválido o expirado
+  if (notFound) {
+    return (
+      <div className="w-full max-w-sm flex flex-col items-center min-h-screen justify-center py-12 px-4 text-center">
+        <span className="font-display font-extrabold text-2xl text-fuego tracking-tight mb-10">ronda</span>
+        <div className="text-5xl mb-4">🔗</div>
+        <h2 className="font-display font-bold text-xl text-humo mb-2">Link inválido o expirado</h2>
+        <p className="text-sm text-niebla">Pedile al admin del grupo que te mande uno nuevo.</p>
+        <button
+          onClick={() => router.push("/login")}
+          className="mt-8 text-sm text-fuego font-semibold bg-transparent border-none cursor-pointer"
+        >
+          Ir al inicio
+        </button>
+      </div>
+    );
+  }
+
+  // Cargando datos del invite
+  if (!invite) {
+    return (
+      <div className="w-full max-w-sm flex flex-col items-center min-h-screen justify-center py-12 px-4">
+        <span className="font-display font-extrabold text-2xl text-fuego tracking-tight mb-12">ronda</span>
+        <div className="flex gap-1.5 items-center">
+          <div className="w-2 h-2 rounded-full bg-fuego animate-bounce [animation-delay:0ms]" />
+          <div className="w-2 h-2 rounded-full bg-fuego animate-bounce [animation-delay:150ms]" />
+          <div className="w-2 h-2 rounded-full bg-fuego animate-bounce [animation-delay:300ms]" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm flex flex-col items-center min-h-screen justify-center py-12 px-4">
@@ -32,58 +124,52 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 
       <div className="w-full bg-noche-media rounded-3xl p-6 text-center mb-6">
         <div className="w-20 h-20 rounded-3xl bg-fuego/10 flex items-center justify-center text-4xl mx-auto mb-4">
-          {group.emoji}
+          🎉
         </div>
-
         <h2 className="font-display font-bold text-2xl text-humo mb-1">
-          {group.name}
+          {invite.groupName}
         </h2>
         <p className="text-sm text-niebla mb-5">
-          {group.invitedBy} te invitó a unirte
+          {invite.invitedBy} te invitó a unirte
         </p>
-
-        <div className="flex items-center justify-center mb-1">
-          {group.members.slice(0, 5).map((e, i) => (
-            <div
-              key={i}
-              className={`
-                w-9 h-9 rounded-full bg-fuego/10 flex items-center justify-center text-base
-                border-2 border-noche-media
-                ${i > 0 ? "-ml-2" : ""}
-              `}
-              style={{ zIndex: 5 - i }}
-            >
-              {e}
-            </div>
-          ))}
-          {group.memberCount > 5 && (
-            <div className="-ml-2 w-9 h-9 rounded-full bg-noche border-2 border-noche-media flex items-center justify-center text-[11px] font-semibold text-niebla">
-              +{group.memberCount - 5}
-            </div>
-          )}
-        </div>
-        <p className="text-xs text-niebla">{group.memberCount} integrantes</p>
+        <p className="text-xs text-niebla">
+          {invite.memberCount} {invite.memberCount === 1 ? "integrante" : "integrantes"}
+        </p>
       </div>
 
       <p className="text-sm text-niebla text-center mb-6 max-w-[260px]">
         Entrá antes de que te anoten como fantasma.
       </p>
 
+      {error && (
+        <p className="text-[13px] text-error font-medium mb-3 text-center">{error}</p>
+      )}
+
       <div className="w-full flex flex-col gap-3">
-        <Button full big onClick={handleJoin}>
+        <Button full big onClick={handleJoin} disabled={joining}>
           {joining ? "Entrando..." : "Entrar al grupo"}
         </Button>
+
+        {!isLoggedIn && (
+          <p className="text-xs text-niebla text-center px-4">
+            Si no tenés cuenta,{" "}
+            <button
+              onClick={() => router.push(`/registro?next=/invite/${token}`)}
+              className="text-fuego font-semibold bg-transparent border-none cursor-pointer p-0"
+            >
+              creá una
+            </button>
+            {" "}para poder entrar.
+          </p>
+        )}
+
         <button
-          onClick={() => router.push("/login")}
+          onClick={() => router.push("/")}
           className="text-sm text-niebla bg-transparent border-none cursor-pointer text-center py-2"
         >
           No, gracias
         </button>
       </div>
-
-      <p className="text-xs text-niebla/60 text-center mt-8">
-        Si no tenés cuenta, te pedimos que crees una para poder entrar al grupo.
-      </p>
     </div>
   );
 }

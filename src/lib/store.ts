@@ -66,6 +66,42 @@ export function setAvatarEmoji(emoji: string): void {
   _avatarEmoji = emoji;
 }
 
+// ─── Aportes store ────────────────────────────────────────────────────────────
+export interface AporteEntry {
+  memberId: string;
+  categoryId: string;
+  note?: string;
+}
+
+const aportesStore: Record<string, AporteEntry[]> = {};
+
+export function getAportes(juntadaId: string): AporteEntry[] | undefined {
+  return aportesStore[juntadaId];
+}
+
+export function saveAportes(juntadaId: string, aportes: AporteEntry[]): void {
+  aportesStore[juntadaId] = aportes;
+}
+
+// ─── Gastos store ─────────────────────────────────────────────────────────────
+export interface GastoEntry {
+  desc: string;
+  amount: number;
+  who: string;
+  forAll: boolean;
+}
+
+const gastosStore: Record<string, GastoEntry[]> = {};
+
+export function getGastos(juntadaId: string): GastoEntry[] | undefined {
+  return gastosStore[juntadaId];
+}
+
+export function addGasto(juntadaId: string, gasto: GastoEntry): void {
+  if (!gastosStore[juntadaId]) gastosStore[juntadaId] = [];
+  gastosStore[juntadaId] = [...gastosStore[juntadaId], gasto];
+}
+
 // ─── Dynamic groups store ─────────────────────────────────────────────────────
 export interface DynamicGroup {
   id: string;

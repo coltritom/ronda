@@ -6,6 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { X, Plus, ChevronDown } from "lucide-react";
 import { MOCK_MEMBERS, APORTE_CATEGORIES, type AporteId } from "@/lib/constants";
+import { getAportes, saveAportes } from "@/lib/store";
 
 interface Aporte {
   memberId: string;
@@ -14,6 +15,7 @@ interface Aporte {
 }
 
 interface TabAportesProps {
+  juntadaId: string;
   isNew?: boolean;
 }
 
@@ -26,8 +28,10 @@ const MOCK_APORTES: Aporte[] = [
   { memberId: "4", categoryId: "bebidas", note: "2 Fernet + Coca" },
 ];
 
-export function TabAportes({ isNew = false }: TabAportesProps) {
-  const [aportes, setAportes] = useState<Aporte[]>(isNew ? [] : MOCK_APORTES);
+export function TabAportes({ juntadaId, isNew = false }: TabAportesProps) {
+  const [aportes, setAportes] = useState<Aporte[]>(
+    () => (getAportes(juntadaId) as Aporte[] | undefined) ?? (isNew ? [] : MOCK_APORTES)
+  );
   const [adding, setAdding] = useState(false);
   const [newMember, setNewMember] = useState<string | null>(null);
   const [newCategory, setNewCategory] = useState<AporteId | null>(null);
@@ -53,7 +57,9 @@ export function TabAportes({ isNew = false }: TabAportesProps) {
   const handleAdd = () => {
     if (!newMember) { toast.error("Seleccioná quién aportó."); return; }
     if (!newCategory) { toast.error("Elegí qué llevó."); return; }
-    setAportes([...aportes, { memberId: newMember, categoryId: newCategory, note: newNote || undefined }]);
+    const next = [...aportes, { memberId: newMember, categoryId: newCategory, note: newNote || undefined }];
+    setAportes(next);
+    saveAportes(juntadaId, next);
     setNewMember(null);
     setNewCategory(null);
     setNewNote("");
@@ -61,7 +67,9 @@ export function TabAportes({ isNew = false }: TabAportesProps) {
   };
 
   const handleRemove = (index: number) => {
-    setAportes(aportes.filter((_, i) => i !== index));
+    const next = aportes.filter((_, i) => i !== index);
+    setAportes(next);
+    saveAportes(juntadaId, next);
   };
 
   const selectedCat = APORTE_CATEGORIES.find((c) => c.id === newCategory);

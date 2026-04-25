@@ -87,7 +87,7 @@ function JuntadaContent({ id }: { id: string }) {
       <InnerTabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
 
       {activeTab === "Asistencia" && <TabAsistencia closed={isClosed} isNew={isNew} upcoming={isUpcoming} juntadaId={id} />}
-      {activeTab === "Aportes" && <TabAportes isNew={isNew} />}
+      {activeTab === "Aportes" && <TabAportes juntadaId={id} isNew={isNew} />}
       {activeTab === "Gastos" && <TabGastos juntadaId={id} isNew={isNew} />}
       {activeTab === "Cuentas" && <TabCuentas closed={isClosed} isNew={isNew} juntadaId={id} />}
     </div>

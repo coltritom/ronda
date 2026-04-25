@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
 import { fmtARS } from "@/lib/utils";
+import { addGasto } from "@/lib/store";
 
 export default function GastoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -148,7 +149,19 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
           "
         />
 
-        <Button full disabled={!amount || parseFloat(amount) <= 0 || isNaN(parseFloat(amount))}>
+        <Button
+          full
+          disabled={!amount || parseFloat(amount) <= 0 || isNaN(parseFloat(amount))}
+          onClick={() => {
+            addGasto(id, {
+              desc: desc || "Sin descripción",
+              amount: parseFloat(amount),
+              who: MOCK_MEMBERS[payer].name,
+              forAll: selected.every(Boolean),
+            });
+            router.back();
+          }}
+        >
           Agregar gasto
         </Button>
       </div>

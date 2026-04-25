@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { fmtARS } from "@/lib/utils";
+import { getGastos } from "@/lib/store";
 
 interface TabGastosProps {
   juntadaId: string;
@@ -17,7 +18,7 @@ const MOCK_GASTOS = [
 
 export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
   const router = useRouter();
-  const gastos = isNew ? [] : MOCK_GASTOS;
+  const gastos = getGastos(juntadaId) ?? (isNew ? [] : MOCK_GASTOS);
   const total = gastos.reduce((s, g) => s + g.amount, 0);
 
   if (gastos.length === 0) {

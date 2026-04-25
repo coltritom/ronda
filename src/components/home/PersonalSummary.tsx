@@ -113,20 +113,24 @@ export function PersonalSummary() {
 
       if (groupIds.length > 0) {
         const now = new Date().toISOString();
-        const [{ data: attendanceData }, { count }] = await Promise.all([
-          supabase
+        const { data: lastTen } = await supabase
+          .from("events")
+          .select("id")
+          .in("group_id", groupIds)
+          .neq("status", "cancelled")
+          .lte("date", now)
+          .order("date", { ascending: false })
+          .limit(10);
+        const lastTenIds = (lastTen ?? []).map((e) => e.id);
+        totalEvents = lastTenIds.length;
+        if (lastTenIds.length > 0) {
+          const { data: attendanceData } = await supabase
             .from("event_attendance")
             .select("event_id")
-            .eq("user_id", user.id),
-          supabase
-            .from("events")
-            .select("*", { count: "exact", head: true })
-            .in("group_id", groupIds)
-            .neq("status", "cancelled")
-            .lte("date", now),
-        ]);
-        attended = (attendanceData ?? []).length;
-        totalEvents = count ?? 0;
+            .eq("user_id", user.id)
+            .in("event_id", lastTenIds);
+          attended = (attendanceData ?? []).length;
+        }
       }
 
       setStats({
@@ -145,16 +149,19 @@ export function PersonalSummary() {
     {
       value: stats ? `$${fmtARS(stats.debes)}` : "—",
       label: "Debés",
+      sub: "saldo actual",
       href: "/home/debes",
     },
     {
       value: stats ? `$${fmtARS(stats.teDebon)}` : "—",
       label: "Te deben",
+      sub: "saldo actual",
       href: "/home/te-deben",
     },
     {
       value: stats ? `${stats.attended}/${stats.totalEvents}` : "—",
       label: "Asistencia",
+      sub: "últimas 10 juntadas",
       href: "/home/asistencia",
     },
   ];
@@ -177,7 +184,7 @@ export function PersonalSummary() {
             Hola, {stats?.name ?? "..."}
           </h1>
           <p className="text-[13px] text-gris-cal dark:text-niebla mt-0.5">
-            Así venís esta semana
+            Tu resumen
           </p>
         </div>
         <Link href="/perfil" className="rounded-full">
@@ -203,6 +210,9 @@ export function PersonalSummary() {
             </p>
             <p className="text-[11px] text-gris-cal dark:text-niebla mt-0.5">
               {s.label}
+            </p>
+            <p className="text-[10px] text-gris-cal/60 dark:text-niebla/60 mt-0.5">
+              {s.sub}
             </p>
           </Link>
         ))}

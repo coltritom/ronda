@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const TABS = [
   { label: 'Juntadas',      path: '',               adminOnly: false },
+  { label: 'Cuentas',       path: '/cuentas',       adminOnly: false },
   { label: 'Rankings',      path: '/rankings',      adminOnly: false },
   { label: 'Etiquetas',     path: '/etiquetas',     adminOnly: false },
   { label: 'Miembros',      path: '/miembros',      adminOnly: false },

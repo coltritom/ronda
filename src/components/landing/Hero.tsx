@@ -33,7 +33,7 @@ export function Hero() {
         </p>
 
         <div className="flex gap-3 items-center flex-wrap justify-center md:justify-start">
-          <Button big onClick={() => router.push("/registro")}>Creá tu grupo gratis</Button>
+          <Button big onClick={() => router.push("/registro")}>Creá tu grupo</Button>
           <span className="hidden md:inline-flex">
             <Button primary={false}>Ver cómo funciona ↓</Button>
           </span>

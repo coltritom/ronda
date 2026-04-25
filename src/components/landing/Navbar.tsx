@@ -35,7 +35,7 @@ export function Navbar() {
               {link.label}
             </a>
           ))}
-          <Button onClick={() => router.push("/registro")}>Empezar gratis</Button>
+          <Button onClick={() => router.push("/registro")}>Empezar</Button>
         </div>
       </div>
     </nav>

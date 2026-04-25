@@ -51,7 +51,7 @@ export function Pricing() {
             </div>
           ))}
           <div className="mt-6">
-            <Button full primary={false} onClick={() => router.push("/registro")}>Empezar gratis</Button>
+            <Button full primary={false} onClick={() => router.push("/registro")}>Empezar</Button>
           </div>
         </div>
 

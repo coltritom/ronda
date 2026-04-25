@@ -16,7 +16,7 @@ export function CTAFinal() {
           Creá tu grupo en 30 segundos. Mandá el link. Y que la próxima juntada ya quede registrada.
         </p>
         <div className="relative">
-          <Button big onClick={() => router.push("/registro")}>Creá tu grupo gratis</Button>
+          <Button big onClick={() => router.push("/registro")}>Creá tu grupo</Button>
         </div>
       </div>
     </section>

@@ -90,11 +90,11 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
               `}
             >
               {f.label}
-              {f.value === "abiertas" && (
-                <span className="ml-1.5 text-[11px]">
-                  {allPast.filter((j) => !j.closed).length}
-                </span>
-              )}
+              <span className="ml-1.5 text-[11px]">
+                {f.value === "todas" && allPast.length}
+                {f.value === "abiertas" && allPast.filter((j) => !j.closed).length}
+                {f.value === "cerradas" && allPast.filter((j) => j.closed).length}
+              </span>
             </button>
           ))}
         </div>

@@ -27,7 +27,12 @@ export function Navbar() {
           >
             Entrá
           </button>
-          <Button onClick={() => router.push("/registro")}>Empezar</Button>
+          <button
+            onClick={() => router.push("/registro")}
+            className="px-4 py-2 text-sm font-semibold text-white bg-fuego border border-fuego rounded-xl hover:opacity-90 transition-opacity"
+          >
+            Empezar
+          </button>
         </div>
 
         {/* Desktop */}
@@ -47,7 +52,12 @@ export function Navbar() {
           >
             Entrá
           </button>
-          <Button onClick={() => router.push("/registro")}>Empezar</Button>
+          <button
+            onClick={() => router.push("/registro")}
+            className="px-4 py-2 text-sm font-semibold text-white bg-fuego border border-fuego rounded-xl hover:opacity-90 transition-opacity"
+          >
+            Empezar
+          </button>
         </div>
       </div>
     </nav>

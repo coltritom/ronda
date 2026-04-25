@@ -3,8 +3,8 @@
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Check, Link } from "lucide-react";
-import { MOCK_MEMBERS, MOCK_GROUPS, MOCK_GROUP_DETAILS, type JuntadaItem } from "@/lib/constants";
-import { addJuntada, getNewJuntadas, getDynamicGroup } from "@/lib/store";
+import { MOCK_GROUP_DETAILS, getGroup, type JuntadaItem } from "@/lib/constants";
+import { addJuntada, getNewJuntadas } from "@/lib/store";
 import { GroupHeader } from "@/components/grupo/GroupHeader";
 import { PendingAlert } from "@/components/grupo/PendingAlert";
 import { NextJuntada } from "@/components/grupo/NextJuntada";
@@ -31,14 +31,23 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const dynamicGroup = getDynamicGroup(id);
-  const group = dynamicGroup ?? MOCK_GROUPS.find((g) => g.id === id) ?? MOCK_GROUPS[0];
+  const group = getGroup(id);
   const detail = MOCK_GROUP_DETAILS[id] ?? {
     pending: null,
     juntadas: [],
     ranking: [],
     wrapped: null,
   };
+
+  if (!group) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
+        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
+        <a href="/home" className="text-fuego text-sm font-semibold">Ir al inicio</a>
+      </div>
+    );
+  }
+
   const allJuntadas = [...extraJuntadas, ...detail.juntadas];
 
   const TODAY = new Date().toISOString().slice(0, 10);
@@ -85,7 +94,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
         groupId={id}
         name={group.name}
         emoji={group.emoji}
-        members={MOCK_MEMBERS}
+        members={group.members}
       />
 
       <div className="px-4 md:px-6 flex flex-col gap-3">

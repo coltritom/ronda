@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { JuntadaCard } from "@/components/juntada/JuntadaCard";
-import { MOCK_GROUP_DETAILS, MOCK_GROUPS } from "@/lib/constants";
+import { MOCK_GROUP_DETAILS, getGroup } from "@/lib/constants";
 import { getNewJuntadas } from "@/lib/store";
 import { fmtARS } from "@/lib/utils";
 
@@ -15,9 +15,18 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
   const router = useRouter();
   const [filtro, setFiltro] = useState<Filtro>("todas");
 
-  const group = MOCK_GROUPS.find((g) => g.id === id) ?? MOCK_GROUPS[0];
+  const group = getGroup(id);
   const detail = MOCK_GROUP_DETAILS[id] ?? MOCK_GROUP_DETAILS["g1"];
   const TODAY = new Date().toISOString().slice(0, 10);
+
+  if (!group) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
+        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
+        <a href="/home" className="text-fuego text-sm font-semibold">Ir al inicio</a>
+      </div>
+    );
+  }
 
   const allPast = [...getNewJuntadas(id), ...detail.juntadas]
     .filter((j) => j.isoDate < TODAY)

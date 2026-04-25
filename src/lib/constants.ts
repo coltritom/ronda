@@ -145,6 +145,20 @@ export const MOCK_GROUP_DETAILS: Record<string, GroupDetail> = {
   },
 };
 
+// ─── GROUPS_DB ────────────────────────────────────────────────────────────────
+
+type GroupDBEntry = { id: string; name: string; emoji: string; members: typeof MOCK_MEMBERS };
+
+export const GROUPS_DB: Record<string, GroupDBEntry> = {
+  g1: { id: "g1", name: "Los del asado",      emoji: "🔥", members: MOCK_MEMBERS },
+  g2: { id: "g2", name: "Fútbol 5 miércoles", emoji: "⚽", members: MOCK_MEMBERS.slice(1) },
+  g3: { id: "g3", name: "Depto vacaciones",   emoji: "🏖️", members: MOCK_MEMBERS.slice(2, 6) },
+};
+
+export function getGroup(id: string): GroupDBEntry | null {
+  return GROUPS_DB[id] ?? null;
+}
+
 export const MOCK_GROUPS = [
   {
     id: "g1",

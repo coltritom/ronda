@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Copy, Check, Crown, UserMinus, Trash2 } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { MOCK_MEMBERS } from "@/lib/constants";
+import { getGroup } from "@/lib/constants";
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -39,12 +39,22 @@ const RANKING_OPTIONS = [
 export default function GroupConfigPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const group = getGroup(id);
   const [copied, setCopied] = useState(false);
   const [rankings, setRankings] = useState(
     RANKING_OPTIONS.reduce((acc, r) => ({ ...acc, [r.id]: r.default }), {} as Record<string, boolean>)
   );
-  const [groupName, setGroupName] = useState("Los del asado");
-  const [groupEmoji] = useState("🔥");
+  const [groupName, setGroupName] = useState(group?.name ?? "");
+  const [groupEmoji] = useState(group?.emoji ?? "🔥");
+
+  if (!group) {
+    return (
+      <div className="max-w-lg mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
+        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
+        <a href="/home" className="text-fuego text-sm font-semibold">Ir al inicio</a>
+      </div>
+    );
+  }
 
   const handleCopy = () => {
     setCopied(true);
@@ -64,7 +74,7 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
         >
           <ChevronLeft size={16} />
-          Los del asado
+          {group.name}
         </button>
         <h1 className="font-display font-bold text-[22px] text-humo">
           Configuración del grupo
@@ -114,9 +124,9 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
         {/* Miembros */}
         <div className="bg-noche-media rounded-2xl p-4">
           <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mb-3">
-            Miembros · {MOCK_MEMBERS.length}
+            Miembros · {group.members.length}
           </p>
-          {MOCK_MEMBERS.map((m, i) => {
+          {group.members.map((m, i) => {
             const isAdmin = i === 0;
             return (
               <div

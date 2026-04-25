@@ -78,7 +78,7 @@ function BadgeRow({ emoji, label, name, detail, memberEmoji, colorIndex, variant
   );
 }
 
-export default function RankingsContent() {
+export default function RankingsContent({ groupName }: { groupName: string }) {
   const [active, setActive] = useState<RankingType>("asistencias");
   const [ddOpen, setDdOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
@@ -90,7 +90,7 @@ export default function RankingsContent() {
     <div className="max-w-2xl mx-auto pb-8">
       <div className="px-4 md:px-6 pt-2 pb-2">
         <h1 className="font-display font-bold text-2xl text-humo">El ranking no miente</h1>
-        <p className="text-[13px] text-niebla mt-1">Los del asado · 8 juntadas</p>
+        <p className="text-[13px] text-niebla mt-1">{groupName}</p>
       </div>
 
       {/* Selector */}
@@ -194,7 +194,7 @@ export default function RankingsContent() {
         filename={`ronda-ranking-${active}`}
       >
         <StoryRanking
-          groupName="Los del asado"
+          groupName={groupName}
           rankingEmoji={cur.emoji}
           rankingLabel={cur.label}
           top3={podium.map((p) => ({ position: p.position, name: p.name, score: p.score }))}

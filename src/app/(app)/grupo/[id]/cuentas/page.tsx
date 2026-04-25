@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { MOCK_MEMBERS, MOCK_GROUPS } from "@/lib/constants";
+import { getGroup } from "@/lib/constants";
 import { fmtARS } from "@/lib/utils";
 
 interface Deuda {
@@ -29,7 +29,17 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
   const router = useRouter();
   const [deudas, setDeudas] = useState(MOCK_DEUDAS);
 
-  const group = MOCK_GROUPS.find((g) => g.id === id) ?? MOCK_GROUPS[0];
+  const group = getGroup(id);
+
+  if (!group) {
+    return (
+      <div className="max-w-lg mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
+        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
+        <a href="/home" className="text-fuego text-sm font-semibold">Ir al inicio</a>
+      </div>
+    );
+  }
+
   const pendientes = deudas.filter((d) => !d.paid);
   const pagadas = deudas.filter((d) => d.paid);
   const totalPendiente = pendientes.reduce((s, d) => s + d.amount, 0);
@@ -93,7 +103,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
               Pendientes
             </p>
             {pendientes.map((d, i) => (
-              <DeudaCard key={`p-${i}`} deuda={d} onMarkPaid={() => markPaid(i)} />
+              <DeudaCard key={`p-${i}`} deuda={d} members={group.members} onMarkPaid={() => markPaid(i)} />
             ))}
           </>
         )}
@@ -104,7 +114,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
               Cerradas
             </p>
             {pagadas.map((d, i) => (
-              <DeudaCard key={`c-${i}`} deuda={d} />
+              <DeudaCard key={`c-${i}`} deuda={d} members={group.members} />
             ))}
           </>
         )}
@@ -149,9 +159,9 @@ function PersonalSummary({ deudas }: { deudas: Deuda[] }) {
   );
 }
 
-function DeudaCard({ deuda, onMarkPaid }: { deuda: Deuda; onMarkPaid?: () => void }) {
-  const from = MOCK_MEMBERS.find((m) => m.id === deuda.fromId)!;
-  const to = MOCK_MEMBERS.find((m) => m.id === deuda.toId)!;
+function DeudaCard({ deuda, members, onMarkPaid }: { deuda: Deuda; members: { id: string; name: string; emoji: string; colorIndex: number }[]; onMarkPaid?: () => void }) {
+  const from = members.find((m) => m.id === deuda.fromId)!;
+  const to = members.find((m) => m.id === deuda.toId)!;
 
   return (
     <div className={`bg-noche-media rounded-2xl p-4 ${deuda.paid ? "opacity-50" : ""}`}>

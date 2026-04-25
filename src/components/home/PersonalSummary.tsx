@@ -148,7 +148,7 @@ export function PersonalSummary() {
       }
 
       setStats({
-        name: resolvedName.split(" ")[0] || "Vos",
+        name: resolvedName || "Vos",
         debes,
         teDebon,
         attended,

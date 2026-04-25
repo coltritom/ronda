@@ -20,7 +20,13 @@ export function Navbar() {
         </span>
 
         {/* Mobile */}
-        <div className="md:hidden">
+        <div className="md:hidden flex items-center gap-2">
+          <button
+            onClick={() => router.push("/login")}
+            className="px-4 py-2 text-sm font-medium text-niebla border border-white/20 rounded-xl hover:border-white/40 hover:text-humo transition-colors"
+          >
+            Entrá
+          </button>
           <Button onClick={() => router.push("/registro")}>Empezar</Button>
         </div>
 
@@ -35,6 +41,12 @@ export function Navbar() {
               {link.label}
             </a>
           ))}
+          <button
+            onClick={() => router.push("/login")}
+            className="px-4 py-2 text-sm font-medium text-niebla border border-white/20 rounded-xl hover:border-white/40 hover:text-humo transition-colors"
+          >
+            Entrá
+          </button>
           <Button onClick={() => router.push("/registro")}>Empezar</Button>
         </div>
       </div>

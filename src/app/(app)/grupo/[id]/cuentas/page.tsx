@@ -27,9 +27,11 @@ const MOCK_DEUDAS: Deuda[] = [
 export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [deudas, setDeudas] = useState(MOCK_DEUDAS);
-
   const group = getGroup(id);
+  const memberIds = new Set(group?.members.map((m) => m.id) ?? []);
+  const [deudas, setDeudas] = useState(
+    MOCK_DEUDAS.filter((d) => memberIds.has(d.fromId) && memberIds.has(d.toId))
+  );
 
   if (!group) {
     return (

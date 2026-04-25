@@ -13,4 +13,4 @@ jobs:
       - name: Ping Ronda API
         # IMPORTANTE: Cambiá la URL por el dominio real de tu app cuando la subas (ej. Vercel)
         run: |
-          curl -X GET https://tu-dominio-en-vercel.com/api/keep-alive
+          curl -X GET https://ronda-two.vercel.app/api/keep-alive

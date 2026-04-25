@@ -17,7 +17,7 @@ export function PendingAlert({ count, amount, groupId }: PendingAlertProps) {
       <div className="flex justify-between items-center">
         <div>
           <p className="font-semibold text-sm text-humo">
-            Tenés {count} cuenta{count > 1 ? "s" : ""} abierta{count > 1 ? "s" : ""}
+            Hay {count} cuenta{count > 1 ? "s" : ""} sin saldar
           </p>
           <p className="text-[13px] text-niebla mt-0.5">
             ${fmtARS(amount)} pendientes

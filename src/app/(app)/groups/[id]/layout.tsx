@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { GroupTabs } from '@/components/groups/GroupTabs'
 import { InviteButton } from '@/components/groups/InviteButton'
@@ -51,6 +52,16 @@ export default async function GroupLayout({ children, params }: LayoutProps) {
 
   return (
     <div className="flex flex-col min-h-full">
+
+      {/* ── Volver (mobile only) ──────────────────────────────── */}
+      <div className="md:hidden px-5 pt-4 pb-1 bg-surface">
+        <Link
+          href="/groups"
+          className="inline-flex items-center gap-1 font-body text-sm text-muted hover:text-foreground transition-colors"
+        >
+          ← Volver
+        </Link>
+      </div>
 
       {/* ── Header del grupo ──────────────────────────────────── */}
       <div className="border-b border-border bg-surface px-5 py-5 lg:px-8">

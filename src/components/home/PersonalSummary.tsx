@@ -45,6 +45,20 @@ export function PersonalSummary() {
             .eq("user_id", user.id),
         ]);
 
+      // If the profile name looks like an email (trigger mis-wired), fall back
+      // to auth metadata and silently repair the profile row.
+      const profileName = profile?.name ?? "";
+      const isEmailInName = profileName.includes("@");
+      const metaName: string =
+        user.user_metadata?.display_name ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        "";
+      const resolvedName = isEmailInName ? metaName : profileName;
+      if (isEmailInName && metaName) {
+        supabase.from("profiles").update({ name: metaName }).eq("id", user.id);
+      }
+
       const mySplits = mySplitsRaw ?? [];
       const groupIds = (memberData ?? []).map((m) => m.group_id);
 
@@ -134,7 +148,7 @@ export function PersonalSummary() {
       }
 
       setStats({
-        name: profile?.name?.split(" ")[0] ?? "Vos",
+        name: resolvedName.split(" ")[0] || "Vos",
         debes,
         teDebon,
         attended,

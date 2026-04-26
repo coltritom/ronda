@@ -5,7 +5,7 @@ import { Check, X, Minus } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
-import { getRSVP, setRSVP, type RSVPStatus } from "@/lib/store";
+import { getRSVP, setRSVP, type RSVPStatus, getGuests, addGuest, removeGuest, type GuestMember } from "@/lib/store";
 
 interface TabAsistenciaProps {
   closed?: boolean;
@@ -41,13 +41,49 @@ const RSVP_CHIPS: {
 ];
 
 export function TabAsistencia({ closed = false, isNew = false, upcoming = false, juntadaId }: TabAsistenciaProps) {
+  // All hooks must be declared before any conditional return
   const [rsvpStatus, setRsvpStatus] = useState<RSVPStatus>(() =>
     juntadaId ? getRSVP(juntadaId) : "none"
   );
+  const [editing, setEditing] = useState(isNew);
+  const [checks, setChecks] = useState<boolean[]>(
+    isNew ? MOCK_MEMBERS.map(() => false) : MOCK_MEMBERS.map((_, i) => i < 6)
+  );
+  const [guests, setGuests] = useState<GuestMember[]>(() =>
+    juntadaId ? getGuests(juntadaId) : []
+  );
+  const [guestInput, setGuestInput] = useState("");
+  const [showGuestInput, setShowGuestInput] = useState(false);
 
   const handleRSVP = (s: RSVPStatus) => {
     setRsvpStatus(s);
     if (juntadaId) setRSVP(juntadaId, s);
+  };
+
+  const toggle = (i: number) => {
+    if (!editing) return;
+    const next = [...checks];
+    next[i] = !next[i];
+    setChecks(next);
+  };
+
+  const count = checks.filter(Boolean).length;
+
+  const handleConfirm = () => setEditing(false);
+
+  const handleAddGuest = () => {
+    const trimmed = guestInput.trim();
+    if (!trimmed || !juntadaId) return;
+    const guest = addGuest(juntadaId, trimmed);
+    setGuests((prev) => [...prev, guest]);
+    setGuestInput("");
+    setShowGuestInput(false);
+  };
+
+  const handleRemoveGuest = (guestId: string) => {
+    if (!juntadaId) return;
+    removeGuest(juntadaId, guestId);
+    setGuests((prev) => prev.filter((g) => g.id !== guestId));
   };
 
   // ─── Juntada próxima: mostrar RSVP ───────────────────────────────────────
@@ -103,26 +139,7 @@ export function TabAsistencia({ closed = false, isNew = false, upcoming = false,
     );
   }
 
-  // ─── Juntada pasada: marcar quién fue ─────────────────────────────────────
-  const [editing, setEditing] = useState(isNew);
-  const [checks, setChecks] = useState<boolean[]>(
-    isNew ? MOCK_MEMBERS.map(() => false) : MOCK_MEMBERS.map((_, i) => i < 6)
-  );
-
-  const toggle = (i: number) => {
-    if (!editing) return;
-    const next = [...checks];
-    next[i] = !next[i];
-    setChecks(next);
-  };
-
-  const count = checks.filter(Boolean).length;
-
-  const handleConfirm = () => {
-    setEditing(false);
-    // TODO: guardar en Supabase
-  };
-
+  // ─── Juntada pasada: marcar quién fue + invitados ─────────────────────────
   return (
     <div className="px-4 md:px-6 py-4">
       <div className="flex items-center justify-between mb-3">
@@ -173,6 +190,70 @@ export function TabAsistencia({ closed = false, isNew = false, upcoming = false,
           )}
         </div>
       ))}
+
+      {/* Invitados */}
+      {guests.length > 0 && (
+        <div className="mt-1 border-t border-white/[0.04]">
+          {guests.map((g) => (
+            <div key={g.id} className="flex items-center gap-3 py-3">
+              <Avatar emoji="👤" name={g.name} colorIndex={3} />
+              <span className="flex-1 text-[15px] text-humo">{g.name}</span>
+              <span className="text-[10px] text-niebla/50 bg-white/[0.06] px-1.5 py-0.5 rounded-full">
+                invitado
+              </span>
+              {!closed && (
+                <button
+                  onClick={() => handleRemoveGuest(g.id)}
+                  className="text-niebla/40 hover:text-fuego bg-transparent border-none cursor-pointer p-1 transition-colors"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Agregar invitado */}
+      {!closed && (
+        <div className="mt-3">
+          {showGuestInput ? (
+            <div className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={guestInput}
+                onChange={(e) => setGuestInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddGuest()}
+                placeholder="Nombre del invitado"
+                autoFocus
+                className="flex-1 px-3 py-2 rounded-[10px] border-[1.5px] border-white/[0.08] bg-noche-media text-[14px] text-humo placeholder:text-niebla outline-none font-body"
+              />
+              <button
+                onClick={handleAddGuest}
+                className="px-3 py-2 rounded-[10px] bg-fuego/[0.12] text-fuego text-sm font-semibold border-none cursor-pointer"
+              >
+                Listo
+              </button>
+              <button
+                onClick={() => { setShowGuestInput(false); setGuestInput(""); }}
+                className="p-1.5 text-niebla/50 bg-transparent border-none cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowGuestInput(true)}
+              className="flex items-center gap-2 text-[13px] text-niebla/60 bg-transparent border-none cursor-pointer py-1 hover:text-niebla transition-colors"
+            >
+              <span className="w-5 h-5 rounded-full border border-niebla/25 flex items-center justify-center text-niebla text-xs leading-none">
+                +
+              </span>
+              Agregar invitado
+            </button>
+          )}
+        </div>
+      )}
 
       {editing && (
         <div className="mt-4">

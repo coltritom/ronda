@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
 import { fmtARS } from "@/lib/utils";
-import { addGasto, updateGasto, getGastos } from "@/lib/store";
+import { addGasto, updateGasto, getGastos, getGuests } from "@/lib/store";
 
 function GastoContent({ id }: { id: string }) {
   const router = useRouter();
@@ -17,20 +17,27 @@ function GastoContent({ id }: { id: string }) {
   const editIndex = editParam !== null ? parseInt(editParam, 10) : null;
   const existing = editIndex !== null ? getGastos(id)?.[editIndex] : undefined;
 
+  // Combined participants: members + any guests added to this juntada
+  const guestMembers = getGuests(id);
+  const participants = [
+    ...MOCK_MEMBERS.slice(0, 6),
+    ...guestMembers.map((g) => ({ id: g.id, name: g.name, emoji: "👤", colorIndex: 3 })),
+  ];
+
   const [amount, setAmount] = useState(() => existing ? String(existing.amount) : "");
   const [payer, setPayer] = useState(() => {
     if (existing) {
-      const idx = MOCK_MEMBERS.findIndex((m) => m.name === existing.who);
+      const idx = participants.findIndex((m) => m.name === existing.who);
       return idx >= 0 ? idx : 0;
     }
     return 0;
   });
   const [selected, setSelected] = useState<boolean[]>(() =>
-    MOCK_MEMBERS.slice(0, 6).map((m) => existing ? existing.memberIds.includes(m.id) : true)
+    participants.map((m) => existing ? existing.memberIds.includes(m.id) : true)
   );
   const [desc, setDesc] = useState(() => existing?.desc === "Sin descripción" ? "" : existing?.desc ?? "");
   const [allSelected, setAllSelected] = useState(() =>
-    existing ? existing.memberIds.length === MOCK_MEMBERS.slice(0, 6).length : true
+    existing ? existing.memberIds.length === participants.length : true
   );
 
   const toggleMember = (i: number) => {
@@ -43,7 +50,7 @@ function GastoContent({ id }: { id: string }) {
   const toggleAll = () => {
     const newVal = !allSelected;
     setAllSelected(newVal);
-    setSelected(MOCK_MEMBERS.map(() => newVal));
+    setSelected(participants.map(() => newVal));
   };
 
   const numericAmount = amount ? parseInt(amount, 10) : 0;
@@ -58,8 +65,8 @@ function GastoContent({ id }: { id: string }) {
     const entry = {
       desc: desc || "Sin descripción",
       amount: numericAmount,
-      who: MOCK_MEMBERS[payer].name,
-      memberIds: MOCK_MEMBERS.slice(0, 6).filter((_, i) => selected[i]).map((m) => m.id),
+      who: participants[payer].name,
+      memberIds: participants.filter((_, i) => selected[i]).map((m) => m.id),
     };
     if (editIndex !== null) {
       updateGasto(id, editIndex, entry);
@@ -108,7 +115,7 @@ function GastoContent({ id }: { id: string }) {
         <div>
           <p className="text-[13px] text-niebla mb-2">¿Quién pagó?</p>
           <div className="flex gap-3 flex-wrap">
-            {MOCK_MEMBERS.slice(0, 6).map((m, i) => (
+            {participants.map((m, i) => (
               <div
                 key={m.id}
                 onClick={() => setPayer(i)}
@@ -135,7 +142,7 @@ function GastoContent({ id }: { id: string }) {
             </button>
           </div>
           <div className="flex gap-1.5 flex-wrap">
-            {MOCK_MEMBERS.slice(0, 6).map((m, i) => (
+            {participants.map((m, i) => (
               <button
                 key={m.id}
                 onClick={() => toggleMember(i)}

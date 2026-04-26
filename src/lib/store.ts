@@ -195,3 +195,28 @@ export function getDynamicGroup(id: string): DynamicGroup | undefined {
 export function getDynamicGroups(): DynamicGroup[] {
   return [...dynamicGroups];
 }
+
+// ─── Guests store ─────────────────────────────────────────────────────────────
+export interface GuestMember {
+  id: string;
+  name: string;
+  isGuest: true;
+}
+
+const guestStore: Record<string, GuestMember[]> = {};
+
+export function getGuests(juntadaId: string): GuestMember[] {
+  return guestStore[juntadaId] ?? [];
+}
+
+export function addGuest(juntadaId: string, name: string): GuestMember {
+  const guest: GuestMember = { id: `guest-${Date.now()}`, name: name.trim(), isGuest: true };
+  if (!guestStore[juntadaId]) guestStore[juntadaId] = [];
+  guestStore[juntadaId] = [...guestStore[juntadaId], guest];
+  return guest;
+}
+
+export function removeGuest(juntadaId: string, guestId: string): void {
+  if (!guestStore[juntadaId]) return;
+  guestStore[juntadaId] = guestStore[juntadaId].filter((g) => g.id !== guestId);
+}

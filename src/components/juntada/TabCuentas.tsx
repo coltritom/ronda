@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
-import { getDeudas, getGastos, computeDeudas, markDeudaPaid, type Deuda } from "@/lib/store";
+import { getDeudas, getGastos, computeDeudas, getGuests, type Deuda } from "@/lib/store";
 import { fmtARSExact } from "@/lib/utils";
 
 interface Props {
@@ -14,18 +14,31 @@ interface Props {
   juntadaName?: string;
 }
 
+function GuestBadge() {
+  return (
+    <span className="ml-1 text-[10px] font-normal text-niebla/50 bg-white/[0.06] px-1.5 py-0.5 rounded-full align-middle">
+      invitado
+    </span>
+  );
+}
+
 export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaName }: Props) {
+  const guests = getGuests(juntadaId);
+  const allMembers = [
+    ...MOCK_MEMBERS,
+    ...guests.map((g) => ({ id: g.id, name: g.name, emoji: "👤", colorIndex: 3 })),
+  ];
+
   const [deudas, setDeudas] = useState<Deuda[]>(() => {
     const gastos = getGastos(juntadaId);
-    if (gastos && gastos.length > 0) return computeDeudas(gastos, MOCK_MEMBERS, juntadaId);
+    if (gastos && gastos.length > 0) return computeDeudas(gastos, allMembers, juntadaId);
     return getDeudas(juntadaId);
   });
 
   const markPaid = (index: number) => {
     const ok = window.confirm("¿Seguro que querés marcar esto como pagado? No se puede deshacer.");
     if (!ok) return;
-    markDeudaPaid(juntadaId, index);
-    setDeudas([...getDeudas(juntadaId)]);
+    setDeudas((prev) => prev.filter((_, i) => i !== index));
   };
 
   if (isNew) {
@@ -55,8 +68,10 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaNa
       <p className="text-sm text-niebla mb-4">Así quedaron los números.</p>
       <div className="flex flex-col gap-3">
         {deudas.map((d, i) => {
-          const from = MOCK_MEMBERS.find((m) => m.id === d.fromId)!;
-          const to = MOCK_MEMBERS.find((m) => m.id === d.toId)!;
+          const from = allMembers.find((m) => m.id === d.fromId)!;
+          const to = allMembers.find((m) => m.id === d.toId)!;
+          const fromIsGuest = guests.some((g) => g.id === d.fromId);
+          const toIsGuest = guests.some((g) => g.id === d.toId);
           return (
             <div key={`${d.fromId}-${d.toId}-${i}`} className="bg-noche-media rounded-2xl p-4 flex flex-col gap-4">
               {/* Involucrados */}
@@ -66,7 +81,11 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaNa
                   <span className="text-lg text-niebla">→</span>
                   <Avatar emoji={to.emoji} name={to.name} colorIndex={to.colorIndex} />
                 </div>
-                <p className="font-semibold text-[15px] text-humo">{from.name} le debe a {to.name}</p>
+                <p className="font-semibold text-[15px] text-humo">
+                  {from.name}{fromIsGuest && <GuestBadge />}
+                  {" le debe a "}
+                  {to.name}{toIsGuest && <GuestBadge />}
+                </p>
                 {juntadaName && (
                   <p className="text-xs text-niebla/60 mt-0.5">por {juntadaName}</p>
                 )}

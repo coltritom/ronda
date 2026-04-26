@@ -4,6 +4,7 @@ import { Toaster } from "sonner";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ordenalaronda.com"),
   title: "Ronda — La memoria de tus juntadas",
   description: "Registrá juntadas, cerrá cuentas, exponé al fantasma del grupo y guardá la historia.",
 };

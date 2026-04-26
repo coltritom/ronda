@@ -313,7 +313,7 @@ export default function GroupSettingsPage({
     inviteCode && typeof window !== "undefined"
       ? `${window.location.origin}/invite/${inviteCode}`
       : inviteCode
-      ? `https://ronda.app/invite/${inviteCode}`
+      ? `https://ordenalaronda.com/invite/${inviteCode}`
       : null;
 
   const generateCode = () => {

@@ -64,7 +64,7 @@ export default function CrearGrupoPage() {
           <div className="w-full bg-noche-media rounded-2xl p-5 mb-4">
             <p className="text-xs text-niebla mb-1">Link de invitación</p>
             <p className="text-sm text-humo font-mono break-all mb-4">
-              ronda.app/invite/{groupId}
+              ordenalaronda.com/invite/{groupId}
             </p>
             <button
               onClick={handleCopy}

@@ -6,7 +6,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { X, Plus, ChevronDown } from "lucide-react";
 import { MOCK_MEMBERS, APORTE_CATEGORIES, type AporteId } from "@/lib/constants";
-import { getAportes, saveAportes } from "@/lib/store";
+import { getAportes, saveAportes, getGuests } from "@/lib/store";
 
 interface Aporte {
   memberId: string;
@@ -29,6 +29,11 @@ const MOCK_APORTES: Aporte[] = [
 ];
 
 export function TabAportes({ juntadaId, isNew = false }: TabAportesProps) {
+  const allParticipants = [
+    ...MOCK_MEMBERS,
+    ...getGuests(juntadaId).map((g) => ({ id: g.id, name: g.name, emoji: "👤", colorIndex: 3 })),
+  ];
+
   const [aportes, setAportes] = useState<Aporte[]>(
     () => (getAportes(juntadaId) as Aporte[] | undefined) ?? (isNew ? [] : MOCK_APORTES)
   );
@@ -86,7 +91,7 @@ export function TabAportes({ juntadaId, isNew = false }: TabAportesProps) {
         <>
           {/* Lista agrupada por miembro */}
           {Object.entries(grouped).map(([memberId, items], gi) => {
-            const member = MOCK_MEMBERS.find((m) => m.id === memberId)!;
+            const member = allParticipants.find((m) => m.id === memberId)!;
             const score = scores.find((s) => s.memberId === memberId);
             return (
               <div
@@ -142,7 +147,7 @@ export function TabAportes({ juntadaId, isNew = false }: TabAportesProps) {
                 No es lo mismo llevar la carne que llevar hielo. Cada aporte tiene un peso distinto.
               </p>
               {scores.map((s, i) => {
-                const member = MOCK_MEMBERS.find((m) => m.id === s.memberId)!;
+                const member = allParticipants.find((m) => m.id === s.memberId)!;
                 return (
                   <div key={s.memberId} className={`flex items-center gap-2 py-1.5 ${i > 0 ? "border-t border-white/[0.04]" : ""}`}>
                     <span className="w-4 text-center text-xs font-bold text-niebla">{i + 1}</span>
@@ -164,7 +169,7 @@ export function TabAportes({ juntadaId, isNew = false }: TabAportesProps) {
               <div>
                 <p className="text-xs text-niebla mb-1.5">¿Quién aportó?</p>
                 <div className="flex gap-2 flex-wrap">
-                  {MOCK_MEMBERS.slice(0, 8).map((m) => (
+                  {allParticipants.map((m) => (
                     <button
                       key={m.id}
                       onClick={() => setNewMember(m.id)}

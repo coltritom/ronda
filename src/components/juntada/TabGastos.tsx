@@ -47,7 +47,7 @@ export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
       {gastos.map((g, i) => (
         <div
           key={i}
-          className={`flex items-center gap-3 py-3 group ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
+          className={`flex items-center gap-3 py-3 ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
         >
           <div className="w-1.5 h-1.5 rounded-full bg-niebla/40 shrink-0" />
           <div className="flex-1 min-w-0">
@@ -59,20 +59,18 @@ export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
           <span className="font-semibold text-base text-humo shrink-0">
             ${fmtARS(g.amount)}
           </span>
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1">
             <button
               onClick={() => router.push(`/juntada/${juntadaId}/gasto?edit=${i}`)}
-              className="text-niebla bg-transparent border-none cursor-pointer p-0.5"
-              title="Editar"
+              className="text-niebla/50 hover:text-niebla bg-transparent border-none cursor-pointer p-1 transition-colors"
             >
-              <Pencil size={14} />
+              <Pencil size={13} />
             </button>
             <button
               onClick={() => handleRemove(i)}
-              className="text-niebla bg-transparent border-none cursor-pointer p-0.5"
-              title="Eliminar"
+              className="text-niebla/50 hover:text-fuego bg-transparent border-none cursor-pointer p-1 transition-colors"
             >
-              <X size={14} />
+              <X size={13} />
             </button>
           </div>
         </div>

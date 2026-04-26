@@ -11,9 +11,10 @@ interface Props {
   closed?: boolean;
   isNew?: boolean;
   juntadaId: string;
+  juntadaName?: string;
 }
 
-export function TabCuentas({ closed = false, isNew = false, juntadaId }: Props) {
+export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaName }: Props) {
   const [deudas, setDeudas] = useState<Deuda[]>(() => {
     const gastos = getGastos(juntadaId);
     if (gastos && gastos.length > 0) return computeDeudas(gastos, MOCK_MEMBERS, juntadaId);
@@ -57,17 +58,24 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId }: Props) 
           const from = MOCK_MEMBERS.find((m) => m.id === d.fromId)!;
           const to = MOCK_MEMBERS.find((m) => m.id === d.toId)!;
           return (
-            <div key={`${d.fromId}-${d.toId}-${i}`} className="bg-noche-media rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Avatar emoji={from.emoji} name={from.name} colorIndex={from.colorIndex} />
-                <span className="text-lg text-niebla">→</span>
-                <Avatar emoji={to.emoji} name={to.name} colorIndex={to.colorIndex} />
+            <div key={`${d.fromId}-${d.toId}-${i}`} className="bg-noche-media rounded-2xl p-4 flex flex-col gap-4">
+              {/* Involucrados */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Avatar emoji={from.emoji} name={from.name} colorIndex={from.colorIndex} />
+                  <span className="text-lg text-niebla">→</span>
+                  <Avatar emoji={to.emoji} name={to.name} colorIndex={to.colorIndex} />
+                </div>
+                <p className="font-semibold text-[15px] text-humo">{from.name} le debe a {to.name}</p>
+                {juntadaName && (
+                  <p className="text-xs text-niebla/60 mt-0.5">por {juntadaName}</p>
+                )}
               </div>
-              <p className="font-semibold text-[15px] text-humo">{from.name} le debe a {to.name}</p>
-              <p className="font-bold text-[22px] text-humo mt-1">${fmtARSExact(d.amount)}</p>
-              {d.juntadaId && (
-                <p className="text-[10px] text-niebla/50 mb-3">ref: {d.juntadaId}</p>
-              )}
+
+              {/* Monto */}
+              <p className="font-bold text-[28px] text-humo leading-none">${fmtARSExact(d.amount)}</p>
+
+              {/* Acción */}
               <Button primary={false} full onClick={() => markPaid(i)}>
                 Marcar como pagado
               </Button>

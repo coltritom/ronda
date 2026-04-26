@@ -89,7 +89,7 @@ function JuntadaContent({ id }: { id: string }) {
       {activeTab === "Asistencia" && <TabAsistencia closed={isClosed} isNew={isNew} upcoming={isUpcoming} juntadaId={id} />}
       {activeTab === "Aportes" && <TabAportes juntadaId={id} isNew={isNew} />}
       {activeTab === "Gastos" && <TabGastos juntadaId={id} isNew={isNew} />}
-      {activeTab === "Cuentas" && <TabCuentas closed={isClosed} isNew={isNew} juntadaId={id} />}
+      {activeTab === "Cuentas" && <TabCuentas closed={isClosed} isNew={isNew} juntadaId={id} juntadaName={displayName} />}
     </div>
   );
 }

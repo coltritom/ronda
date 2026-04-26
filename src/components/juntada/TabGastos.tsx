@@ -1,16 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { X, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { fmtARS } from "@/lib/utils";
-import { getGastos } from "@/lib/store";
+import { getGastos, removeGasto, GastoEntry } from "@/lib/store";
 
 interface TabGastosProps {
   juntadaId: string;
   isNew?: boolean;
 }
 
-const MOCK_GASTOS = [
+const MOCK_GASTOS: GastoEntry[] = [
   { desc: "Carne y carbón", amount: 12000, who: "Mati", forAll: true },
   { desc: "Bebidas", amount: 4200, who: "Nico", forAll: true },
   { desc: "Ensaladas y pan", amount: 2000, who: "Lucía", forAll: true },
@@ -18,8 +20,16 @@ const MOCK_GASTOS = [
 
 export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
   const router = useRouter();
-  const gastos = getGastos(juntadaId) ?? (isNew ? [] : MOCK_GASTOS);
+  const [gastos, setGastos] = useState<GastoEntry[]>(
+    () => getGastos(juntadaId) ?? (isNew ? [] : MOCK_GASTOS)
+  );
+
   const total = gastos.reduce((s, g) => s + g.amount, 0);
+
+  const handleRemove = (index: number) => {
+    removeGasto(juntadaId, index);
+    setGastos(getGastos(juntadaId) ?? []);
+  };
 
   if (gastos.length === 0) {
     return (
@@ -37,7 +47,7 @@ export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
       {gastos.map((g, i) => (
         <div
           key={i}
-          className={`flex items-center gap-3 py-3 ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
+          className={`flex items-center gap-3 py-3 group ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
         >
           <div className="w-1.5 h-1.5 rounded-full bg-niebla/40 shrink-0" />
           <div className="flex-1 min-w-0">
@@ -49,6 +59,22 @@ export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
           <span className="font-semibold text-base text-humo shrink-0">
             ${fmtARS(g.amount)}
           </span>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => router.push(`/juntada/${juntadaId}/gasto?edit=${i}`)}
+              className="text-niebla bg-transparent border-none cursor-pointer p-0.5"
+              title="Editar"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              onClick={() => handleRemove(i)}
+              className="text-niebla bg-transparent border-none cursor-pointer p-0.5"
+              title="Eliminar"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
       ))}
 

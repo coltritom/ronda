@@ -1,22 +1,35 @@
 "use client";
 
-import { use, useState } from "react";
-import { useRouter } from "next/navigation";
+import { use, useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
 import { fmtARS } from "@/lib/utils";
-import { addGasto } from "@/lib/store";
+import { addGasto, updateGasto, getGastos } from "@/lib/store";
 
-export default function GastoPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+function GastoContent({ id }: { id: string }) {
   const router = useRouter();
-  const [amount, setAmount] = useState("");
-  const [payer, setPayer] = useState(0);
-  const [selected, setSelected] = useState<boolean[]>(MOCK_MEMBERS.map(() => true));
-  const [desc, setDesc] = useState("");
-  const [allSelected, setAllSelected] = useState(true);
+  const searchParams = useSearchParams();
+
+  const editParam = searchParams.get("edit");
+  const editIndex = editParam !== null ? parseInt(editParam, 10) : null;
+  const existing = editIndex !== null ? getGastos(id)?.[editIndex] : undefined;
+
+  const [amount, setAmount] = useState(() => existing ? String(existing.amount) : "");
+  const [payer, setPayer] = useState(() => {
+    if (existing) {
+      const idx = MOCK_MEMBERS.findIndex((m) => m.name === existing.who);
+      return idx >= 0 ? idx : 0;
+    }
+    return 0;
+  });
+  const [selected, setSelected] = useState<boolean[]>(() =>
+    MOCK_MEMBERS.map(() => existing ? existing.forAll : true)
+  );
+  const [desc, setDesc] = useState(() => existing?.desc === "Sin descripción" ? "" : existing?.desc ?? "");
+  const [allSelected, setAllSelected] = useState(() => existing ? existing.forAll : true);
 
   const toggleMember = (i: number) => {
     const next = [...selected];
@@ -39,19 +52,34 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
     ? Math.round(numericAmount / selectedCount)
     : 0;
 
+  const handleSave = () => {
+    const entry = {
+      desc: desc || "Sin descripción",
+      amount: numericAmount,
+      who: MOCK_MEMBERS[payer].name,
+      forAll: selected.every(Boolean),
+    };
+    if (editIndex !== null) {
+      updateGasto(id, editIndex, entry);
+    } else {
+      addGasto(id, entry);
+    }
+    router.back();
+  };
+
   return (
     <div className="max-w-lg mx-auto pb-8">
       {/* Header */}
       <div className="px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
         <button
-          onClick={() => router.push(`/juntada/${id}`)}
+          onClick={() => router.back()}
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0"
         >
           <ChevronLeft size={16} />
           Volver
         </button>
         <span className="font-display font-bold text-lg text-humo">
-          Nuevo gasto
+          {editIndex !== null ? "Editar gasto" : "Nuevo gasto"}
         </span>
         <div className="w-[50px]" />
       </div>
@@ -150,19 +178,20 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
         <Button
           full
           disabled={numericAmount <= 0}
-          onClick={() => {
-            addGasto(id, {
-              desc: desc || "Sin descripción",
-              amount: numericAmount,
-              who: MOCK_MEMBERS[payer].name,
-              forAll: selected.every(Boolean),
-            });
-            router.back();
-          }}
+          onClick={handleSave}
         >
-          Agregar gasto
+          {editIndex !== null ? "Guardar cambios" : "Agregar gasto"}
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function GastoPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  return (
+    <Suspense fallback={null}>
+      <GastoContent id={id} />
+    </Suspense>
   );
 }

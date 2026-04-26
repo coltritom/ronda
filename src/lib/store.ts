@@ -102,6 +102,16 @@ export function addGasto(juntadaId: string, gasto: GastoEntry): void {
   gastosStore[juntadaId] = [...gastosStore[juntadaId], gasto];
 }
 
+export function removeGasto(juntadaId: string, index: number): void {
+  if (!gastosStore[juntadaId]) return;
+  gastosStore[juntadaId] = gastosStore[juntadaId].filter((_, i) => i !== index);
+}
+
+export function updateGasto(juntadaId: string, index: number, gasto: GastoEntry): void {
+  if (!gastosStore[juntadaId]) return;
+  gastosStore[juntadaId] = gastosStore[juntadaId].map((g, i) => i === index ? gasto : g);
+}
+
 // ─── Dynamic groups store ─────────────────────────────────────────────────────
 export interface DynamicGroup {
   id: string;

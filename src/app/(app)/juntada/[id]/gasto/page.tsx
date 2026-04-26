@@ -31,9 +31,12 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
     setSelected(MOCK_MEMBERS.map(() => newVal));
   };
 
+  const numericAmount = amount ? parseInt(amount, 10) : 0;
+  const formattedAmount = amount ? fmtARS(numericAmount) : "";
+
   const selectedCount = selected.filter(Boolean).length;
-  const perPerson = amount && selectedCount > 0
-    ? Math.round(parseFloat(amount) / selectedCount)
+  const perPerson = numericAmount > 0 && selectedCount > 0
+    ? Math.round(numericAmount / selectedCount)
     : 0;
 
   return (
@@ -61,17 +64,12 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
             <span className="opacity-40">$</span>
             <input
               type="text"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => {
-                const val = e.target.value.replace(/[^0-9.]/g, "");
-                // prevent multiple dots
-                const dots = val.split(".").length - 1;
-                if (dots <= 1) setAmount(val);
-              }}
+              inputMode="numeric"
+              value={formattedAmount}
+              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
               placeholder="0"
               className="bg-transparent border-none outline-none font-display font-bold text-[40px] text-humo text-center placeholder:text-niebla/30"
-              style={{ width: Math.max(40, (amount.length || 1) * 24) }}
+              style={{ width: Math.max(48, (formattedAmount.length || 1) * 28) }}
             />
           </div>
         </div>
@@ -151,11 +149,11 @@ export default function GastoPage({ params }: { params: Promise<{ id: string }> 
 
         <Button
           full
-          disabled={!amount || parseFloat(amount) <= 0 || isNaN(parseFloat(amount))}
+          disabled={numericAmount <= 0}
           onClick={() => {
             addGasto(id, {
               desc: desc || "Sin descripción",
-              amount: parseFloat(amount),
+              amount: numericAmount,
               who: MOCK_MEMBERS[payer].name,
               forAll: selected.every(Boolean),
             });

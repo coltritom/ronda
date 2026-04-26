@@ -5,7 +5,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
 import { getDeudas, getGastos, computeDeudas, markDeudaPaid, type Deuda } from "@/lib/store";
-import { fmtARS } from "@/lib/utils";
+import { fmtARSExact } from "@/lib/utils";
 
 interface Props {
   closed?: boolean;
@@ -16,7 +16,7 @@ interface Props {
 export function TabCuentas({ closed = false, isNew = false, juntadaId }: Props) {
   const [deudas, setDeudas] = useState<Deuda[]>(() => {
     const gastos = getGastos(juntadaId);
-    if (gastos && gastos.length > 0) return computeDeudas(gastos, MOCK_MEMBERS);
+    if (gastos && gastos.length > 0) return computeDeudas(gastos, MOCK_MEMBERS, juntadaId);
     return getDeudas(juntadaId);
   });
 
@@ -64,7 +64,10 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId }: Props) 
                 <Avatar emoji={to.emoji} name={to.name} colorIndex={to.colorIndex} />
               </div>
               <p className="font-semibold text-[15px] text-humo">{from.name} le debe a {to.name}</p>
-              <p className="font-bold text-[22px] text-humo mt-1 mb-3">${fmtARS(d.amount)}</p>
+              <p className="font-bold text-[22px] text-humo mt-1">${fmtARSExact(d.amount)}</p>
+              {d.juntadaId && (
+                <p className="text-[10px] text-niebla/50 mb-3">ref: {d.juntadaId}</p>
+              )}
               <Button primary={false} full onClick={() => markPaid(i)}>
                 Marcar como pagado
               </Button>

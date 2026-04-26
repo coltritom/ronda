@@ -2,9 +2,17 @@
   Utilidades generales de la app.
 */
 
-/** Formatea un número como pesos argentinos con separador de miles. Ej: 18200 → "18.200" */
+/** Formatea un número como pesos argentinos sin decimales. Ej: 18200 → "18.200" */
 export function fmtARS(amount: number): string {
   return new Intl.NumberFormat("es-AR", { maximumFractionDigits: 0 }).format(amount);
+}
+
+/** Formatea siempre con exactamente 1 decimal. Ej: 1000.5 → "1.000,5" */
+export function fmtARSExact(amount: number): string {
+  return new Intl.NumberFormat("es-AR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(amount);
 }
 
 /**

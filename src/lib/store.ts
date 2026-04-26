@@ -32,6 +32,7 @@ export interface Deuda {
   fromId: string;
   toId: string;
   amount: number;
+  juntadaId?: string;
 }
 
 const DEFAULT_DEUDAS: Deuda[] = [
@@ -114,8 +115,10 @@ export function updateGasto(juntadaId: string, index: number, gasto: GastoEntry)
 
 export function computeDeudas(
   gastos: GastoEntry[],
-  members: { id: string; name: string }[]
+  members: { id: string; name: string }[],
+  juntadaId: string,
 ): Deuda[] {
+  // Full-precision balance accumulation — no intermediate rounding
   const balance: Record<string, number> = {};
   members.forEach((m) => { balance[m.id] = 0; });
 
@@ -132,32 +135,37 @@ export function computeDeudas(
     }
   }
 
+  // Separate creditors (positive balance) from debtors (negative balance)
+  // Threshold 0.05 avoids chasing sub-cent float residuals
   const creditors: { id: string; amt: number }[] = [];
   const debtors: { id: string; amt: number }[] = [];
 
   for (const [id, bal] of Object.entries(balance)) {
-    if (bal > 0.5) creditors.push({ id, amt: bal });
-    else if (bal < -0.5) debtors.push({ id, amt: -bal });
+    if (bal > 0.05) creditors.push({ id, amt: bal });
+    else if (bal < -0.05) debtors.push({ id, amt: -bal });
   }
 
   creditors.sort((a, b) => b.amt - a.amt);
   debtors.sort((a, b) => b.amt - a.amt);
 
+  // Greedy min-transfers: match largest creditor with largest debtor
   const deudas: Deuda[] = [];
   let ci = 0, di = 0;
 
   while (ci < creditors.length && di < debtors.length) {
     const creditor = creditors[ci];
     const debtor = debtors[di];
-    const amount = Math.min(creditor.amt, debtor.amt);
+    const raw = Math.min(creditor.amt, debtor.amt);
+    // 1 decimal precision — preserves cents without integer truncation
+    const amount = parseFloat(raw.toFixed(1));
 
-    deudas.push({ fromId: debtor.id, toId: creditor.id, amount: Math.round(amount) });
+    deudas.push({ fromId: debtor.id, toId: creditor.id, amount, juntadaId });
 
-    creditor.amt -= amount;
-    debtor.amt -= amount;
+    creditor.amt -= raw;
+    debtor.amt -= raw;
 
-    if (creditor.amt < 0.5) ci++;
-    if (debtor.amt < 0.5) di++;
+    if (creditor.amt < 0.05) ci++;
+    if (debtor.amt < 0.05) di++;
   }
 
   return deudas;

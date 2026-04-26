@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
-import { getDeudas, markDeudaPaid, type Deuda } from "@/lib/store";
+import { getDeudas, getGastos, computeDeudas, markDeudaPaid, type Deuda } from "@/lib/store";
 import { fmtARS } from "@/lib/utils";
 
 interface Props {
@@ -14,7 +14,11 @@ interface Props {
 }
 
 export function TabCuentas({ closed = false, isNew = false, juntadaId }: Props) {
-  const [deudas, setDeudas] = useState<Deuda[]>(() => getDeudas(juntadaId));
+  const [deudas, setDeudas] = useState<Deuda[]>(() => {
+    const gastos = getGastos(juntadaId);
+    if (gastos && gastos.length > 0) return computeDeudas(gastos, MOCK_MEMBERS);
+    return getDeudas(juntadaId);
+  });
 
   const markPaid = (index: number) => {
     const ok = window.confirm("¿Seguro que querés marcar esto como pagado? No se puede deshacer.");

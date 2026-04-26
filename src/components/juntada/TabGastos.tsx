@@ -12,10 +12,12 @@ interface TabGastosProps {
   isNew?: boolean;
 }
 
+const ALL_IDS = ["1", "2", "3", "4", "5", "6", "7", "8"];
+
 const MOCK_GASTOS: GastoEntry[] = [
-  { desc: "Carne y carbón", amount: 12000, who: "Mati", forAll: true },
-  { desc: "Bebidas", amount: 4200, who: "Nico", forAll: true },
-  { desc: "Ensaladas y pan", amount: 2000, who: "Lucía", forAll: true },
+  { desc: "Carne y carbón", amount: 12000, who: "Mati", memberIds: ALL_IDS },
+  { desc: "Bebidas", amount: 4200, who: "Nico", memberIds: ALL_IDS },
+  { desc: "Ensaladas y pan", amount: 2000, who: "Lucía", memberIds: ALL_IDS },
 ];
 
 export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
@@ -53,7 +55,7 @@ export function TabGastos({ juntadaId, isNew = false }: TabGastosProps) {
           <div className="flex-1 min-w-0">
             <p className="text-[15px] text-humo">{g.desc}</p>
             <p className="text-xs text-niebla mt-0.5">
-              Pagó {g.who} · {g.forAll ? "Para todos" : ""}
+              Pagó {g.who} · {g.memberIds.length} personas
             </p>
           </div>
           <span className="font-semibold text-base text-humo shrink-0">

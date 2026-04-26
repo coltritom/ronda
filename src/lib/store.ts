@@ -88,7 +88,7 @@ export interface GastoEntry {
   desc: string;
   amount: number;
   who: string;
-  forAll: boolean;
+  memberIds: string[];
 }
 
 const gastosStore: Record<string, GastoEntry[]> = {};
@@ -110,6 +110,57 @@ export function removeGasto(juntadaId: string, index: number): void {
 export function updateGasto(juntadaId: string, index: number, gasto: GastoEntry): void {
   if (!gastosStore[juntadaId]) return;
   gastosStore[juntadaId] = gastosStore[juntadaId].map((g, i) => i === index ? gasto : g);
+}
+
+export function computeDeudas(
+  gastos: GastoEntry[],
+  members: { id: string; name: string }[]
+): Deuda[] {
+  const balance: Record<string, number> = {};
+  members.forEach((m) => { balance[m.id] = 0; });
+
+  for (const g of gastos) {
+    const payerId = members.find((m) => m.name === g.who)?.id;
+    if (!payerId) continue;
+
+    const splitIds = g.memberIds.length > 0 ? g.memberIds : members.map((m) => m.id);
+    const share = g.amount / splitIds.length;
+
+    balance[payerId] += g.amount;
+    for (const id of splitIds) {
+      balance[id] = (balance[id] ?? 0) - share;
+    }
+  }
+
+  const creditors: { id: string; amt: number }[] = [];
+  const debtors: { id: string; amt: number }[] = [];
+
+  for (const [id, bal] of Object.entries(balance)) {
+    if (bal > 0.5) creditors.push({ id, amt: bal });
+    else if (bal < -0.5) debtors.push({ id, amt: -bal });
+  }
+
+  creditors.sort((a, b) => b.amt - a.amt);
+  debtors.sort((a, b) => b.amt - a.amt);
+
+  const deudas: Deuda[] = [];
+  let ci = 0, di = 0;
+
+  while (ci < creditors.length && di < debtors.length) {
+    const creditor = creditors[ci];
+    const debtor = debtors[di];
+    const amount = Math.min(creditor.amt, debtor.amt);
+
+    deudas.push({ fromId: debtor.id, toId: creditor.id, amount: Math.round(amount) });
+
+    creditor.amt -= amount;
+    debtor.amt -= amount;
+
+    if (creditor.amt < 0.5) ci++;
+    if (debtor.amt < 0.5) di++;
+  }
+
+  return deudas;
 }
 
 // ─── Dynamic groups store ─────────────────────────────────────────────────────

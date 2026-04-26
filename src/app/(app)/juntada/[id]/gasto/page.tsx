@@ -26,10 +26,12 @@ function GastoContent({ id }: { id: string }) {
     return 0;
   });
   const [selected, setSelected] = useState<boolean[]>(() =>
-    MOCK_MEMBERS.map(() => existing ? existing.forAll : true)
+    MOCK_MEMBERS.slice(0, 6).map((m) => existing ? existing.memberIds.includes(m.id) : true)
   );
   const [desc, setDesc] = useState(() => existing?.desc === "Sin descripción" ? "" : existing?.desc ?? "");
-  const [allSelected, setAllSelected] = useState(() => existing ? existing.forAll : true);
+  const [allSelected, setAllSelected] = useState(() =>
+    existing ? existing.memberIds.length === MOCK_MEMBERS.slice(0, 6).length : true
+  );
 
   const toggleMember = (i: number) => {
     const next = [...selected];
@@ -57,7 +59,7 @@ function GastoContent({ id }: { id: string }) {
       desc: desc || "Sin descripción",
       amount: numericAmount,
       who: MOCK_MEMBERS[payer].name,
-      forAll: selected.every(Boolean),
+      memberIds: MOCK_MEMBERS.slice(0, 6).filter((_, i) => selected[i]).map((m) => m.id),
     };
     if (editIndex !== null) {
       updateGasto(id, editIndex, entry);

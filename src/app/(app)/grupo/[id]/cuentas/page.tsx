@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { getGroup } from "@/lib/constants";
 import { fmtARS } from "@/lib/utils";
+import { ConfirmPagoModal } from "@/components/juntada/ConfirmPagoModal";
 
 interface Deuda {
   fromId: string;
@@ -32,6 +33,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
   const [deudas, setDeudas] = useState(
     MOCK_DEUDAS.filter((d) => memberIds.has(d.fromId) && memberIds.has(d.toId))
   );
+  const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
 
   if (!group) {
     return (
@@ -56,6 +58,12 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
       if (realIndex >= 0) next[realIndex] = { ...next[realIndex], paid: true };
       return next;
     });
+  };
+
+  const handleConfirmPaid = () => {
+    if (confirmIdx === null) return;
+    markPaid(confirmIdx);
+    setConfirmIdx(null);
   };
 
   return (
@@ -105,7 +113,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
               Pendientes
             </p>
             {pendientes.map((d, i) => (
-              <DeudaCard key={`p-${i}`} deuda={d} members={group.members} onMarkPaid={() => markPaid(i)} />
+              <DeudaCard key={`p-${i}`} deuda={d} members={group.members} onMarkPaid={() => setConfirmIdx(i)} />
             ))}
           </>
         )}
@@ -125,6 +133,22 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
           Ronda simplificó las cuentas para que haya menos transferencias.
         </p>
       </div>
+
+      {confirmIdx !== null && pendientes[confirmIdx] && (() => {
+        const d = pendientes[confirmIdx];
+        const from = group.members.find((m) => m.id === d.fromId)!;
+        const to = group.members.find((m) => m.id === d.toId)!;
+        return (
+          <ConfirmPagoModal
+            open
+            onClose={() => setConfirmIdx(null)}
+            onConfirm={handleConfirmPaid}
+            from={from}
+            to={to}
+            amountLabel={`$${fmtARS(d.amount)}`}
+          />
+        );
+      })()}
     </div>
   );
 }

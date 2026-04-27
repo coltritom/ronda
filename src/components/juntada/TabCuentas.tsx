@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { MOCK_MEMBERS } from "@/lib/constants";
 import { getDeudas, getGastos, computeDeudas, getGuests, type Deuda } from "@/lib/store";
 import { fmtARSExact } from "@/lib/utils";
+import { ConfirmPagoModal } from "@/components/juntada/ConfirmPagoModal";
 
 interface Props {
   closed?: boolean;
@@ -34,11 +35,12 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaNa
     if (gastos && gastos.length > 0) return computeDeudas(gastos, allMembers, juntadaId);
     return getDeudas(juntadaId);
   });
+  const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
 
-  const markPaid = (index: number) => {
-    const ok = window.confirm("¿Seguro que querés marcar esto como pagado? No se puede deshacer.");
-    if (!ok) return;
-    setDeudas((prev) => prev.filter((_, i) => i !== index));
+  const handleConfirmPaid = () => {
+    if (confirmIdx === null) return;
+    setDeudas((prev) => prev.filter((_, i) => i !== confirmIdx));
+    setConfirmIdx(null);
   };
 
   if (isNew) {
@@ -95,7 +97,7 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaNa
               <p className="font-bold text-[28px] text-humo leading-none">${fmtARSExact(d.amount)}</p>
 
               {/* Acción */}
-              <Button primary={false} full onClick={() => markPaid(i)}>
+              <Button primary={false} full onClick={() => setConfirmIdx(i)}>
                 Marcar como pagado
               </Button>
             </div>
@@ -105,6 +107,22 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaNa
       <p className="text-xs text-niebla text-center mt-4">
         Ronda simplificó las cuentas para que haya menos transferencias.
       </p>
+
+      {confirmIdx !== null && deudas[confirmIdx] && (() => {
+        const d = deudas[confirmIdx];
+        const from = allMembers.find((m) => m.id === d.fromId)!;
+        const to = allMembers.find((m) => m.id === d.toId)!;
+        return (
+          <ConfirmPagoModal
+            open
+            onClose={() => setConfirmIdx(null)}
+            onConfirm={handleConfirmPaid}
+            from={from}
+            to={to}
+            amountLabel={`$${fmtARSExact(d.amount)}`}
+          />
+        );
+      })()}
     </div>
   );
 }

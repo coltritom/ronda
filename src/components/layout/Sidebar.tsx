@@ -1,14 +1,61 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Plus, Moon, Sun, HelpCircle, MessageSquare, Home } from "lucide-react";
-import { MOCK_GROUPS } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/clients";
 import { useTheme } from "@/lib/theme-context";
+
+interface SidebarGroup {
+  id: string;
+  name: string;
+  emoji: string;
+  pendingCount: number;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggle } = useTheme();
+  const [groups, setGroups] = useState<SidebarGroup[]>([]);
+  const [userName, setUserName] = useState("Vos");
+
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("id", user.id)
+        .single();
+      if (profile?.name) setUserName(profile.name);
+
+      const { data: memberships } = await supabase
+        .from("group_members")
+        .select("groups ( id, name )")
+        .eq("user_id", user.id);
+
+      const userGroups = (memberships ?? [])
+        .map((m) => {
+          const g = Array.isArray(m.groups) ? m.groups[0] : m.groups;
+          return g as { id: string; name: string } | null;
+        })
+        .filter((g): g is { id: string; name: string } => g !== null);
+
+      setGroups(
+        userGroups.map((g) => ({
+          id: g.id,
+          name: g.name,
+          emoji: g.name.charAt(0).toUpperCase(),
+          pendingCount: 0,
+        }))
+      );
+    }
+    load();
+  }, []);
 
   return (
     <aside className="hidden md:flex flex-col w-60 h-screen fixed left-0 top-0 bg-noche-media border-r border-white/[0.06] z-40">
@@ -52,8 +99,10 @@ export function Sidebar() {
             }
           `}
         >
-          <div className="w-7 h-7 rounded-full bg-fuego/15 flex items-center justify-center text-sm">🙋‍♂️</div>
-          <span>Tomi</span>
+          <div className="w-7 h-7 rounded-full bg-fuego/15 flex items-center justify-center text-sm font-bold text-fuego">
+            {userName.charAt(0).toUpperCase()}
+          </div>
+          <span>{userName}</span>
         </button>
       </div>
 
@@ -64,23 +113,26 @@ export function Sidebar() {
             Tus grupos
           </span>
           <button
-            onClick={() => {}}
+            onClick={() => router.push("/grupos")}
             className="w-6 h-6 rounded-lg bg-fuego/10 flex items-center justify-center text-fuego cursor-pointer border-none hover:bg-fuego/20 transition-colors"
-            title="Crear grupo"
+            title="Ver grupos"
           >
             <Plus size={14} />
           </button>
         </div>
 
-        {MOCK_GROUPS.length === 0 ? (
+        {groups.length === 0 ? (
           <div className="px-3 py-6 text-center">
             <p className="text-xs text-niebla mb-2">Todavía no tenés grupos.</p>
-            <button className="text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer">
+            <button
+              onClick={() => router.push("/grupos")}
+              className="text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer"
+            >
               Crear grupo
             </button>
           </div>
         ) : (
-          MOCK_GROUPS.map((g) => {
+          groups.map((g) => {
             const active = pathname === `/grupo/${g.id}` || pathname.startsWith(`/grupo/${g.id}/`);
             return (
               <button
@@ -95,7 +147,7 @@ export function Sidebar() {
                   }
                 `}
               >
-                <span className="text-base">{g.emoji}</span>
+                <span className="text-base font-bold">{g.emoji}</span>
                 <span className="truncate flex-1">{g.name}</span>
                 {g.pendingCount > 0 && (
                   <span className="w-5 h-5 rounded-full bg-alerta/20 text-alerta text-[10px] font-bold flex items-center justify-center shrink-0">

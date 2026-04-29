@@ -162,8 +162,8 @@ export default function RegistroPage() {
 
         {error && <p className="text-[13px] text-error font-medium">{error}</p>}
 
-        <Button full big onClick={handleRegister}>
-          {loading ? "Creando cuenta..." : "Crear cuenta"}
+        <Button full big onClick={handleRegister} loading={loading}>
+          Crear cuenta
         </Button>
 
         <p className="text-xs text-niebla text-center mt-1">

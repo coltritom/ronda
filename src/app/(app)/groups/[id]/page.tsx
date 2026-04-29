@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 import { EventCard } from '@/components/events/EventCard'
 import { CreateEventModal } from '@/components/events/CreateEventModal'
 import { AlertCircle, Trophy, ChevronRight, CalendarDays } from 'lucide-react'
@@ -14,13 +15,14 @@ export default async function GroupDetailPage({ params }: PageProps) {
   const { id } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
 
   /* ── Membresía ────────────────────────────────────────────── */
   const { data: membership } = await supabase
     .from('group_members')
     .select('role')
     .eq('group_id', id)
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .single()
 
   const isAdmin = membership?.role === 'admin'
@@ -68,7 +70,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
       const { data: splits } = await supabase
         .from('expense_splits')
         .select('amount')
-        .eq('user_id', user!.id)
+        .eq('user_id', user.id)
         .eq('is_settled', false)
         .neq('expense_id', null)
         .in('expense_id', ids)
@@ -203,7 +205,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
               <div
                 key={entry.user_id}
                 className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 ${
-                  entry.user_id === user!.id
+                  entry.user_id === user.id
                     ? 'border-fuego/30 bg-fuego/5'
                     : 'border-border bg-surface'
                 }`}
@@ -212,7 +214,7 @@ export default async function GroupDetailPage({ params }: PageProps) {
                   {MEDALS[i]}
                 </span>
                 <span className="flex-1 font-body text-sm text-foreground">
-                  {entry.user_id === user!.id ? 'Vos' : entry.name}
+                  {entry.user_id === user.id ? 'Vos' : entry.name}
                 </span>
                 <span className="font-body text-sm font-semibold text-fuego">
                   {entry.count} {entry.count === 1 ? 'juntada' : 'juntadas'}

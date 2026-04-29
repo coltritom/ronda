@@ -52,6 +52,10 @@ export async function settleDebt(
 
   if (!user) return { error: 'No autenticado.' }
   if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
+  if (user.id === toUserId) return { error: 'No podés saldar una deuda con vos mismo.' }
+
+  const memberError = await assertGroupMember(supabase, groupId, user.id)
+  if (memberError) return memberError
 
   const { error } = await supabase
     .from('settlements')

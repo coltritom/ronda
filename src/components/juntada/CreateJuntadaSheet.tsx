@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { LugarSelector } from "@/components/juntada/LugarSelector";
 import { X } from "lucide-react";
-import { MOCK_MEMBERS, LUGAR_OPTIONS, type LugarId } from "@/lib/constants";
+import { LUGAR_OPTIONS, type LugarId } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/clients";
+
+interface Member {
+  id: string;
+  name: string;
+  emoji: string;
+  colorIndex: number;
+}
 
 interface CreateJuntadaSheetProps {
   open: boolean;
   onClose: () => void;
   groupId: string;
   groupName?: string;
-  onCreated?: (juntada: any) => void;
+  onCreated?: () => void;
 }
 
 export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreated }: CreateJuntadaSheetProps) {
@@ -23,6 +31,32 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
   const [lugar, setLugar] = useState<LugarId | null>(null);
   const [hostId, setHostId] = useState<string | null>(null);
   const [customLocation, setCustomLocation] = useState("");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!open || !groupId) return;
+    async function loadMembers() {
+      const supabase = createClient();
+      const { data } = await supabase
+        .from("group_members")
+        .select("user_id, profiles(name)")
+        .eq("group_id", groupId);
+      setMembers(
+        (data ?? []).map((m, i) => {
+          const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+          return {
+            id: m.user_id,
+            name: (p as { name: string } | null)?.name ?? "Miembro",
+            emoji: "",
+            colorIndex: i,
+          };
+        })
+      );
+    }
+    loadMembers();
+  }, [open, groupId]);
 
   if (!open) return null;
 
@@ -33,53 +67,62 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
     setLugar(null);
     setHostId(null);
     setCustomLocation("");
+    setError("");
   };
 
-  const handleCreate = () => {
-    const newId = `j-${Date.now()}`;
-    const hostMember = MOCK_MEMBERS.find((m) => m.id === hostId);
-    const lugarOption = lugar ? LUGAR_OPTIONS.find((l) => l.id === lugar) : null;
-
-    const newJuntada = {
-      id: newId,
-      name: name || undefined,
-      date: date || new Date().toLocaleDateString("es-AR", { weekday: "short", day: "numeric", month: "short" }),
-      time,
-      lugar,
-      hostId: lugar === "casa" ? hostId : null,
-      hostName: lugar === "casa" && hostId && hostId !== "otro" ? hostMember?.name : undefined,
-      customLocation: (lugar === "otro" || hostId === "otro") ? customLocation : null,
-      attendees: 0,
-      totalSpent: 0,
-      closed: false,
-    };
-
-    // Formatear fecha legible para URL params
-    let displayDate = "";
-    if (date) {
-      const [year, month, day] = date.split("-").map(Number);
-      const d = new Date(year, month - 1, day);
-      displayDate = d.toLocaleDateString("es-AR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const buildLocation = (): string | null => {
+    if (!lugar) return null;
+    const lugarOption = LUGAR_OPTIONS.find((l) => l.id === lugar);
+    if (!lugarOption) return null;
+    if (lugar === "casa") {
+      if (hostId && hostId !== "otro") {
+        const host = members.find((m) => m.id === hostId);
+        return host ? `${lugarOption.emoji} En lo de ${host.name}` : lugarOption.label;
+      }
+      if (hostId === "otro" && customLocation) return customLocation;
+      return lugarOption.label;
     }
-    if (time) displayDate = displayDate ? `${displayDate}, ${time}` : time;
+    if (lugar === "otro") return customLocation || lugarOption.label;
+    return lugarOption.label;
+  };
 
-    // Lugar legible
-    const hostName = lugar === "casa" && hostId && hostId !== "otro" ? hostMember?.name : null;
-    const lugarDisplay = lugarOption
-      ? (hostName ? `${lugarOption.emoji} En lo de ${hostName}` : `${lugarOption.emoji} ${customLocation && (lugar === "otro" || hostId === "otro") ? customLocation : lugarOption.label}`)
-      : null;
+  const handleCreate = async () => {
+    if (!date) { setError("La fecha es obligatoria."); return; }
+    setLoading(true);
+    setError("");
 
-    const params = new URLSearchParams();
-    if (name) params.set("n", name);
-    if (displayDate) params.set("d", displayDate);
-    if (lugarDisplay) params.set("l", lugarDisplay);
-    if (groupId) params.set("g", groupId);
-    if (groupName) params.set("gn", groupName);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { setError("No autenticado."); setLoading(false); return; }
 
-    onCreated?.(newJuntada);
+    // Build ISO datetime: combine date + time, or use noon as default
+    const isoDate = time ? `${date}T${time}:00` : `${date}T12:00:00`;
+    const location = buildLocation();
+
+    const { data: event, error: insertError } = await supabase
+      .from("events")
+      .insert({
+        name: name.trim() || (groupName ? `Juntada de ${groupName}` : "Juntada"),
+        date: isoDate,
+        group_id: groupId,
+        created_by: user.id,
+        status: "upcoming",
+        ...(location ? { location } : {}),
+      })
+      .select("id")
+      .single();
+
+    setLoading(false);
+
+    if (insertError || !event) {
+      setError("No se pudo crear la juntada. Intentá de nuevo.");
+      return;
+    }
+
+    onCreated?.();
     resetForm();
     onClose();
-    router.push(`/juntada/${newId}?${params.toString()}`);
+    router.push(`/grupo/${groupId}`);
   };
 
   const handleClose = () => {
@@ -110,81 +153,84 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
 
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto px-5">
-        <div className="flex flex-col gap-4">
-          <div>
-            <label className="text-xs font-medium text-niebla mb-1.5 block">
-              Nombre (opcional)
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Ponele nombre si querés (o dejalo así)"
-              className="
-                w-full px-3.5 py-3 rounded-[10px]
-                border-[1.5px] border-white/[0.08]
-                bg-noche text-[15px] text-humo
-                placeholder:text-niebla/50 outline-none font-body
-                focus:border-fuego/50 transition-colors
-              "
-            />
-          </div>
-
-          <LugarSelector
-            selected={lugar}
-            onSelect={setLugar}
-            hostId={hostId}
-            onHostSelect={setHostId}
-            members={MOCK_MEMBERS}
-            customName={customLocation}
-            onCustomNameChange={setCustomLocation}
-          />
-
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-4">
             <div>
               <label className="text-xs font-medium text-niebla mb-1.5 block">
-                ¿Cuándo? <span className="text-fuego">*</span>
+                Nombre (opcional)
               </label>
               <input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-                className={`
-                  w-full px-3.5 py-3 rounded-[10px]
-                  border-[1.5px]
-                  bg-noche text-[15px] text-humo
-                  outline-none font-body focus:border-fuego/50 transition-colors
-                  [color-scheme:dark]
-                  ${!date ? "border-white/[0.08]" : "border-fuego/30"}
-                `}
-              />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-niebla mb-1.5 block">
-                Hora
-              </label>
-              <input
-                type="time"
-                value={time}
-                onChange={(e) => setTime(e.target.value)}
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ponele nombre si querés (o dejalo así)"
                 className="
                   w-full px-3.5 py-3 rounded-[10px]
                   border-[1.5px] border-white/[0.08]
                   bg-noche text-[15px] text-humo
-                  outline-none font-body focus:border-fuego/50 transition-colors
-                  [color-scheme:dark]
+                  placeholder:text-niebla/50 outline-none font-body
+                  focus:border-fuego/50 transition-colors
                 "
               />
             </div>
-          </div>
 
-        </div>
+            <LugarSelector
+              selected={lugar}
+              onSelect={setLugar}
+              hostId={hostId}
+              onHostSelect={setHostId}
+              members={members}
+              customName={customLocation}
+              onCustomNameChange={setCustomLocation}
+            />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-niebla mb-1.5 block">
+                  ¿Cuándo? <span className="text-fuego">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  required
+                  className={`
+                    w-full px-3.5 py-3 rounded-[10px]
+                    border-[1.5px]
+                    bg-noche text-[15px] text-humo
+                    outline-none font-body focus:border-fuego/50 transition-colors
+                    [color-scheme:dark]
+                    ${!date ? "border-white/[0.08]" : "border-fuego/30"}
+                  `}
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-niebla mb-1.5 block">
+                  Hora
+                </label>
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="
+                    w-full px-3.5 py-3 rounded-[10px]
+                    border-[1.5px] border-white/[0.08]
+                    bg-noche text-[15px] text-humo
+                    outline-none font-body focus:border-fuego/50 transition-colors
+                    [color-scheme:dark]
+                  "
+                />
+              </div>
+            </div>
+
+            {error && <p className="text-[13px] text-error font-medium">{error}</p>}
+          </div>
         </div>
 
         {/* Sticky button */}
         <div className="px-5 pt-3 shrink-0" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-          <Button full big onClick={handleCreate} disabled={!date}>Crear juntada</Button>
+          <Button full big onClick={handleCreate} disabled={!date || loading}>
+            {loading ? "Creando..." : "Crear juntada"}
+          </Button>
         </div>
       </div>
     </>

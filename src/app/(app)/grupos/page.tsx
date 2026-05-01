@@ -31,15 +31,15 @@ export default function GruposPage() {
     // 1. Grupos del usuario
     const { data: memberships } = await supabase
       .from("group_members")
-      .select("groups ( id, name, emoji )")
+      .select("groups ( id, name )")
       .eq("user_id", user.id);
 
     const userGroups = (memberships ?? [])
       .map((m) => {
         const g = Array.isArray(m.groups) ? m.groups[0] : m.groups;
-        return g as { id: string; name: string; emoji: string | null } | null;
+        return g as { id: string; name: string } | null;
       })
-      .filter((g): g is { id: string; name: string; emoji: string | null } => g !== null);
+      .filter((g): g is { id: string; name: string } => g !== null);
 
     if (!userGroups.length) {
       setGroups([]);
@@ -47,6 +47,18 @@ export default function GruposPage() {
     }
 
     const groupIds = userGroups.map((g) => g.id);
+
+    // Fetch emoji separately (column may not exist in all instances yet)
+    const emojiMap: Record<string, string> = {};
+    {
+      const { data: groupsEmoji } = await supabase
+        .from("groups")
+        .select("id, emoji")
+        .in("id", groupIds);
+      for (const g of groupsEmoji ?? []) {
+        if (g.emoji) emojiMap[g.id] = g.emoji;
+      }
+    }
 
     // 2. Cantidad de integrantes por grupo
     const { data: allMembers } = await supabase
@@ -122,7 +134,7 @@ export default function GruposPage() {
       userGroups.map((g) => ({
         id: g.id,
         name: g.name,
-        emoji: g.emoji ?? g.name.charAt(0).toUpperCase(),
+        emoji: emojiMap[g.id] ?? g.name.charAt(0).toUpperCase(),
         memberCount: memberCountByGroup[g.id] ?? 0,
         lastActivity: lastActivityByGroup[g.id] ?? "Sin juntadas",
         pendingCount: pendingByGroup[g.id]?.count ?? 0,

@@ -67,7 +67,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     // Datos del grupo
     const { data: groupData } = await supabase
       .from("groups")
-      .select("id, name, emoji")
+      .select("id, name")
       .eq("id", id)
       .single();
 
@@ -77,7 +77,16 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
       return;
     }
     setGroupName(groupData.name);
-    if (groupData.emoji) setGroupEmoji(groupData.emoji);
+
+    // Fetch emoji separately so a missing column doesn't block the whole page
+    const { data: emojiRow } = await supabase
+      .from("groups")
+      .select("emoji")
+      .eq("id", id)
+      .single();
+    if ((emojiRow as { emoji?: string } | null)?.emoji) {
+      setGroupEmoji((emojiRow as { emoji: string }).emoji);
+    }
 
     // Integrantes
     const { data: membersRaw } = await supabase

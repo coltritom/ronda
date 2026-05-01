@@ -48,7 +48,7 @@ export function UpcomingJuntadas() {
 
       const { data: eventsRaw } = await supabase
         .from("events")
-        .select("id, name, date, group_id, groups(name, emoji), event_rsvps(user_id, response)")
+        .select("id, name, date, group_id, groups(name), event_rsvps(user_id, response)")
         .in("group_id", groupIds)
         .neq("status", "cancelled")
         .gte("date", NOW)
@@ -69,9 +69,9 @@ export function UpcomingJuntadas() {
 
       const mapped: UpcomingEvent[] = eventsRaw.map((e) => {
         const g = Array.isArray(e.groups) ? e.groups[0] : e.groups;
-        const gTyped = g as { name: string; emoji: string | null } | null;
+        const gTyped = g as { name: string } | null;
         const groupName = gTyped?.name ?? "Grupo";
-        const groupEmoji = gTyped?.emoji ?? groupName.charAt(0).toUpperCase();
+        const groupEmoji = groupName.charAt(0).toUpperCase();
         const rsvps = (e.event_rsvps as { user_id: string; response: string }[]) ?? [];
         const going = rsvps.filter((r) => r.response === "going").length;
         const maybe = rsvps.filter((r) => r.response === "maybe").length;

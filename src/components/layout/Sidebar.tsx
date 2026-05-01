@@ -43,21 +43,34 @@ export function Sidebar() {
 
       const { data: memberships } = await supabase
         .from("group_members")
-        .select("groups ( id, name, emoji )")
+        .select("groups ( id, name )")
         .eq("user_id", user.id);
 
       const userGroups = (memberships ?? [])
         .map((m) => {
           const g = Array.isArray(m.groups) ? m.groups[0] : m.groups;
-          return g as { id: string; name: string; emoji: string | null } | null;
+          return g as { id: string; name: string } | null;
         })
-        .filter((g): g is { id: string; name: string; emoji: string | null } => g !== null);
+        .filter((g): g is { id: string; name: string } => g !== null);
+
+      // Fetch emoji separately since it may not exist yet in all instances
+      const groupIds = userGroups.map((g) => g.id);
+      const emojiMap: Record<string, string> = {};
+      if (groupIds.length > 0) {
+        const { data: groupsWithEmoji } = await supabase
+          .from("groups")
+          .select("id, emoji")
+          .in("id", groupIds);
+        for (const g of groupsWithEmoji ?? []) {
+          if (g.emoji) emojiMap[g.id] = g.emoji;
+        }
+      }
 
       setGroups(
         userGroups.map((g) => ({
           id: g.id,
           name: g.name,
-          emoji: g.emoji ?? g.name.charAt(0).toUpperCase(),
+          emoji: emojiMap[g.id] ?? g.name.charAt(0).toUpperCase(),
           pendingCount: 0,
         }))
       );

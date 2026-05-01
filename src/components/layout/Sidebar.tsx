@@ -31,7 +31,15 @@ export function Sidebar() {
         .select("name")
         .eq("id", user.id)
         .single();
-      if (profile?.name) setUserName(profile.name);
+      const profileName = profile?.name ?? "";
+      const isEmail = profileName.includes("@");
+      const metaName: string =
+        user.user_metadata?.display_name ||
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        "";
+      const resolvedName = isEmail ? metaName : profileName;
+      if (resolvedName) setUserName(resolvedName);
 
       const { data: memberships } = await supabase
         .from("group_members")

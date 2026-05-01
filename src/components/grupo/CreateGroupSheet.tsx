@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { X } from "lucide-react";
-import { addGroup } from "@/lib/store";
+import { createGroup } from "@/lib/actions/groups";
 
 const EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠"];
 
@@ -18,26 +18,24 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
   const [name, setName] = useState("");
   const [emoji, setEmoji] = useState("🔥");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   if (!open) return null;
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!name.trim()) {
       setError("Ponele un nombre al grupo.");
       return;
     }
-    const id = `grp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    addGroup({
-      id,
-      name: name.trim(),
-      emoji,
-      memberCount: 1,
-      lastActivity: "ahora mismo",
-      pendingCount: 0,
-      pendingAmount: 0,
-    });
+    setLoading(true);
+    const result = await createGroup(name.trim(), null);
+    setLoading(false);
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
     onClose();
-    router.push(`/grupo/${id}`);
+    router.push(`/grupo/${result.groupId}`);
   };
 
   return (
@@ -105,7 +103,9 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
 
         {/* Sticky button */}
         <div className="px-5 pt-3 shrink-0" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
-          <Button full big onClick={handleCreate}>Crear grupo</Button>
+          <Button full big onClick={handleCreate} disabled={loading}>
+            {loading ? "Creando..." : "Crear grupo"}
+          </Button>
         </div>
       </div>
     </>

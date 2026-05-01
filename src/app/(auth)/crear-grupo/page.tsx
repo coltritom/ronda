@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Copy, Check, ChevronLeft } from "lucide-react";
-import { addGroup } from "@/lib/store";
+import { createGroup } from "@/lib/actions/groups";
 
 const EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠", "🚗", "🎂"];
 
@@ -17,17 +17,22 @@ export default function CrearGrupoPage() {
   const [emoji, setEmoji] = useState("🔥");
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const [groupId, setGroupId] = useState("");
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     if (!name.trim()) {
       setError("Ponele un nombre al grupo.");
       return;
     }
-    setError("");
-    const id = `grp_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-    addGroup({ id, name: name.trim(), emoji, memberCount: 1, lastActivity: "ahora mismo", pendingCount: 0, pendingAmount: 0 });
-    setGroupId(id);
+    setLoading(true);
+    const result = await createGroup(name.trim(), null);
+    setLoading(false);
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    setGroupId(result.groupId);
     setCurrentStep("invite");
   };
 
@@ -164,7 +169,9 @@ export default function CrearGrupoPage() {
       </div>
 
       <div className="w-full">
-        <Button full big onClick={handleCreate}>Crear grupo</Button>
+        <Button full big onClick={handleCreate} disabled={loading}>
+          {loading ? "Creando..." : "Crear grupo"}
+        </Button>
       </div>
     </div>
   );

@@ -1,11 +1,27 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, Copy, Check, Crown, UserMinus, Trash2 } from "lucide-react";
+import { ChevronLeft, Copy, Check, Crown, Trash2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/clients";
 import { Avatar } from "@/components/ui/Avatar";
-import { Button } from "@/components/ui/Button";
-import { getGroup } from "@/lib/constants";
+
+interface Member {
+  userId: string;
+  name: string;
+  role: "admin" | "member";
+  colorIndex: number;
+}
+
+const RANKING_OPTIONS = [
+  { id: "presente",  label: "🏆 El más presente",        default: true },
+  { id: "billetera", label: "💰 La billetera del grupo",  default: true },
+  { id: "mvp",       label: "🏅 MVP de la ronda",         default: true },
+  { id: "anfitrion", label: "🏠 Anfitrión/a de oro",      default: true },
+  { id: "fantasma",  label: "👻 Fantasma oficial",        default: true },
+  { id: "tarde",     label: "⏰ Siempre tarde al split",  default: true },
+  { id: "deudor",    label: "😅 Deudor/a serial",         default: false },
+];
 
 function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void }) {
   return (
@@ -26,44 +42,89 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
   );
 }
 
-const RANKING_OPTIONS = [
-  { id: "presente", label: "🏆 El más presente", default: true },
-  { id: "billetera", label: "💰 La billetera del grupo", default: true },
-  { id: "mvp", label: "🏅 MVP de la ronda", default: true },
-  { id: "anfitrion", label: "🏠 Anfitrión/a de oro", default: true },
-  { id: "fantasma", label: "👻 Fantasma oficial", default: true },
-  { id: "tarde", label: "⏰ Siempre tarde al split", default: true },
-  { id: "deudor", label: "😅 Deudor/a serial", default: false },
-];
-
 export default function GroupConfigPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const group = getGroup(id);
+
+  const [loading, setLoading] = useState(true);
+  const [groupName, setGroupName] = useState("");
+  const [groupEmoji, setGroupEmoji] = useState("🔥");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [myRole, setMyRole] = useState<"admin" | "member">("member");
+  const [myUserId, setMyUserId] = useState("");
   const [copied, setCopied] = useState(false);
   const [rankings, setRankings] = useState(
     RANKING_OPTIONS.reduce((acc, r) => ({ ...acc, [r.id]: r.default }), {} as Record<string, boolean>)
   );
-  const [groupName, setGroupName] = useState(group?.name ?? "");
-  const [groupEmoji] = useState(group?.emoji ?? "🔥");
 
-  if (!group) {
-    return (
-      <div className="max-w-lg mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
-        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
-        <a href="/home" className="text-fuego text-sm font-semibold">Ir al inicio</a>
-      </div>
-    );
-  }
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+    setMyUserId(user.id);
 
-  const handleCopy = () => {
+    const [groupRes, membersRes] = await Promise.all([
+      supabase.from("groups").select("id, name").eq("id", id).single(),
+      supabase
+        .from("group_members")
+        .select("user_id, role, profiles(name)")
+        .eq("group_id", id),
+    ]);
+
+    if (!groupRes.data) { router.push(`/grupo/${id}`); return; }
+    setGroupName(groupRes.data.name);
+
+    // Fetch emoji separately (resilient to missing column)
+    const { data: emojiRow } = await supabase
+      .from("groups").select("emoji").eq("id", id).single();
+    if ((emojiRow as { emoji?: string } | null)?.emoji)
+      setGroupEmoji((emojiRow as { emoji: string }).emoji);
+
+    const mapped: Member[] = (membersRes.data ?? []).map((m, i) => {
+      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+      return {
+        userId: m.user_id,
+        name: (p as { name: string } | null)?.name ?? "Usuario",
+        role: m.role as "admin" | "member",
+        colorIndex: i,
+      };
+    });
+    setMembers(mapped);
+
+    const me = mapped.find((m) => m.userId === user.id);
+    if (me) setMyRole(me.role);
+
+    setLoading(false);
+  }, [id, router]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleCopyInvite = () => {
+    const link = `${window.location.origin}/invite/${id}`;
+    navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const toggleRanking = (rankId: string) => {
-    setRankings((prev) => ({ ...prev, [rankId]: !prev[rankId] }));
+  const handleLeave = async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase
+      .from("group_members")
+      .delete()
+      .eq("group_id", id)
+      .eq("user_id", user.id);
+    router.push("/grupos");
   };
+
+  const handleDelete = async () => {
+    const supabase = createClient();
+    await supabase.from("groups").delete().eq("id", id);
+    router.push("/grupos");
+  };
+
+  if (loading) return null;
 
   return (
     <div className="max-w-lg mx-auto pb-8">
@@ -74,7 +135,7 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
         >
           <ChevronLeft size={16} />
-          {group.name}
+          {groupName}
         </button>
         <h1 className="font-display font-bold text-[22px] text-humo">
           Configuración del grupo
@@ -87,16 +148,11 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
           <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mb-3">
             Info del grupo
           </p>
-          <div className="flex gap-3 items-center mb-3">
-            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-2xl cursor-pointer">
+          <div className="flex gap-3 items-center">
+            <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-2xl">
               {groupEmoji}
             </div>
-            <input
-              type="text"
-              value={groupName}
-              onChange={(e) => setGroupName(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none font-display font-semibold text-lg text-humo"
-            />
+            <span className="font-display font-semibold text-lg text-humo">{groupName}</span>
           </div>
         </div>
 
@@ -106,14 +162,14 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
             Invitación
           </p>
           <p className="text-sm text-niebla mb-3">
-            Mandá este link al grupo de WhatsApp para que se sumen.
+            Mandá este link al grupo para que se sumen.
           </p>
           <button
-            onClick={handleCopy}
+            onClick={handleCopyInvite}
             className={`
               w-full flex items-center justify-center gap-2 py-3 rounded-xl font-semibold text-sm
               border-none cursor-pointer transition-colors
-              ${copied ? "bg-exito/10 text-exito" : "bg-fuego/10 text-fuego hover:bg-fuego/15"}
+              ${copied ? "bg-menta/10 text-menta" : "bg-fuego/10 text-fuego hover:bg-fuego/15"}
             `}
           >
             {copied ? <Check size={16} /> : <Copy size={16} />}
@@ -124,35 +180,27 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
         {/* Miembros */}
         <div className="bg-noche-media rounded-2xl p-4">
           <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mb-3">
-            Miembros · {group.members.length}
+            Miembros · {members.length}
           </p>
-          {group.members.map((m, i) => {
-            const isAdmin = i === 0;
-            return (
-              <div
-                key={m.id}
-                className={`flex items-center gap-3 py-2.5 ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
-              >
-                <Avatar emoji={m.emoji} name={m.name} colorIndex={m.colorIndex} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[15px] text-humo font-medium">{m.name}</span>
-                    {isAdmin && (
-                      <span className="flex items-center gap-0.5 text-[10px] text-ambar font-semibold bg-ambar/10 px-1.5 py-0.5 rounded-full">
-                        <Crown size={10} />
-                        Admin
-                      </span>
-                    )}
-                  </div>
+          {members.map((m, i) => (
+            <div
+              key={m.userId}
+              className={`flex items-center gap-3 py-2.5 ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
+            >
+              <Avatar name={m.name} colorIndex={m.colorIndex} />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[15px] text-humo font-medium">{m.name}</span>
+                  {m.role === "admin" && (
+                    <span className="flex items-center gap-0.5 text-[10px] text-ambar font-semibold bg-ambar/10 px-1.5 py-0.5 rounded-full">
+                      <Crown size={10} />
+                      Admin
+                    </span>
+                  )}
                 </div>
-                {!isAdmin && (
-                  <button className="text-niebla bg-transparent border-none cursor-pointer p-1 hover:text-error transition-colors">
-                    <UserMinus size={16} />
-                  </button>
-                )}
               </div>
-            );
-          })}
+            </div>
+          ))}
         </div>
 
         {/* Rankings y etiquetas */}
@@ -169,7 +217,10 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
               className={`flex items-center justify-between py-2.5 ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
             >
               <span className="text-sm text-humo">{r.label}</span>
-              <Toggle checked={rankings[r.id]} onChange={() => toggleRanking(r.id)} />
+              <Toggle
+                checked={rankings[r.id]}
+                onChange={() => setRankings((prev) => ({ ...prev, [r.id]: !prev[r.id] }))}
+              />
             </div>
           ))}
         </div>
@@ -179,13 +230,24 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
           <p className="text-[11px] font-semibold text-error uppercase tracking-wider mb-3">
             Zona peligrosa
           </p>
-          <button className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-error bg-error/10 border-none cursor-pointer hover:bg-error/15 transition-colors">
+          <button
+            onClick={handleLeave}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-error bg-error/10 border-none cursor-pointer hover:bg-error/15 transition-colors"
+          >
             <Trash2 size={16} />
             Salir del grupo
           </button>
           <p className="text-xs text-niebla text-center mt-2">
             No vas a poder volver sin una invitación nueva.
           </p>
+          {myRole === "admin" && (
+            <button
+              onClick={handleDelete}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-error/70 bg-transparent border-none cursor-pointer hover:text-error transition-colors mt-1"
+            >
+              Eliminar el grupo para todos
+            </button>
+          )}
         </div>
       </div>
     </div>

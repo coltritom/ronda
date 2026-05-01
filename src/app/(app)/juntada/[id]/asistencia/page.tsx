@@ -1,25 +1,60 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { MOCK_MEMBERS } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/clients";
+
+interface Member {
+  id: string;
+  name: string;
+  colorIndex: number;
+}
 
 export default function AsistenciaPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const [checks, setChecks] = useState<boolean[]>(
-    MOCK_MEMBERS.map((_, i) => i < 6)
-  );
+  const [members, setMembers] = useState<Member[]>([]);
+  const [checks, setChecks] = useState<boolean[]>([]);
+
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const { data: eventData } = await supabase
+      .from("events").select("group_id").eq("id", id).single();
+    if (!eventData?.group_id) return;
+
+    const [membersResult, attendanceResult] = await Promise.all([
+      supabase.from("group_members").select("user_id, profiles(name)").eq("group_id", eventData.group_id),
+      supabase.from("event_attendance").select("user_id").eq("event_id", id),
+    ]);
+
+    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => {
+      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
+    });
+    const attendedIds = new Set((attendanceResult.data ?? []).map(a => a.user_id));
+    setMembers(memberList);
+    setChecks(memberList.map(m => attendedIds.has(m.id)));
+  }, [id]);
+
+  useEffect(() => { load(); }, [load]);
 
   const toggle = (i: number) => {
-    setChecks((prev) => {
-      const next = [...prev];
-      next[i] = !next[i];
-      return next;
-    });
+    setChecks(prev => prev.map((v, idx) => idx === i ? !v : v));
+  };
+
+  const handleConfirm = async () => {
+    const supabase = createClient();
+    const attendedIds = members.filter((_, i) => checks[i]).map(m => m.id);
+    await supabase.from("event_attendance").delete().eq("event_id", id);
+    if (attendedIds.length > 0) {
+      await supabase.from("event_attendance").insert(
+        attendedIds.map(userId => ({ event_id: id, user_id: userId }))
+      );
+    }
+    router.push(`/juntada/${id}`);
   };
 
   const count = checks.filter(Boolean).length;
@@ -38,32 +73,28 @@ export default function AsistenciaPage({ params }: { params: Promise<{ id: strin
           ¿Quién vino de verdad?
         </h2>
         <p className="text-sm text-niebla mt-1.5">
-          {count} de {MOCK_MEMBERS.length} fueron
+          {count} de {members.length} fueron
         </p>
       </div>
 
       <div className="px-4 md:px-6 mt-2">
-        {MOCK_MEMBERS.map((m, i) => (
+        {members.map((m, i) => (
           <div
             key={m.id}
             onClick={() => toggle(i)}
             className={`flex items-center gap-3 py-3 cursor-pointer ${i > 0 ? "border-t border-white/[0.04]" : ""}`}
           >
-            <Avatar emoji={m.emoji} name={m.name} colorIndex={m.colorIndex} />
+            <Avatar name={m.name} colorIndex={m.colorIndex} />
             <span className="flex-1 text-[15px] text-humo">{m.name}</span>
-            <div
-              className={`w-11 h-6 rounded-full relative transition-colors cursor-pointer ${checks[i] ? "bg-fuego" : "bg-niebla/30"}`}
-            >
-              <div
-                className={`w-[18px] h-[18px] rounded-full bg-white absolute top-[3px] transition-[left] ${checks[i] ? "left-[21px]" : "left-[3px]"}`}
-              />
+            <div className={`w-11 h-6 rounded-full relative transition-colors cursor-pointer ${checks[i] ? "bg-fuego" : "bg-niebla/30"}`}>
+              <div className={`w-[18px] h-[18px] rounded-full bg-white absolute top-[3px] transition-[left] ${checks[i] ? "left-[21px]" : "left-[3px]"}`} />
             </div>
           </div>
         ))}
       </div>
 
       <div className="px-4 md:px-6 mt-5">
-        <Button full>Confirmar asistencia</Button>
+        <Button full onClick={handleConfirm}>Confirmar asistencia</Button>
       </div>
     </div>
   );

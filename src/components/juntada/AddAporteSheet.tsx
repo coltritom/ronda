@@ -4,15 +4,20 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { MOCK_MEMBERS } from "@/lib/constants";
+interface Participant {
+  id: string;
+  name: string;
+  colorIndex: number;
+}
 
 interface AddAporteSheetProps {
   open: boolean;
   onClose: () => void;
   onAdd: (memberId: string, what: string) => void;
+  participants?: Participant[];
 }
 
-export function AddAporteSheet({ open, onClose, onAdd }: AddAporteSheetProps) {
+export function AddAporteSheet({ open, onClose, onAdd, participants = [] }: AddAporteSheetProps) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [what, setWhat] = useState("");
 
@@ -48,7 +53,7 @@ export function AddAporteSheet({ open, onClose, onAdd }: AddAporteSheetProps) {
           <div>
             <label className="text-xs font-medium text-niebla mb-2 block">¿Quién aportó?</label>
             <div className="flex flex-wrap gap-2">
-              {MOCK_MEMBERS.map((m) => (
+              {participants.map((m) => (
                 <button
                   key={m.id}
                   onClick={() => setSelectedId(m.id)}
@@ -60,7 +65,7 @@ export function AddAporteSheet({ open, onClose, onAdd }: AddAporteSheetProps) {
                     }
                   `}
                 >
-                  <Avatar emoji={m.emoji} name={m.name} colorIndex={m.colorIndex} size="sm" />
+                  <Avatar name={m.name} colorIndex={m.colorIndex} size="sm" />
                   <span className="text-[13px] font-medium text-humo">{m.name}</span>
                 </button>
               ))}

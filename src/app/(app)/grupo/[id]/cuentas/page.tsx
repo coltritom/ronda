@@ -1,13 +1,19 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { getGroup } from "@/lib/constants";
 import { fmtARS } from "@/lib/utils";
 import { ConfirmPagoModal } from "@/components/juntada/ConfirmPagoModal";
+import { createClient } from "@/lib/supabase/clients";
+
+interface Member {
+  id: string;
+  name: string;
+  colorIndex: number;
+}
 
 interface Deuda {
   fromId: string;
@@ -16,55 +22,160 @@ interface Deuda {
   paid: boolean;
 }
 
-// 2 pendientes ($2.400 + $2.400 = $4.800) — consistente con PendingAlert del grupo
-const MOCK_DEUDAS: Deuda[] = [
-  { fromId: "2", toId: "1", amount: 2400, paid: false },
-  { fromId: "5", toId: "3", amount: 2400, paid: false },
-  { fromId: "4", toId: "1", amount: 1800, paid: true },
-  { fromId: "8", toId: "3", amount: 900,  paid: true },
-  { fromId: "7", toId: "1", amount: 1500, paid: true },
-];
+function simplifyDebts(
+  splits: Array<{ user_id: string; amount: number; paid_by: string }>
+): Deuda[] {
+  const balance: Record<string, number> = {};
+  for (const s of splits) {
+    balance[s.paid_by] = (balance[s.paid_by] ?? 0) + s.amount;
+    balance[s.user_id] = (balance[s.user_id] ?? 0) - s.amount;
+  }
+
+  const creditors: { id: string; amount: number }[] = [];
+  const debtors: { id: string; amount: number }[] = [];
+  for (const [id, bal] of Object.entries(balance)) {
+    if (bal > 0.01) creditors.push({ id, amount: bal });
+    else if (bal < -0.01) debtors.push({ id, amount: -bal });
+  }
+  creditors.sort((a, b) => b.amount - a.amount);
+  debtors.sort((a, b) => b.amount - a.amount);
+
+  const result: Deuda[] = [];
+  let ci = 0, di = 0;
+  while (ci < creditors.length && di < debtors.length) {
+    const credit = creditors[ci];
+    const debt = debtors[di];
+    const amount = Math.min(credit.amount, debt.amount);
+    result.push({
+      fromId: debt.id,
+      toId: credit.id,
+      amount: Math.round(amount * 100) / 100,
+      paid: false,
+    });
+    credit.amount -= amount;
+    debt.amount -= amount;
+    if (credit.amount < 0.01) ci++;
+    if (debt.amount < 0.01) di++;
+  }
+  return result;
+}
 
 export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
-  const group = getGroup(id);
-  const memberIds = new Set(group?.members.map((m) => m.id) ?? []);
-  const [deudas, setDeudas] = useState(
-    MOCK_DEUDAS.filter((d) => memberIds.has(d.fromId) && memberIds.has(d.toId))
-  );
-  const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
 
-  if (!group) {
-    return (
-      <div className="max-w-lg mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
-        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
-        <a href="/home" className="text-fuego text-sm font-semibold">Ir al inicio</a>
-      </div>
+  const [loading, setLoading] = useState(true);
+  const [groupName, setGroupName] = useState("");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [deudas, setDeudas] = useState<Deuda[]>([]);
+  const [confirmDeuda, setConfirmDeuda] = useState<Deuda | null>(null);
+  const [myUserId, setMyUserId] = useState("");
+
+  // For settling splits in Supabase
+  const [expensesByPayer, setExpensesByPayer] = useState<Record<string, string[]>>({});
+
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
+    setMyUserId(user.id);
+
+    const { data: groupData } = await supabase
+      .from("groups").select("id, name").eq("id", id).single();
+    if (!groupData) { router.push("/grupos"); return; }
+    setGroupName(groupData.name);
+
+    const { data: membersRaw } = await supabase
+      .from("group_members")
+      .select("user_id, profiles(name)")
+      .eq("group_id", id);
+
+    const memberList: Member[] = (membersRaw ?? []).map((m, i) => {
+      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
+    });
+    setMembers(memberList);
+
+    const { data: eventsRaw } = await supabase
+      .from("events").select("id").eq("group_id", id).neq("status", "cancelled");
+
+    const eventIds = (eventsRaw ?? []).map((e) => e.id);
+    if (!eventIds.length) { setLoading(false); return; }
+
+    const { data: expensesRaw } = await supabase
+      .from("expenses").select("id, paid_by").in("event_id", eventIds);
+
+    const allExpenseIds = (expensesRaw ?? []).map((e) => e.id);
+    if (!allExpenseIds.length) { setLoading(false); return; }
+
+    // Build payer→expenseIds map for settling later
+    const byPayer: Record<string, string[]> = {};
+    for (const e of expensesRaw ?? []) {
+      if (!byPayer[e.paid_by]) byPayer[e.paid_by] = [];
+      byPayer[e.paid_by].push(e.id);
+    }
+    setExpensesByPayer(byPayer);
+
+    const expenseMap: Record<string, string> = {};
+    for (const e of expensesRaw ?? []) expenseMap[e.id] = e.paid_by;
+
+    const { data: splitsRaw } = await supabase
+      .from("expense_splits")
+      .select("expense_id, user_id, amount")
+      .in("expense_id", allExpenseIds)
+      .eq("is_settled", false);
+
+    const debtData = (splitsRaw ?? [])
+      .map((s) => ({
+        user_id: s.user_id,
+        amount: s.amount ?? 0,
+        paid_by: expenseMap[s.expense_id],
+      }))
+      .filter((s) => s.paid_by && s.user_id !== s.paid_by);
+
+    setDeudas(simplifyDebts(debtData));
+    setLoading(false);
+  }, [id, router]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleConfirmPaid = async () => {
+    if (!confirmDeuda) return;
+    const { fromId, toId } = confirmDeuda;
+
+    const supabase = createClient();
+    const expensesOfTo = expensesByPayer[toId] ?? [];
+    const expensesOfFrom = expensesByPayer[fromId] ?? [];
+
+    if (expensesOfTo.length > 0) {
+      await supabase
+        .from("expense_splits")
+        .update({ is_settled: true })
+        .eq("user_id", fromId)
+        .in("expense_id", expensesOfTo);
+    }
+    if (expensesOfFrom.length > 0) {
+      await supabase
+        .from("expense_splits")
+        .update({ is_settled: true })
+        .eq("user_id", toId)
+        .in("expense_id", expensesOfFrom);
+    }
+
+    setDeudas((prev) =>
+      prev.map((d) =>
+        d.fromId === fromId && d.toId === toId ? { ...d, paid: true } : d
+      )
     );
-  }
+    setConfirmDeuda(null);
+  };
+
+  if (loading) return null;
 
   const pendientes = deudas.filter((d) => !d.paid);
   const pagadas = deudas.filter((d) => d.paid);
   const totalPendiente = pendientes.reduce((s, d) => s + d.amount, 0);
-  const allClear = pendientes.length === 0;
-
-  const markPaid = (index: number) => {
-    setDeudas((prev) => {
-      const next = [...prev];
-      const realIndex = prev.findIndex(
-        (d) => !d.paid && d.fromId === pendientes[index].fromId && d.toId === pendientes[index].toId
-      );
-      if (realIndex >= 0) next[realIndex] = { ...next[realIndex], paid: true };
-      return next;
-    });
-  };
-
-  const handleConfirmPaid = () => {
-    if (confirmIdx === null) return;
-    markPaid(confirmIdx);
-    setConfirmIdx(null);
-  };
+  const allClear = pendientes.length === 0 && deudas.length > 0 || deudas.length === 0;
 
   return (
     <div className="max-w-lg mx-auto pb-8">
@@ -74,7 +185,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
         >
           <ChevronLeft size={16} />
-          {group.name}
+          {groupName}
         </button>
         <h1 className="font-display font-semibold text-xl text-humo">
           Cuentas del grupo
@@ -105,16 +216,27 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
           </div>
         )}
 
-        <PersonalSummary deudas={deudas} />
+        <PersonalSummary deudas={deudas} myId={myUserId} />
 
         {pendientes.length > 0 && (
           <>
             <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mt-2">
               Pendientes
             </p>
-            {pendientes.map((d, i) => (
-              <DeudaCard key={`p-${i}`} deuda={d} members={group.members} onMarkPaid={() => setConfirmIdx(i)} />
-            ))}
+            {pendientes.map((d, i) => {
+              const from = members.find((m) => m.id === d.fromId);
+              const to = members.find((m) => m.id === d.toId);
+              if (!from || !to) return null;
+              return (
+                <DeudaCard
+                  key={`p-${i}`}
+                  deuda={d}
+                  from={from}
+                  to={to}
+                  onMarkPaid={() => setConfirmDeuda(d)}
+                />
+              );
+            })}
           </>
         )}
 
@@ -123,9 +245,12 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
             <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mt-4">
               Cerradas
             </p>
-            {pagadas.map((d, i) => (
-              <DeudaCard key={`c-${i}`} deuda={d} members={group.members} />
-            ))}
+            {pagadas.map((d, i) => {
+              const from = members.find((m) => m.id === d.fromId);
+              const to = members.find((m) => m.id === d.toId);
+              if (!from || !to) return null;
+              return <DeudaCard key={`c-${i}`} deuda={d} from={from} to={to} />;
+            })}
           </>
         )}
 
@@ -134,18 +259,18 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
         </p>
       </div>
 
-      {confirmIdx !== null && pendientes[confirmIdx] && (() => {
-        const d = pendientes[confirmIdx];
-        const from = group.members.find((m) => m.id === d.fromId)!;
-        const to = group.members.find((m) => m.id === d.toId)!;
+      {confirmDeuda && (() => {
+        const from = members.find((m) => m.id === confirmDeuda.fromId);
+        const to = members.find((m) => m.id === confirmDeuda.toId);
+        if (!from || !to) return null;
         return (
           <ConfirmPagoModal
             open
-            onClose={() => setConfirmIdx(null)}
+            onClose={() => setConfirmDeuda(null)}
             onConfirm={handleConfirmPaid}
             from={from}
             to={to}
-            amountLabel={`$${fmtARS(d.amount)}`}
+            amountLabel={`$${fmtARS(confirmDeuda.amount)}`}
           />
         );
       })()}
@@ -153,8 +278,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
   );
 }
 
-function PersonalSummary({ deudas }: { deudas: Deuda[] }) {
-  const myId = "7";
+function PersonalSummary({ deudas, myId }: { deudas: Deuda[]; myId: string }) {
   const myDebts = deudas.filter((d) => d.fromId === myId && !d.paid);
   const myCredits = deudas.filter((d) => d.toId === myId && !d.paid);
   const totalDebt = myDebts.reduce((s, d) => s + d.amount, 0);
@@ -185,16 +309,20 @@ function PersonalSummary({ deudas }: { deudas: Deuda[] }) {
   );
 }
 
-function DeudaCard({ deuda, members, onMarkPaid }: { deuda: Deuda; members: { id: string; name: string; emoji: string; colorIndex: number }[]; onMarkPaid?: () => void }) {
-  const from = members.find((m) => m.id === deuda.fromId)!;
-  const to = members.find((m) => m.id === deuda.toId)!;
-
+function DeudaCard({
+  deuda, from, to, onMarkPaid,
+}: {
+  deuda: Deuda;
+  from: Member;
+  to: Member;
+  onMarkPaid?: () => void;
+}) {
   return (
     <div className={`bg-noche-media rounded-2xl p-4 ${deuda.paid ? "opacity-50" : ""}`}>
       <div className="flex items-center gap-2 mb-3">
-        <Avatar emoji={from.emoji} name={from.name} colorIndex={from.colorIndex} />
+        <Avatar name={from.name} colorIndex={from.colorIndex} />
         <span className="text-lg text-niebla">→</span>
-        <Avatar emoji={to.emoji} name={to.name} colorIndex={to.colorIndex} />
+        <Avatar name={to.name} colorIndex={to.colorIndex} />
       </div>
 
       {deuda.paid ? (

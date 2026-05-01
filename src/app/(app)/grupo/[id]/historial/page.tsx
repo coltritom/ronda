@@ -1,36 +1,96 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { JuntadaCard } from "@/components/juntada/JuntadaCard";
-import { MOCK_GROUP_DETAILS, getGroup } from "@/lib/constants";
-import { getNewJuntadas } from "@/lib/store";
 import { fmtARS } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/clients";
 
 type Filtro = "todas" | "abiertas" | "cerradas";
+
+interface JuntadaRow {
+  id: string;
+  isoDate: string;
+  date: string;
+  name: string;
+  attendees: number;
+  totalSpent: number;
+  closed: boolean;
+}
 
 export default function HistorialPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [filtro, setFiltro] = useState<Filtro>("todas");
+  const [loading, setLoading] = useState(true);
+  const [groupName, setGroupName] = useState("");
+  const [juntadas, setJuntadas] = useState<JuntadaRow[]>([]);
 
-  const group = getGroup(id);
-  const detail = MOCK_GROUP_DETAILS[id] ?? MOCK_GROUP_DETAILS["g1"];
-  const TODAY = new Date().toISOString().slice(0, 10);
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
 
-  if (!group) {
-    return (
-      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
-        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
-        <a href="/home" className="text-fuego text-sm font-semibold">Ir al inicio</a>
-      </div>
-    );
-  }
+    const { data: groupData } = await supabase
+      .from("groups")
+      .select("id, name")
+      .eq("id", id)
+      .single();
 
-  const allPast = [...getNewJuntadas(id), ...detail.juntadas]
-    .filter((j) => j.isoDate < TODAY)
-    .sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+    if (!groupData) { router.push("/grupos"); return; }
+    setGroupName(groupData.name);
+
+    const { data: eventsRaw } = await supabase
+      .from("events")
+      .select("id, name, date, status")
+      .eq("group_id", id)
+      .neq("status", "cancelled")
+      .order("date", { ascending: false });
+
+    const eventIds = (eventsRaw ?? []).map((e) => e.id);
+    if (!eventIds.length) { setLoading(false); return; }
+
+    const [attendanceResult, expensesResult] = await Promise.all([
+      supabase.from("event_attendance").select("event_id").in("event_id", eventIds),
+      supabase.from("expenses").select("event_id, amount").in("event_id", eventIds),
+    ]);
+
+    const attendanceByEvent: Record<string, number> = {};
+    for (const a of attendanceResult.data ?? []) {
+      attendanceByEvent[a.event_id] = (attendanceByEvent[a.event_id] ?? 0) + 1;
+    }
+
+    const spentByEvent: Record<string, number> = {};
+    for (const e of expensesResult.data ?? []) {
+      spentByEvent[e.event_id] = (spentByEvent[e.event_id] ?? 0) + (e.amount ?? 0);
+    }
+
+    const TODAY = new Date().toISOString().slice(0, 10);
+    const mapped: JuntadaRow[] = (eventsRaw ?? [])
+      .filter((e) => e.date.slice(0, 10) < TODAY)
+      .map((e) => ({
+        id: e.id,
+        isoDate: e.date.slice(0, 10),
+        date: new Intl.DateTimeFormat("es-AR", {
+          weekday: "short", day: "numeric", month: "short",
+          timeZone: "America/Argentina/Buenos_Aires",
+        }).format(new Date(e.date)),
+        name: e.name,
+        attendees: attendanceByEvent[e.id] ?? 0,
+        totalSpent: spentByEvent[e.id] ?? 0,
+        closed: e.status === "completed",
+      }));
+
+    setJuntadas(mapped);
+    setLoading(false);
+  }, [id, router]);
+
+  useEffect(() => { load(); }, [load]);
+
+  if (loading) return null;
+
+  const allPast = juntadas.sort((a, b) => b.isoDate.localeCompare(a.isoDate));
 
   const filtered = allPast.filter((j) => {
     if (filtro === "abiertas") return !j.closed;
@@ -38,7 +98,6 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
     return true;
   });
 
-  const totalJuntadas = allPast.length;
   const totalGastado = allPast.reduce((s, j) => s + j.totalSpent, 0);
 
   return (
@@ -49,7 +108,7 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
         >
           <ChevronLeft size={16} />
-          {group.name}
+          {groupName}
         </button>
         <h1 className="font-display font-bold text-[22px] text-humo">
           Historial de juntadas
@@ -59,7 +118,7 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
       <div className="px-4 md:px-6 mb-4">
         <div className="bg-noche-media rounded-2xl p-4 flex gap-6">
           <div>
-            <p className="font-display font-bold text-2xl text-humo">{totalJuntadas}</p>
+            <p className="font-display font-bold text-2xl text-humo">{allPast.length}</p>
             <p className="text-xs text-niebla">juntadas</p>
           </div>
           <div>
@@ -106,12 +165,24 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
             <p className="text-sm text-niebla">
               {filtro === "abiertas"
                 ? "No hay juntadas abiertas. Todo al día."
-                : "No hay juntadas cerradas todavía."}
+                : filtro === "cerradas"
+                ? "No hay juntadas cerradas todavía."
+                : "Todavía no hay juntadas pasadas."}
             </p>
           </div>
         ) : (
           filtered.map((j) => (
-            <JuntadaCard key={j.id} {...j} />
+            <JuntadaCard
+              key={j.id}
+              id={j.id}
+              date={j.date}
+              name={j.name}
+              attendees={j.attendees}
+              totalSpent={j.totalSpent}
+              closed={j.closed}
+              groupId={id}
+              groupName={groupName}
+            />
           ))
         )}
       </div>

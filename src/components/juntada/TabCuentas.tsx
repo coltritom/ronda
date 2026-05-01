@@ -1,18 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { MOCK_MEMBERS } from "@/lib/constants";
-import { getDeudas, getGastos, computeDeudas, getGuests, type Deuda } from "@/lib/store";
 import { fmtARSExact } from "@/lib/utils";
 import { ConfirmPagoModal } from "@/components/juntada/ConfirmPagoModal";
+import { createClient } from "@/lib/supabase/clients";
 
-interface Props {
-  closed?: boolean;
-  isNew?: boolean;
-  juntadaId: string;
-  juntadaName?: string;
+interface Member {
+  id: string;
+  name: string;
+  colorIndex: number;
+  isGuest?: boolean;
+}
+
+interface Deuda {
+  fromId: string;
+  toId: string;
+  amount: number;
+}
+
+function simplifyDebts(splits: Array<{ user_id: string; amount: number; paid_by: string }>): Deuda[] {
+  const balance: Record<string, number> = {};
+  for (const s of splits) {
+    balance[s.paid_by] = (balance[s.paid_by] ?? 0) + s.amount;
+    balance[s.user_id] = (balance[s.user_id] ?? 0) - s.amount;
+  }
+  const creditors: { id: string; amount: number }[] = [];
+  const debtors: { id: string; amount: number }[] = [];
+  for (const [id, bal] of Object.entries(balance)) {
+    if (bal > 0.01) creditors.push({ id, amount: bal });
+    else if (bal < -0.01) debtors.push({ id, amount: -bal });
+  }
+  creditors.sort((a, b) => b.amount - a.amount);
+  debtors.sort((a, b) => b.amount - a.amount);
+
+  const result: Deuda[] = [];
+  let ci = 0, di = 0;
+  while (ci < creditors.length && di < debtors.length) {
+    const credit = creditors[ci];
+    const debt = debtors[di];
+    const amount = Math.min(credit.amount, debt.amount);
+    result.push({ fromId: debt.id, toId: credit.id, amount: Math.round(amount * 100) / 100 });
+    credit.amount -= amount;
+    debt.amount -= amount;
+    if (credit.amount < 0.01) ci++;
+    if (debt.amount < 0.01) di++;
+  }
+  return result;
 }
 
 function GuestBadge() {
@@ -23,31 +58,95 @@ function GuestBadge() {
   );
 }
 
-export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaName }: Props) {
-  const guests = getGuests(juntadaId);
-  const allMembers = [
-    ...MOCK_MEMBERS,
-    ...guests.map((g) => ({ id: g.id, name: g.name, emoji: "👤", colorIndex: 3 })),
-  ];
+interface Props {
+  closed?: boolean;
+  juntadaId: string;
+  juntadaName?: string;
+  groupId: string;
+}
 
-  const [deudas, setDeudas] = useState<Deuda[]>(() => {
-    const gastos = getGastos(juntadaId);
-    if (gastos && gastos.length > 0) return computeDeudas(gastos, allMembers, juntadaId);
-    return getDeudas(juntadaId);
-  });
-  const [confirmIdx, setConfirmIdx] = useState<number | null>(null);
+export function TabCuentas({ closed = false, juntadaId, juntadaName, groupId }: Props) {
+  const [members, setMembers] = useState<Member[]>([]);
+  const [deudas, setDeudas] = useState<Deuda[]>([]);
+  const [expensesByPayer, setExpensesByPayer] = useState<Record<string, string[]>>({});
+  const [confirmDeuda, setConfirmDeuda] = useState<Deuda | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [hasExpenses, setHasExpenses] = useState(false);
 
-  const handleConfirmPaid = () => {
-    if (confirmIdx === null) return;
-    setDeudas((prev) => prev.filter((_, i) => i !== confirmIdx));
-    setConfirmIdx(null);
+  const load = useCallback(async () => {
+    if (!groupId) return;
+    const supabase = createClient();
+
+    const [membersResult, guestsResult, expensesResult] = await Promise.all([
+      supabase.from("group_members").select("user_id, profiles(name)").eq("group_id", groupId),
+      supabase.from("event_guests").select("id, name").eq("event_id", juntadaId),
+      supabase.from("expenses").select("id, paid_by").eq("event_id", juntadaId),
+    ]);
+
+    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => {
+      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
+    });
+    const guestList: Member[] = (guestsResult.data ?? []).map((g, i) => ({
+      id: g.id, name: g.name, colorIndex: (memberList.length + i) % 8, isGuest: true,
+    }));
+    setMembers([...memberList, ...guestList]);
+
+    const expensesRaw = expensesResult.data ?? [];
+    setHasExpenses(expensesRaw.length > 0);
+    if (!expensesRaw.length) { setLoaded(true); return; }
+
+    const byPayer: Record<string, string[]> = {};
+    for (const e of expensesRaw) {
+      if (!byPayer[e.paid_by]) byPayer[e.paid_by] = [];
+      byPayer[e.paid_by].push(e.id);
+    }
+    setExpensesByPayer(byPayer);
+
+    const expenseMap: Record<string, string> = {};
+    for (const e of expensesRaw) expenseMap[e.id] = e.paid_by;
+
+    const { data: splitsRaw } = await supabase
+      .from("expense_splits")
+      .select("expense_id, user_id, amount")
+      .in("expense_id", expensesRaw.map(e => e.id))
+      .eq("is_settled", false);
+
+    const debtData = (splitsRaw ?? [])
+      .map(s => ({ user_id: s.user_id, amount: s.amount ?? 0, paid_by: expenseMap[s.expense_id] }))
+      .filter(s => s.paid_by && s.user_id !== s.paid_by);
+
+    setDeudas(simplifyDebts(debtData));
+    setLoaded(true);
+  }, [juntadaId, groupId]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleConfirmPaid = async () => {
+    if (!confirmDeuda) return;
+    const { fromId, toId } = confirmDeuda;
+    const supabase = createClient();
+    const expensesOfTo = expensesByPayer[toId] ?? [];
+    const expensesOfFrom = expensesByPayer[fromId] ?? [];
+    if (expensesOfTo.length > 0) {
+      await supabase.from("expense_splits").update({ is_settled: true })
+        .eq("user_id", fromId).in("expense_id", expensesOfTo);
+    }
+    if (expensesOfFrom.length > 0) {
+      await supabase.from("expense_splits").update({ is_settled: true })
+        .eq("user_id", toId).in("expense_id", expensesOfFrom);
+    }
+    setDeudas(prev => prev.filter(d => !(d.fromId === fromId && d.toId === toId)));
+    setConfirmDeuda(null);
   };
 
-  if (isNew) {
+  if (!loaded) return null;
+
+  if (!hasExpenses) {
     return (
       <div className="px-4 md:px-6 py-10 text-center">
         <p className="text-sm text-niebla">
-          Primero registrá la asistencia y cargá los gastos. Después podés cerrar las cuentas.
+          Primero registrá los gastos. Después podés ver las cuentas.
         </p>
       </div>
     );
@@ -70,34 +169,26 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaNa
       <p className="text-sm text-niebla mb-4">Así quedaron los números.</p>
       <div className="flex flex-col gap-3">
         {deudas.map((d, i) => {
-          const from = allMembers.find((m) => m.id === d.fromId)!;
-          const to = allMembers.find((m) => m.id === d.toId)!;
-          const fromIsGuest = guests.some((g) => g.id === d.fromId);
-          const toIsGuest = guests.some((g) => g.id === d.toId);
+          const from = members.find(m => m.id === d.fromId);
+          const to = members.find(m => m.id === d.toId);
+          if (!from || !to) return null;
           return (
             <div key={`${d.fromId}-${d.toId}-${i}`} className="bg-noche-media rounded-2xl p-4 flex flex-col gap-4">
-              {/* Involucrados */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <Avatar emoji={from.emoji} name={from.name} colorIndex={from.colorIndex} />
+                  <Avatar name={from.name} colorIndex={from.colorIndex} />
                   <span className="text-lg text-niebla">→</span>
-                  <Avatar emoji={to.emoji} name={to.name} colorIndex={to.colorIndex} />
+                  <Avatar name={to.name} colorIndex={to.colorIndex} />
                 </div>
                 <p className="font-semibold text-[15px] text-humo">
-                  {from.name}{fromIsGuest && <GuestBadge />}
+                  {from.name}{from.isGuest && <GuestBadge />}
                   {" le debe a "}
-                  {to.name}{toIsGuest && <GuestBadge />}
+                  {to.name}{to.isGuest && <GuestBadge />}
                 </p>
-                {juntadaName && (
-                  <p className="text-xs text-niebla/60 mt-0.5">por {juntadaName}</p>
-                )}
+                {juntadaName && <p className="text-xs text-niebla/60 mt-0.5">por {juntadaName}</p>}
               </div>
-
-              {/* Monto */}
               <p className="font-bold text-[28px] text-humo leading-none">${fmtARSExact(d.amount)}</p>
-
-              {/* Acción */}
-              <Button primary={false} full onClick={() => setConfirmIdx(i)}>
+              <Button primary={false} full onClick={() => setConfirmDeuda(d)}>
                 Marcar como pagado
               </Button>
             </div>
@@ -108,18 +199,18 @@ export function TabCuentas({ closed = false, isNew = false, juntadaId, juntadaNa
         Ronda simplificó las cuentas para que haya menos transferencias.
       </p>
 
-      {confirmIdx !== null && deudas[confirmIdx] && (() => {
-        const d = deudas[confirmIdx];
-        const from = allMembers.find((m) => m.id === d.fromId)!;
-        const to = allMembers.find((m) => m.id === d.toId)!;
+      {confirmDeuda && (() => {
+        const from = members.find(m => m.id === confirmDeuda.fromId);
+        const to = members.find(m => m.id === confirmDeuda.toId);
+        if (!from || !to) return null;
         return (
           <ConfirmPagoModal
             open
-            onClose={() => setConfirmIdx(null)}
+            onClose={() => setConfirmDeuda(null)}
             onConfirm={handleConfirmPaid}
             from={from}
             to={to}
-            amountLabel={`$${fmtARSExact(d.amount)}`}
+            amountLabel={`$${fmtARSExact(confirmDeuda.amount)}`}
           />
         );
       })()}

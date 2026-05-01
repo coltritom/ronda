@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Minus, ChevronRight } from "lucide-react";
 import { LUGAR_OPTIONS } from "@/lib/constants";
-import { getRSVP, setRSVP, type RSVPStatus } from "@/lib/store";
+import { createClient } from "@/lib/supabase/clients";
+
+type RSVPStatus = "going" | "not_going" | "maybe" | "none";
 
 interface NextJuntadaProps {
   date: string;
@@ -20,26 +22,72 @@ interface NextJuntadaProps {
   groupName?: string;
 }
 
-const CHIPS: { id: RSVPStatus; label: string; icon: typeof Check; activeClasses: string; iconColor: string; bgConfirmed: string }[] = [
+const CHIPS: {
+  id: Exclude<RSVPStatus, "none">;
+  label: string;
+  icon: typeof Check;
+  activeClasses: string;
+  iconColor: string;
+  bgConfirmed: string;
+}[] = [
   {
-    id: "voy", label: "Voy", icon: Check,
+    id: "going", label: "Voy", icon: Check,
     activeClasses: "bg-menta/[0.15] ring-1 ring-menta/40",
     iconColor: "text-menta", bgConfirmed: "bg-menta/20",
   },
   {
-    id: "no-voy", label: "No voy", icon: X,
+    id: "not_going", label: "No voy", icon: X,
     activeClasses: "bg-error/[0.12] ring-1 ring-error/30",
     iconColor: "text-error", bgConfirmed: "bg-error/15",
   },
   {
-    id: "no-se", label: "No sé", icon: Minus,
+    id: "maybe", label: "No sé", icon: Minus,
     activeClasses: "bg-niebla/[0.15] ring-1 ring-niebla/40",
     iconColor: "text-niebla", bgConfirmed: "bg-niebla/15",
   },
 ];
 
-export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, juntadaName, lugarId, hostName, isoDate, groupId, groupName }: NextJuntadaProps) {
+export function NextJuntada({
+  date, confirmed, unsure, noResponse,
+  juntadaId, juntadaName, lugarId, hostName, isoDate, groupId, groupName,
+}: NextJuntadaProps) {
   const router = useRouter();
+  const [status, setStatus] = useState<RSVPStatus>("none");
+
+  useEffect(() => {
+    if (!juntadaId) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return;
+      const { data } = await supabase
+        .from("event_rsvps")
+        .select("response")
+        .eq("event_id", juntadaId)
+        .eq("user_id", user.id)
+        .single();
+      if (data?.response) setStatus(data.response as RSVPStatus);
+    });
+  }, [juntadaId]);
+
+  const handleRSVP = async (newStatus: RSVPStatus) => {
+    setStatus(newStatus);
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user || !juntadaId) return;
+
+    if (newStatus === "none") {
+      await supabase
+        .from("event_rsvps")
+        .delete()
+        .eq("event_id", juntadaId)
+        .eq("user_id", user.id);
+    } else {
+      await supabase.from("event_rsvps").upsert(
+        { event_id: juntadaId, user_id: user.id, response: newStatus },
+        { onConflict: "event_id,user_id" }
+      );
+    }
+  };
 
   const goToDetail = () => {
     if (!juntadaId) return;
@@ -60,13 +108,12 @@ export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, ju
     if (groupName) params.set("gn", groupName);
     router.push(`/juntada/${juntadaId}?${params.toString()}`);
   };
-  const [status, setStatus] = useState<RSVPStatus>(() => getRSVP(juntadaId ?? ""));
 
   const currentChip = CHIPS.find((c) => c.id === status);
 
   const getUpdatedCounts = () => {
-    const c = confirmed + (status === "voy" ? 1 : 0);
-    const u = unsure + (status === "no-se" ? 1 : 0);
+    const c = confirmed + (status === "going" ? 1 : 0);
+    const u = unsure + (status === "maybe" ? 1 : 0);
     const n = Math.max(0, noResponse - 1);
     return { c, u, n };
   };
@@ -74,7 +121,10 @@ export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, ju
   if (status !== "none" && currentChip) {
     const { c, u, n } = getUpdatedCounts();
     const Icon = currentChip.icon;
-    const confirmLabel = status === "voy" ? "Confirmaste que vas" : status === "no-voy" ? "No vas a ir" : "Todavía no sabés";
+    const confirmLabel =
+      status === "going" ? "Confirmaste que vas"
+      : status === "not_going" ? "No vas a ir"
+      : "Todavía no sabés";
 
     return (
       <div className="bg-noche-media rounded-2xl p-4">
@@ -91,8 +141,12 @@ export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, ju
             </button>
           )}
         </div>
-        {juntadaName && <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>}
-        <p className={`font-${juntadaName ? "normal text-[13px] text-niebla" : "display font-semibold text-[17px] text-humo"}`}>{date}</p>
+        {juntadaName && (
+          <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>
+        )}
+        <p className={juntadaName ? "text-[13px] text-niebla" : "font-display font-semibold text-[17px] text-humo"}>
+          {date}
+        </p>
         <p className="text-[13px] text-niebla mt-1 mb-3">
           {c} van{u > 0 ? ` · ${u} no sabe${u > 1 ? "n" : ""}` : ""}{n > 0 ? ` · ${n} sin respuesta` : ""}
         </p>
@@ -105,7 +159,7 @@ export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, ju
             <span className="text-sm font-medium text-humo">{confirmLabel}</span>
           </div>
           <button
-            onClick={() => { setStatus("none"); setRSVP(juntadaId ?? "", "none"); }}
+            onClick={() => handleRSVP("none")}
             className="text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer"
           >
             Cambiar
@@ -130,10 +184,16 @@ export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, ju
           </button>
         )}
       </div>
-      {juntadaName && <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>}
-      <p className={juntadaName ? "text-[13px] text-niebla" : "font-display font-semibold text-[17px] text-humo"}>{date}</p>
+      {juntadaName && (
+        <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>
+      )}
+      <p className={juntadaName ? "text-[13px] text-niebla" : "font-display font-semibold text-[17px] text-humo"}>
+        {date}
+      </p>
       <p className="text-[13px] text-niebla mt-1 mb-3">
-        {confirmed} van{unsure > 0 ? ` · ${unsure} no sabe${unsure > 1 ? "n" : ""}` : ""} · {noResponse} sin respuesta
+        {confirmed} van
+        {unsure > 0 ? ` · ${unsure} no sabe${unsure > 1 ? "n" : ""}` : ""}
+        {" "}· {noResponse} sin respuesta
       </p>
 
       <div className="flex gap-2">
@@ -142,7 +202,7 @@ export function NextJuntada({ date, confirmed, unsure, noResponse, juntadaId, ju
           return (
             <button
               key={chip.id}
-              onClick={() => { setStatus(chip.id); setRSVP(juntadaId ?? "", chip.id); }}
+              onClick={() => handleRSVP(chip.id)}
               className="
                 flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-semibold
                 border-none cursor-pointer transition-all

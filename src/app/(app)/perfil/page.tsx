@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
-import { MOCK_GROUPS } from "@/lib/constants";
 import { LogOut, ChevronRight, MessageSquare, HelpCircle, Eye, EyeOff, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
 
@@ -43,20 +42,52 @@ export default function PerfilPage() {
   const router = useRouter();
   const { theme, toggle } = useTheme();
 
-  // Datos (mock por ahora, luego vendrá de Supabase)
   const [displayName, setDisplayName] = useState("Tomi");
   const [email, setEmail] = useState("tomi@email.com");
   const [avatarEmoji, setAvatarEmoji] = useState("🙋‍♂️");
+  const [profileGroups, setProfileGroups] = useState<{ id: string; name: string; emoji: string }[]>([]);
 
   useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    async function load() {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       if (user.user_metadata?.full_name) setDisplayName(user.user_metadata.full_name);
       if (user.email) setEmail(user.email);
       const saved = user.user_metadata?.avatar_emoji || localStorage.getItem("ronda_avatar");
       if (saved) setAvatarEmoji(saved);
-    });
+
+      const { data: memberships } = await supabase
+        .from("group_members")
+        .select("groups(id, name)")
+        .eq("user_id", user.id);
+
+      if (memberships) {
+        const mapped = memberships
+          .map((m) => {
+            const g = Array.isArray(m.groups) ? m.groups[0] : m.groups;
+            if (!g) return null;
+            const s = g as { id: string; name: string };
+            return { id: s.id, name: s.name, emoji: s.name.charAt(0).toUpperCase() };
+          })
+          .filter((g): g is { id: string; name: string; emoji: string } => g !== null);
+
+        const groupIds = mapped.map((g) => g.id);
+        if (groupIds.length > 0) {
+          const { data: emojiRows } = await supabase
+            .from("groups").select("id, emoji").in("id", groupIds);
+          const emojiMap: Record<string, string> = {};
+          for (const row of emojiRows ?? []) {
+            if ((row as { id: string; emoji?: string }).emoji)
+              emojiMap[row.id] = (row as { id: string; emoji: string }).emoji;
+          }
+          setProfileGroups(mapped.map((g) => ({ ...g, emoji: emojiMap[g.id] ?? g.emoji })));
+        } else {
+          setProfileGroups(mapped);
+        }
+      }
+    }
+    load();
   }, []);
 
   // Modales
@@ -198,7 +229,9 @@ export default function PerfilPage() {
           <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mb-2.5">
             Mis grupos
           </p>
-          {MOCK_GROUPS.map((g, i) => (
+          {profileGroups.length === 0 ? (
+            <p className="text-sm text-niebla py-1">Todavía no tenés grupos.</p>
+          ) : profileGroups.map((g, i) => (
             <div
               key={g.id}
               className={`py-2.5 ${i > 0 ? "border-t border-white/[0.04]" : ""}`}

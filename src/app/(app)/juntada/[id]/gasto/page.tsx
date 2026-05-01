@@ -1,48 +1,83 @@
 "use client";
 
-import { use, useState, Suspense } from "react";
+import { use, useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
-import { MOCK_MEMBERS } from "@/lib/constants";
 import { fmtARS } from "@/lib/utils";
-import { addGasto, updateGasto, getGastos, getGuests } from "@/lib/store";
+import { createClient } from "@/lib/supabase/clients";
+
+interface Participant {
+  id: string;
+  name: string;
+  colorIndex: number;
+}
 
 function GastoContent({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const editParam = searchParams.get("edit");
-  const editIndex = editParam !== null ? parseInt(editParam, 10) : null;
-  const existing = editIndex !== null ? getGastos(id)?.[editIndex] : undefined;
+  const editId = searchParams.get("edit"); // expense UUID or null
 
-  // Combined participants: members + any guests added to this juntada
-  const guestMembers = getGuests(id);
-  const participants = [
-    ...MOCK_MEMBERS.slice(0, 6),
-    ...guestMembers.map((g) => ({ id: g.id, name: g.name, emoji: "👤", colorIndex: 3 })),
-  ];
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [amount, setAmount] = useState("");
+  const [payerIdx, setPayerIdx] = useState(0);
+  const [selected, setSelected] = useState<boolean[]>([]);
+  const [allSelected, setAllSelected] = useState(true);
+  const [desc, setDesc] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const [amount, setAmount] = useState(() => existing ? String(existing.amount) : "");
-  const [payer, setPayer] = useState(() => {
-    if (existing) {
-      const idx = participants.findIndex((m) => m.name === existing.who);
-      return idx >= 0 ? idx : 0;
+  const load = useCallback(async () => {
+    const supabase = createClient();
+
+    const { data: eventData } = await supabase
+      .from("events")
+      .select("group_id")
+      .eq("id", id)
+      .single();
+
+    if (!eventData?.group_id) { setLoading(false); return; }
+
+    const { data: membersRaw } = await supabase
+      .from("group_members")
+      .select("user_id, profiles(name)")
+      .eq("group_id", eventData.group_id);
+
+    const memberList: Participant[] = (membersRaw ?? []).map((m, i) => {
+      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
+      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
+    });
+    setParticipants(memberList);
+
+    if (editId) {
+      const [expenseResult, splitsResult] = await Promise.all([
+        supabase.from("expenses").select("description, amount, paid_by").eq("id", editId).single(),
+        supabase.from("expense_splits").select("user_id").eq("expense_id", editId),
+      ]);
+      if (expenseResult.data) {
+        const e = expenseResult.data;
+        setAmount(String(Math.round(e.amount ?? 0)));
+        setDesc(e.description === "Sin descripción" ? "" : e.description ?? "");
+        const payerIndex = memberList.findIndex(m => m.id === e.paid_by);
+        setPayerIdx(payerIndex >= 0 ? payerIndex : 0);
+        const splitIds = new Set((splitsResult.data ?? []).map(s => s.user_id));
+        const sel = memberList.map(m => splitIds.has(m.id));
+        setSelected(sel);
+        setAllSelected(sel.every(Boolean));
+      }
+    } else {
+      setSelected(memberList.map(() => true));
+      setAllSelected(true);
     }
-    return 0;
-  });
-  const [selected, setSelected] = useState<boolean[]>(() =>
-    participants.map((m) => existing ? existing.memberIds.includes(m.id) : true)
-  );
-  const [desc, setDesc] = useState(() => existing?.desc === "Sin descripción" ? "" : existing?.desc ?? "");
-  const [allSelected, setAllSelected] = useState(() =>
-    existing ? existing.memberIds.length === participants.length : true
-  );
+
+    setLoading(false);
+  }, [id, editId]);
+
+  useEffect(() => { load(); }, [load]);
 
   const toggleMember = (i: number) => {
-    const next = [...selected];
-    next[i] = !next[i];
+    const next = selected.map((v, idx) => idx === i ? !v : v);
     setSelected(next);
     setAllSelected(next.every(Boolean));
   };
@@ -53,32 +88,45 @@ function GastoContent({ id }: { id: string }) {
     setSelected(participants.map(() => newVal));
   };
 
-  const numericAmount = amount ? parseInt(amount, 10) : 0;
-  const formattedAmount = amount ? fmtARS(numericAmount) : "";
-
+  const numericAmount = amount ? parseInt(amount.replace(/\D/g, ""), 10) : 0;
+  const formattedAmount = numericAmount > 0 ? fmtARS(numericAmount) : "";
   const selectedCount = selected.filter(Boolean).length;
-  const perPerson = numericAmount > 0 && selectedCount > 0
-    ? Math.round(numericAmount / selectedCount)
-    : 0;
+  const perPerson = numericAmount > 0 && selectedCount > 0 ? Math.round(numericAmount / selectedCount) : 0;
 
-  const handleSave = () => {
-    const entry = {
-      desc: desc || "Sin descripción",
-      amount: numericAmount,
-      who: participants[payer].name,
-      memberIds: participants.filter((_, i) => selected[i]).map((m) => m.id),
-    };
-    if (editIndex !== null) {
-      updateGasto(id, editIndex, entry);
+  const handleSave = async () => {
+    if (numericAmount <= 0 || !participants.length || selectedCount === 0) return;
+    const supabase = createClient();
+    const payer = participants[payerIdx];
+    const splitIds = participants.filter((_, i) => selected[i]).map(m => m.id);
+
+    if (editId) {
+      await supabase.from("expenses").update({
+        description: desc || "Sin descripción",
+        amount: numericAmount,
+        paid_by: payer.id,
+      }).eq("id", editId);
+      await supabase.from("expense_splits").delete().eq("expense_id", editId);
+      const splitAmount = Math.round(numericAmount / splitIds.length * 100) / 100;
+      await supabase.from("expense_splits").insert(
+        splitIds.map(userId => ({ expense_id: editId, user_id: userId, amount: splitAmount, is_settled: false }))
+      );
     } else {
-      addGasto(id, entry);
+      await supabase.rpc("create_expense_with_splits", {
+        p_event_id: id,
+        p_description: desc || "Sin descripción",
+        p_amount: numericAmount,
+        p_paid_by: payer.id,
+        p_split_type: "equal",
+        p_split_user_ids: splitIds,
+      });
     }
     router.back();
   };
 
+  if (loading) return null;
+
   return (
     <div className="max-w-lg mx-auto pb-8">
-      {/* Header */}
       <div className="px-4 md:px-6 pt-4 pb-2 flex items-center justify-between">
         <button
           onClick={() => router.back()}
@@ -88,7 +136,7 @@ function GastoContent({ id }: { id: string }) {
           Volver
         </button>
         <span className="font-display font-bold text-lg text-humo">
-          {editIndex !== null ? "Editar gasto" : "Nuevo gasto"}
+          {editId ? "Editar gasto" : "Nuevo gasto"}
         </span>
         <div className="w-[50px]" />
       </div>
@@ -103,7 +151,7 @@ function GastoContent({ id }: { id: string }) {
               type="text"
               inputMode="numeric"
               value={formattedAmount}
-              onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
+              onChange={e => setAmount(e.target.value.replace(/\D/g, ""))}
               placeholder="0"
               className="bg-transparent border-none outline-none font-display font-bold text-[40px] text-humo text-center placeholder:text-niebla/30"
               style={{ width: Math.max(48, (formattedAmount.length || 1) * 28) }}
@@ -116,13 +164,9 @@ function GastoContent({ id }: { id: string }) {
           <p className="text-[13px] text-niebla mb-2">¿Quién pagó?</p>
           <div className="flex gap-3 flex-wrap">
             {participants.map((m, i) => (
-              <div
-                key={m.id}
-                onClick={() => setPayer(i)}
-                className="flex flex-col items-center gap-1 cursor-pointer"
-              >
-                <Avatar emoji={m.emoji} name={m.name} colorIndex={m.colorIndex} selected={payer === i} />
-                <span className={`text-[11px] font-medium ${payer === i ? "text-fuego font-semibold" : "text-niebla"}`}>
+              <div key={m.id} onClick={() => setPayerIdx(i)} className="flex flex-col items-center gap-1 cursor-pointer">
+                <Avatar name={m.name} colorIndex={m.colorIndex} selected={payerIdx === i} />
+                <span className={`text-[11px] font-medium ${payerIdx === i ? "text-fuego font-semibold" : "text-niebla"}`}>
                   {m.name}
                 </span>
               </div>
@@ -151,7 +195,7 @@ function GastoContent({ id }: { id: string }) {
                   ${selected[i] ? "bg-fuego/[0.12] ring-1 ring-fuego/30" : "bg-white/5 opacity-50"}
                 `}
               >
-                <Avatar emoji={m.emoji} name={m.name} colorIndex={m.colorIndex} size="sm" />
+                <Avatar name={m.name} colorIndex={m.colorIndex} size="sm" />
                 <span className={`text-xs font-medium ${selected[i] ? "text-humo" : "text-niebla"}`}>
                   {m.name}
                 </span>
@@ -172,24 +216,18 @@ function GastoContent({ id }: { id: string }) {
         <input
           type="text"
           value={desc}
-          onChange={(e) => setDesc(e.target.value)}
+          onChange={e => setDesc(e.target.value)}
           placeholder="¿Qué fue? (opcional)"
           className="
             w-full px-3.5 py-3 rounded-[10px]
             border-[1.5px] border-white/[0.08]
-            bg-noche-media
-            text-[15px] text-humo
-            placeholder:text-niebla
-            outline-none font-body
+            bg-noche-media text-[15px] text-humo
+            placeholder:text-niebla outline-none font-body
           "
         />
 
-        <Button
-          full
-          disabled={numericAmount <= 0}
-          onClick={handleSave}
-        >
-          {editIndex !== null ? "Guardar cambios" : "Agregar gasto"}
+        <Button full disabled={numericAmount <= 0 || selectedCount === 0} onClick={handleSave}>
+          {editId ? "Guardar cambios" : "Agregar gasto"}
         </Button>
       </div>
     </div>

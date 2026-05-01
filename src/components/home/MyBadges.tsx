@@ -82,17 +82,20 @@ export function MyBadges() {
 
       const { data: myMemberships } = await supabase
         .from("group_members")
-        .select("group_id, created_at, groups(name)")
+        .select("group_id, created_at")
         .eq("user_id", user.id);
 
       if (!myMemberships?.length) { setLoaded(true); return; }
 
       const groupIds = myMemberships.map(m => m.group_id);
 
-      const [membersRes, eventsRes] = await Promise.all([
+      const [membersRes, eventsRes, groupsRes] = await Promise.all([
         supabase.from("group_members").select("user_id, group_id, created_at").in("group_id", groupIds),
         supabase.from("events").select("id, group_id, created_by").in("group_id", groupIds),
+        supabase.from("groups").select("id, name").in("id", groupIds),
       ]);
+
+      const groupNameMap = Object.fromEntries((groupsRes.data ?? []).map(g => [g.id, g.name]));
 
       const allEvents = eventsRes.data ?? [];
       const eventIds = allEvents.map(e => e.id);
@@ -119,7 +122,7 @@ export function MyBadges() {
 
       for (const membership of myMemberships) {
         const { group_id, created_at: myJoinedAt } = membership;
-        const groupName = (membership.groups as unknown as { name: string } | null)?.name ?? "";
+        const groupName = groupNameMap[group_id] ?? "";
 
         const groupMembers = (membersRes.data ?? []).filter(m => m.group_id === group_id);
         const groupEvents  = allEvents.filter(e => e.group_id === group_id);

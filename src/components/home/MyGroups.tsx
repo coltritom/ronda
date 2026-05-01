@@ -8,6 +8,7 @@ import { CreateGroupSheet } from "@/components/grupo/CreateGroupSheet";
 interface Group {
   id: string;
   name: string;
+  emoji: string;
 }
 
 export function MyGroups() {
@@ -32,10 +33,26 @@ export function MyGroups() {
             const g = d.groups;
             if (!g) return null;
             const single = Array.isArray(g) ? g[0] : g;
-            return single as Group | null;
+            const s = single as { id: string; name: string } | null;
+            if (!s) return null;
+            return { id: s.id, name: s.name, emoji: s.name.charAt(0).toUpperCase() };
           })
           .filter((g): g is Group => g !== null);
-        setGroups(mapped);
+
+        const groupIds = mapped.map((g) => g.id);
+        const emojiMap: Record<string, string> = {};
+        if (groupIds.length > 0) {
+          const { data: emojiRows } = await supabase
+            .from("groups")
+            .select("id, emoji")
+            .in("id", groupIds);
+          for (const row of emojiRows ?? []) {
+            if ((row as { id: string; emoji?: string }).emoji)
+              emojiMap[row.id] = (row as { id: string; emoji: string }).emoji;
+          }
+        }
+
+        setGroups(mapped.map((g) => ({ ...g, emoji: emojiMap[g.id] ?? g.emoji })));
       }
     }
     load();
@@ -71,7 +88,7 @@ export function MyGroups() {
                 relative
               "
             >
-              <span className="text-2xl block">{g.name[0]?.toUpperCase()}</span>
+              <span className="text-2xl block">{g.emoji}</span>
               <p className="
                 text-xs font-semibold text-carbon dark:text-humo mt-1.5
                 overflow-hidden text-ellipsis whitespace-nowrap

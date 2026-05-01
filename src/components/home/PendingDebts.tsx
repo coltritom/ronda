@@ -71,6 +71,22 @@ export function PendingDebts() {
           .in("id", payerIds),
       ]);
 
+      // Build a list of unique group IDs from the events, then fetch emoji
+      const eventGroupIds = [
+        ...new Set((eventsResult.data ?? []).map((e) => e.group_id).filter(Boolean)),
+      ];
+      const emojiMap: Record<string, string> = {};
+      if (eventGroupIds.length > 0) {
+        const { data: emojiRows } = await supabase
+          .from("groups")
+          .select("id, emoji")
+          .in("id", eventGroupIds);
+        for (const row of emojiRows ?? []) {
+          if ((row as { id: string; emoji?: string }).emoji)
+            emojiMap[row.id] = (row as { id: string; emoji: string }).emoji;
+        }
+      }
+
       const eventInfo: Record<string, { groupId: string; groupName: string; groupEmoji: string }> = {};
       for (const e of eventsResult.data ?? []) {
         const g = Array.isArray(e.groups) ? e.groups[0] : e.groups;
@@ -79,7 +95,7 @@ export function PendingDebts() {
         eventInfo[e.id] = {
           groupId: e.group_id,
           groupName,
-          groupEmoji: groupName.charAt(0).toUpperCase(),
+          groupEmoji: emojiMap[e.group_id] ?? groupName.charAt(0).toUpperCase(),
         };
       }
 

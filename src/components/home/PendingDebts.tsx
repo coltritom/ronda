@@ -63,7 +63,7 @@ export function PendingDebts() {
       const [eventsResult, profilesResult] = await Promise.all([
         supabase
           .from("events")
-          .select("id, group_id, groups(name)")
+          .select("id, group_id, groups(name, emoji)")
           .in("id", eventIds),
         supabase
           .from("profiles")
@@ -71,12 +71,15 @@ export function PendingDebts() {
           .in("id", payerIds),
       ]);
 
-      const eventInfo: Record<string, { groupId: string; groupName: string }> = {};
+      const eventInfo: Record<string, { groupId: string; groupName: string; groupEmoji: string }> = {};
       for (const e of eventsResult.data ?? []) {
         const g = Array.isArray(e.groups) ? e.groups[0] : e.groups;
+        const gTyped = g as { name: string; emoji: string | null } | null;
+        const groupName = gTyped?.name ?? "Grupo";
         eventInfo[e.id] = {
           groupId: e.group_id,
-          groupName: (g as { name: string } | null)?.name ?? "Grupo",
+          groupName,
+          groupEmoji: gTyped?.emoji ?? groupName.charAt(0).toUpperCase(),
         };
       }
 
@@ -96,7 +99,7 @@ export function PendingDebts() {
         byEvent[exp.event_id] = {
           groupId: info.groupId,
           groupName: info.groupName,
-          groupEmoji: info.groupName.charAt(0).toUpperCase(),
+          groupEmoji: info.groupEmoji,
           eventId: exp.event_id,
           payerName: payerNames[exp.paid_by] ?? "Alguien",
           amount: (existing?.amount ?? 0) + (s.amount ?? 0),

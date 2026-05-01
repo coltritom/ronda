@@ -26,7 +26,7 @@ export default function CrearGrupoPage() {
       return;
     }
     setLoading(true);
-    const result = await createGroup(name.trim(), null);
+    const result = await createGroup(name.trim(), null, emoji);
     setLoading(false);
     if ("error" in result) {
       setError(result.error);

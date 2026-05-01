@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/server'
 
 export async function createGroup(
   name: string,
-  description: string | null
+  description: string | null,
+  emoji?: string
 ): Promise<{ groupId: string } | { error: string }> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -15,7 +16,7 @@ export async function createGroup(
 
   const { data: group, error: groupError } = await supabase
     .from('groups')
-    .insert({ name, description, created_by: user.id })
+    .insert({ name, description, created_by: user.id, ...(emoji ? { emoji } : {}) })
     .select('id')
     .single()
 

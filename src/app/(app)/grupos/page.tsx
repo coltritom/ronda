@@ -31,15 +31,15 @@ export default function GruposPage() {
     // 1. Grupos del usuario
     const { data: memberships } = await supabase
       .from("group_members")
-      .select("groups ( id, name )")
+      .select("groups ( id, name, emoji )")
       .eq("user_id", user.id);
 
     const userGroups = (memberships ?? [])
       .map((m) => {
         const g = Array.isArray(m.groups) ? m.groups[0] : m.groups;
-        return g as { id: string; name: string } | null;
+        return g as { id: string; name: string; emoji: string | null } | null;
       })
-      .filter((g): g is { id: string; name: string } => g !== null);
+      .filter((g): g is { id: string; name: string; emoji: string | null } => g !== null);
 
     if (!userGroups.length) {
       setGroups([]);
@@ -122,7 +122,7 @@ export default function GruposPage() {
       userGroups.map((g) => ({
         id: g.id,
         name: g.name,
-        emoji: g.name.charAt(0).toUpperCase(),
+        emoji: g.emoji ?? g.name.charAt(0).toUpperCase(),
         memberCount: memberCountByGroup[g.id] ?? 0,
         lastActivity: lastActivityByGroup[g.id] ?? "Sin juntadas",
         pendingCount: pendingByGroup[g.id]?.count ?? 0,

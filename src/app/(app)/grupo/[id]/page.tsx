@@ -42,6 +42,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [groupName, setGroupName] = useState("");
+  const [groupEmoji, setGroupEmoji] = useState("🔥");
   const [members, setMembers] = useState<MemberData[]>([]);
   const [juntadas, setJuntadas] = useState<JuntadaItem[]>([]);
   const [pending, setPending] = useState<{ count: number; amount: number } | null>(null);
@@ -66,7 +67,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     // Datos del grupo
     const { data: groupData } = await supabase
       .from("groups")
-      .select("id, name")
+      .select("id, name, emoji")
       .eq("id", id)
       .single();
 
@@ -76,6 +77,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
       return;
     }
     setGroupName(groupData.name);
+    if (groupData.emoji) setGroupEmoji(groupData.emoji);
 
     // Integrantes
     const { data: membersRaw } = await supabase
@@ -226,7 +228,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     .filter((j) => j.isoDate < TODAY)
     .sort((a, b) => b.isoDate.localeCompare(a.isoDate));
 
-  const emoji = groupName.charAt(0).toUpperCase();
+  const emoji = groupEmoji;
 
   return (
     <div className="max-w-2xl mx-auto pb-8">

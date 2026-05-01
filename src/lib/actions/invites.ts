@@ -17,7 +17,6 @@ export async function getOrCreateInvite(
     .maybeSingle()
 
   if (!membership) return { error: 'No tenés acceso a este grupo.' }
-  if (membership.role !== 'admin') return { error: 'Solo los admins pueden generar links de invitación.' }
 
   /* ¿Ya existe un invite para este grupo? */
   const { data: existing } = await supabase

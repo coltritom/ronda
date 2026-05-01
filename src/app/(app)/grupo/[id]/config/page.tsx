@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Copy, Check, Crown, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
 import { Avatar } from "@/components/ui/Avatar";
+import { getOrCreateInvite } from "@/lib/actions/invites";
 
 interface Member {
   userId: string;
@@ -99,8 +100,10 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
 
   useEffect(() => { load(); }, [load]);
 
-  const handleCopyInvite = () => {
-    const link = `${window.location.origin}/invite/${id}`;
+  const handleCopyInvite = async () => {
+    const result = await getOrCreateInvite(id);
+    if ("error" in result) return;
+    const link = `${window.location.origin}/invite/${result.token}`;
     navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

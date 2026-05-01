@@ -58,9 +58,9 @@ export function RecentActivity() {
           .limit(10),
         supabase
           .from("group_members")
-          .select("user_id, created_at, group_id, groups(name)")
+          .select("user_id, joined_at, group_id, groups(name)")
           .in("group_id", groupIds)
-          .order("created_at", { ascending: false })
+          .order("joined_at", { ascending: false })
           .limit(10),
       ]);
 
@@ -106,7 +106,7 @@ export function RecentActivity() {
       }
 
       for (const j of joinsResult.data ?? []) {
-        if (!j.user_id || !j.created_at) continue;
+        if (!j.user_id || !j.joined_at) continue;
         const g = Array.isArray(j.groups) ? j.groups[0] : j.groups;
         const groupName = (g as { name: string } | null)?.name ?? "Grupo";
         activities.push({
@@ -114,7 +114,7 @@ export function RecentActivity() {
           type: "member_joined",
           actorName: nameById[j.user_id] ?? "Alguien",
           groupName,
-          createdAt: j.created_at,
+          createdAt: j.joined_at,
         });
       }
 

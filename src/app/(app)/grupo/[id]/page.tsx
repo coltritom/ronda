@@ -4,6 +4,7 @@ import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Check, Link } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { getOrCreateInvite } from "@/lib/actions/invites";
 import { GroupHeader } from "@/components/grupo/GroupHeader";
 import { PendingAlert } from "@/components/grupo/PendingAlert";
 import { NextJuntada } from "@/components/grupo/NextJuntada";
@@ -50,6 +51,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showAllPast, setShowAllPast] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [inviteError, setInviteError] = useState("");
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -211,8 +213,14 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
 
   useEffect(() => { load(); }, [load]);
 
-  const handleCopyInvite = () => {
-    const link = `${window.location.origin}/invite/${id}`;
+  const handleCopyInvite = async () => {
+    setInviteError("");
+    const result = await getOrCreateInvite(id);
+    if ("error" in result) {
+      setInviteError(result.error);
+      return;
+    }
+    const link = `${window.location.origin}/invite/${result.token}`;
     navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -321,6 +329,9 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
             {copied ? <Check size={15} /> : <Link size={15} />}
             {copied ? "Link copiado. Mandalo al grupo." : "Copiar link de invitación"}
           </Button>
+          {inviteError && (
+            <p className="text-xs text-error mt-2">{inviteError}</p>
+          )}
         </div>
       </div>
 

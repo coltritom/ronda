@@ -94,13 +94,20 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     // Integrantes
     const { data: membersRaw } = await supabase
       .from("group_members")
-      .select("user_id, profiles ( name )")
+      .select("user_id")
       .eq("group_id", id);
 
-    const memberList: MemberData[] = (membersRaw ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return { name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
-    });
+    const memberUserIds = (membersRaw ?? []).map(m => m.user_id);
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, name")
+      .in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+
+    const memberList: MemberData[] = (membersRaw ?? []).map((m, i) => ({
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
     setMembers(memberList);
 
     // Eventos del grupo
@@ -184,15 +191,12 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
 
     // Ranking top 3 por asistencia
     const topMembers = (membersRaw ?? [])
-      .map((m, i) => {
-        const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-        return {
-          user_id: m.user_id,
-          name: (p as { name: string } | null)?.name ?? "Usuario",
-          count: attendanceByMember[m.user_id] ?? 0,
-          colorIndex: i,
-        };
-      })
+      .map((m, i) => ({
+        user_id: m.user_id,
+        name: profileMap[m.user_id] ?? "Usuario",
+        count: attendanceByMember[m.user_id] ?? 0,
+        colorIndex: i,
+      }))
       .filter((m) => m.count > 0)
       .sort((a, b) => b.count - a.count)
       .slice(0, 3);

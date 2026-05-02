@@ -115,13 +115,20 @@ export default async function EtiquetasPage({ params }: PageProps) {
   /* ── Miembros ──────────────────────────────────────────────── */
   const { data: membersRaw } = await supabase
     .from('group_members')
-    .select('user_id, created_at, profiles ( name )')
+    .select('user_id, created_at')
     .eq('group_id', groupId)
     .order('created_at', { ascending: true })
 
+  const memberUserIds = (membersRaw ?? []).map(m => m.user_id)
+  const { data: profilesData } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', memberUserIds)
+  const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]))
+
   const members = (membersRaw ?? []).map((m) => ({
     userId:   m.user_id,
-    name:     (m.profiles as unknown as { name: string } | null)?.name ?? 'Usuario',
+    name:     profileMap[m.user_id] ?? 'Usuario',
     joinedAt: m.created_at as string,
   }))
 

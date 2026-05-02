@@ -58,10 +58,62 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   /* ── RSVPs ────────────────────────────────────────────────── */
   const { data: rsvpsRaw } = await supabase
     .from('event_rsvps')
-    .select('response, user_id, profiles ( name )')
+    .select('response, user_id')
     .eq('event_id', eventId)
 
-  const rsvps = (rsvpsRaw ?? []) as unknown as {
+  /* ── Asistencia real (solo eventos pasados) ───────────────── */
+  let attendanceRaw: { user_id: string }[] = []
+  if (isPast) {
+    const { data } = await supabase
+      .from('event_attendance')
+      .select('user_id')
+      .eq('event_id', eventId)
+    attendanceRaw = data ?? []
+  }
+
+  /* ── Aportes ─────────────────────────────────────────────── */
+  const { data: contributionsRaw } = await supabase
+    .from('contributions')
+    .select('id, category, description, quantity, user_id')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: true })
+
+  /* ── Gastos + splits ─────────────────────────────────────── */
+  const { data: expensesRaw } = await supabase
+    .from('expenses')
+    .select(`
+      id, description, amount, paid_by, split_type,
+      expense_splits ( user_id, amount, is_settled )
+    `)
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: true })
+
+  /* ── Settlements ─────────────────────────────────────────── */
+  const { data: settlementsRaw } = await supabase
+    .from('settlements')
+    .select('from_user, to_user, amount')
+    .eq('event_id', eventId)
+
+  /* ── Profiles (single lookup for all queries) ────────────── */
+  const allUserIds = new Set<string>([
+    ...(rsvpsRaw ?? []).map(r => r.user_id),
+    ...attendanceRaw.map(a => a.user_id),
+    ...(contributionsRaw ?? []).map(c => c.user_id),
+    ...(expensesRaw ?? []).map(e => e.paid_by),
+    ...(expensesRaw ?? []).flatMap(e => ((e as any).expense_splits ?? []).map((s: any) => s.user_id)),
+  ])
+  const { data: profilesData } = allUserIds.size > 0
+    ? await supabase.from('profiles').select('id, name').in('id', [...allUserIds])
+    : { data: [] as { id: string; name: string }[] }
+  const profileMap: Record<string, string> = Object.fromEntries(
+    (profilesData ?? []).map(p => [p.id, p.name ?? 'Usuario'])
+  )
+
+  /* ── Enriquecer datos con nombres ────────────────────────── */
+  const rsvps = (rsvpsRaw ?? []).map(r => ({
+    ...r,
+    profiles: { name: profileMap[r.user_id] ?? 'Usuario' },
+  })) as unknown as {
     response: RsvpStatus
     user_id: string
     profiles: { name: string } | null
@@ -77,33 +129,23 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     name:    r.profiles?.name ?? 'Usuario',
   }))
 
-  const currentUserName = rsvps.find((r) => r.user_id === user.id)?.profiles?.name ?? 'Yo'
+  const currentUserName = profileMap[user.id] ?? 'Yo'
 
-  /* ── Asistencia real (solo eventos pasados) ───────────────── */
   let attendanceList: { user_id: string; name: string }[] = []
   let myAttendance = false
 
   if (isPast) {
-    const { data: attendanceRaw } = await supabase
-      .from('event_attendance')
-      .select('user_id, profiles ( name )')
-      .eq('event_id', eventId)
-
-    attendanceList = (attendanceRaw ?? []).map((a) => ({
-      user_id: a.user_id as string,
-      name: (a.profiles as unknown as { name: string } | null)?.name ?? 'Usuario',
+    attendanceList = attendanceRaw.map((a) => ({
+      user_id: a.user_id,
+      name: profileMap[a.user_id] ?? 'Usuario',
     }))
     myAttendance = attendanceList.some((a) => a.user_id === user.id)
   }
 
-  /* ── Aportes ─────────────────────────────────────────────── */
-  const { data: contributionsRaw } = await supabase
-    .from('contributions')
-    .select('id, category, description, quantity, user_id, profiles ( name )')
-    .eq('event_id', eventId)
-    .order('created_at', { ascending: true })
-
-  const contributions = (contributionsRaw ?? []) as unknown as {
+  const contributions = (contributionsRaw ?? []).map(c => ({
+    ...c,
+    profiles: { name: profileMap[c.user_id] ?? 'Usuario' },
+  })) as unknown as {
     id: string
     category: 'bebida' | 'comida' | 'postre' | 'hielo' | 'snacks' | 'juegos' | 'utensilios' | 'otros'
     description: string | null
@@ -112,18 +154,14 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     profiles: { name: string } | null
   }[]
 
-  /* ── Gastos + splits ─────────────────────────────────────── */
-  const { data: expensesRaw } = await supabase
-    .from('expenses')
-    .select(`
-      id, description, amount, paid_by, split_type,
-      profiles ( name ),
-      expense_splits ( user_id, amount, is_settled, profiles ( name ) )
-    `)
-    .eq('event_id', eventId)
-    .order('created_at', { ascending: true })
-
-  const expenses = (expensesRaw ?? []) as unknown as {
+  const expenses = (expensesRaw ?? []).map(e => ({
+    ...e,
+    profiles: { name: profileMap[(e as any).paid_by] ?? 'Usuario' },
+    expense_splits: ((e as any).expense_splits ?? []).map((s: any) => ({
+      ...s,
+      profiles: { name: profileMap[s.user_id] ?? 'Usuario' },
+    })),
+  })) as unknown as {
     id: string
     description: string | null
     amount: number
@@ -137,12 +175,6 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
       profiles: { name: string } | null
     }[]
   }[]
-
-  /* ── Settlements ─────────────────────────────────────────── */
-  const { data: settlementsRaw } = await supabase
-    .from('settlements')
-    .select('from_user, to_user, amount')
-    .eq('event_id', eventId)
 
   const settlements = (settlementsRaw ?? []) as {
     from_user: string; to_user: string; amount: number

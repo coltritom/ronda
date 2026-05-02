@@ -97,13 +97,17 @@ export default async function GroupCuentasPage({ params }: PageProps) {
   /* ── Perfiles de miembros ──────────────────────────────── */
   const { data: membersRaw } = await supabase
     .from('group_members')
-    .select('user_id, profiles ( name )')
+    .select('user_id')
     .eq('group_id', id)
 
-  const profileMap: Record<string, string> = {}
-  for (const m of membersRaw ?? []) {
-    profileMap[(m as any).user_id] = (m as any).profiles?.name ?? 'Sin nombre'
-  }
+  const memberUserIds = (membersRaw ?? []).map(m => m.user_id)
+  const { data: profilesData } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', memberUserIds)
+  const profileMap: Record<string, string> = Object.fromEntries(
+    (profilesData ?? []).map(p => [p.id, p.name ?? 'Sin nombre'])
+  )
 
   /* ── Calcular balances por evento ──────────────────────── */
   const sections: EventSection[] = []

@@ -232,11 +232,24 @@ export default function GroupSettingsPage({
     // Members with profiles
     const { data: membersData } = await supabase
       .from("group_members")
-      .select("user_id, role, joined_at, profiles(name, avatar_url)")
+      .select("user_id, role, joined_at")
       .eq("group_id", id)
       .order("joined_at");
 
-    if (membersData) setMembers(membersData as unknown as Member[]);
+    if (membersData) {
+      const memberUserIds = membersData.map(m => m.user_id);
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("id, name, avatar_url")
+        .in("id", memberUserIds);
+      const profileMap = Object.fromEntries(
+        (profilesData ?? []).map(p => [p.id, { name: p.name, avatar_url: p.avatar_url }])
+      );
+      setMembers(membersData.map(m => ({
+        ...m,
+        profiles: profileMap[m.user_id] ?? null,
+      })) as unknown as Member[]);
+    }
 
     // Active invite link
     const { data: inviteData } = await supabase

@@ -31,6 +31,7 @@ export async function createGroup(
 
   if (memberError) {
     console.error('Error adding member:', memberError.message)
+    return { error: 'No se pudo crear el grupo. Intentá de nuevo.' }
   }
 
   revalidatePath('/groups')

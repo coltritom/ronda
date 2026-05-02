@@ -89,13 +89,15 @@ export default async function RankingsPage({ params }: PageProps) {
   /* ── Miembros con nombre ─────────────────────────────────── */
   const { data: membersRaw } = await supabase
     .from('group_members')
-    .select('user_id, profiles ( name )')
+    .select('user_id')
     .eq('group_id', groupId)
 
-  const members = (membersRaw ?? []) as unknown as {
-    user_id: string
-    profiles: { name: string } | null
-  }[]
+  const memberUserIds = (membersRaw ?? []).map(m => m.user_id)
+  const { data: profilesData } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', memberUserIds)
+  const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]))
 
   /* ── IDs de todos los eventos del grupo ──────────────────── */
   const { data: eventsRaw } = await supabase
@@ -137,9 +139,9 @@ export default async function RankingsPage({ params }: PageProps) {
   }
 
   /* ── Armar stats por miembro ─────────────────────────────── */
-  const stats = members.map((m) => ({
+  const stats = (membersRaw ?? []).map((m) => ({
     user_id:       m.user_id,
-    name:          m.profiles?.name ?? 'Usuario',
+    name:          profileMap[m.user_id] ?? 'Usuario',
     attendance:    attendanceMap[m.user_id]   ?? 0,
     contributions: contributionMap[m.user_id] ?? 0,
     expenses:      expenseMap[m.user_id]      ?? 0,

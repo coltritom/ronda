@@ -41,6 +41,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
   }, [token]);
 
   const handleJoin = async () => {
+    if (isLoggedIn === null) return;
     if (!isLoggedIn) {
       router.push(`/login?next=/invite/${token}`);
       return;

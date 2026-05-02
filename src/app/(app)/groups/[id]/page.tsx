@@ -82,13 +82,15 @@ export default async function GroupDetailPage({ params }: PageProps) {
   /* ── Mini-ranking: top 3 por asistencia ──────────────────── */
   const { data: membersRaw } = await supabase
     .from('group_members')
-    .select('user_id, profiles ( name )')
+    .select('user_id')
     .eq('group_id', id)
 
-  const members = (membersRaw ?? []) as unknown as {
-    user_id: string
-    profiles: { name: string } | null
-  }[]
+  const memberUserIds = (membersRaw ?? []).map(m => m.user_id)
+  const { data: profilesData } = await supabase
+    .from('profiles')
+    .select('id, name')
+    .in('id', memberUserIds)
+  const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]))
 
   let miniRanking: { user_id: string; name: string; count: number }[] = []
 
@@ -102,10 +104,10 @@ export default async function GroupDetailPage({ params }: PageProps) {
     for (const r of attendance ?? [])
       attendanceMap[r.user_id] = (attendanceMap[r.user_id] ?? 0) + 1
 
-    miniRanking = members
+    miniRanking = (membersRaw ?? [])
       .map((m) => ({
         user_id: m.user_id,
-        name:    m.profiles?.name ?? 'Usuario',
+        name:    profileMap[m.user_id] ?? 'Usuario',
         count:   attendanceMap[m.user_id] ?? 0,
       }))
       .sort((a, b) => b.count - a.count)

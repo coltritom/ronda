@@ -18,18 +18,20 @@ export async function getOrCreateInvite(
 
   if (!membership) return { error: 'No tenés acceso a este grupo.' }
 
+  const admin = createAdminClient()
+
   /* ¿Ya existe un invite para este grupo? */
-  const { data: existing } = await supabase
+  const { data: existing } = await admin
     .from('invites')
     .select('token')
     .eq('group_id', groupId)
     .limit(1)
     .maybeSingle()
 
-  if (existing) return { token: existing.token }
+  if (existing?.token) return { token: existing.token }
 
   /* Crear el invite */
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from('invites')
     .insert({ group_id: groupId, created_by: user.id })
     .select('token')
@@ -80,8 +82,10 @@ export async function acceptInvite(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado.' }
 
+  const admin = createAdminClient()
+
   /* Buscar el invite */
-  const { data: invite } = await supabase
+  const { data: invite } = await admin
     .from('invites')
     .select('group_id')
     .eq('token', token)

@@ -3,7 +3,7 @@
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/clients";
-import { acceptInvite } from "@/lib/actions/invites";
+import { acceptInvite, getInviteData } from "@/lib/actions/invites";
 import { Button } from "@/components/ui/Button";
 
 interface InviteData {
@@ -25,42 +25,15 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
   useEffect(() => {
     async function load() {
       const supabase = createClient();
-
-      // Verificar si está logueado
       const { data: { user } } = await supabase.auth.getUser();
       setIsLoggedIn(!!user);
 
-      // Cargar datos del invite
-      const { data, error: inviteError } = await supabase
-        .from("invites")
-        .select("group_id, group_name, created_by")
-        .eq("token", token)
-        .single();
-
-      if (inviteError || !data) {
+      const result = await getInviteData(token);
+      if ("error" in result) {
         setNotFound(true);
         return;
       }
-
-      // Cantidad de miembros
-      const { count } = await supabase
-        .from("group_members")
-        .select("*", { count: "exact", head: true })
-        .eq("group_id", data.group_id);
-
-      // Nombre del que invitó
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("name")
-        .eq("id", data.created_by)
-        .maybeSingle();
-
-      setInvite({
-        groupId: data.group_id,
-        groupName: data.group_name,
-        memberCount: count ?? 0,
-        invitedBy: profile?.name ?? "Alguien",
-      });
+      setInvite(result);
     }
 
     load();

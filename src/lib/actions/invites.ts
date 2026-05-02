@@ -52,6 +52,35 @@ export async function getOrCreateInvite(
   return { token: data.token }
 }
 
+export async function getInviteData(
+  token: string
+): Promise<{ groupId: string; groupName: string; memberCount: number; invitedBy: string } | { error: string }> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('invites')
+    .select('group_id, group_name, created_by')
+    .eq('token', token)
+    .single()
+
+  if (error || !data) {
+    console.error('getInviteData error:', error?.message, error?.code)
+    return { error: 'Invitación inválida o expirada.' }
+  }
+
+  const [countRes, profileRes] = await Promise.all([
+    supabase.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', data.group_id),
+    supabase.from('profiles').select('name').eq('id', data.created_by).maybeSingle(),
+  ])
+
+  return {
+    groupId: data.group_id,
+    groupName: data.group_name,
+    memberCount: countRes.count ?? 0,
+    invitedBy: profileRes.data?.name ?? 'Alguien',
+  }
+}
+
 export async function acceptInvite(
   token: string
 ): Promise<{ groupId: string } | { error: string }> {

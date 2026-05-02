@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 export async function getOrCreateInvite(
   groupId: string
@@ -55,9 +55,9 @@ export async function getOrCreateInvite(
 export async function getInviteData(
   token: string
 ): Promise<{ groupId: string; groupName: string; memberCount: number; invitedBy: string } | { error: string }> {
-  const supabase = await createClient()
+  const admin = createAdminClient()
 
-  const { data, error } = await supabase
+  const { data, error } = await admin
     .from('invites')
     .select('group_id, group_name, created_by')
     .eq('token', token)
@@ -69,8 +69,8 @@ export async function getInviteData(
   }
 
   const [countRes, profileRes] = await Promise.all([
-    supabase.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', data.group_id),
-    supabase.from('profiles').select('name').eq('id', data.created_by).maybeSingle(),
+    admin.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', data.group_id),
+    admin.from('profiles').select('name').eq('id', data.created_by).maybeSingle(),
   ])
 
   return {

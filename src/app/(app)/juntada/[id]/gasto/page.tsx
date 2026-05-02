@@ -97,7 +97,7 @@ function GastoContent({ id }: { id: string }) {
     if (numericAmount <= 0 || !participants.length || selectedCount === 0) return;
     const supabase = createClient();
     const payer = participants[payerIdx];
-    const splitIds = participants.filter((_, i) => selected[i]).map(m => m.id);
+    const splitIds = [...new Set(participants.filter((_, i) => selected[i]).map(m => m.id))];
 
     if (editId) {
       await supabase.from("expenses").update({

@@ -98,6 +98,8 @@ function GastoContent({ id }: { id: string }) {
     const supabase = createClient();
     const payer = participants[payerIdx];
     const splitIds = [...new Set(participants.filter((_, i) => selected[i]).map(m => m.id))];
+    console.log("participants ids:", participants.map(p => p.id));
+    console.log("splitIds:", splitIds);
 
     if (editId) {
       await supabase.from("expenses").update({

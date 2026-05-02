@@ -28,19 +28,10 @@ export async function getOrCreateInvite(
 
   if (existing) return { token: existing.token }
 
-  /* Obtener el nombre del grupo */
-  const { data: group } = await supabase
-    .from('groups')
-    .select('name')
-    .eq('id', groupId)
-    .single()
-
-  if (!group) return { error: 'Grupo no encontrado.' }
-
   /* Crear el invite */
   const { data, error } = await supabase
     .from('invites')
-    .insert({ group_id: groupId, created_by: user.id, group_name: group.name })
+    .insert({ group_id: groupId, created_by: user.id })
     .select('token')
     .single()
 
@@ -59,7 +50,7 @@ export async function getInviteData(
 
   const { data, error } = await admin
     .from('invites')
-    .select('group_id, group_name, created_by')
+    .select('group_id, created_by')
     .eq('token', token)
     .single()
 
@@ -68,14 +59,15 @@ export async function getInviteData(
     return { error: 'Invitación inválida o expirada.' }
   }
 
-  const [countRes, profileRes] = await Promise.all([
+  const [countRes, profileRes, groupRes] = await Promise.all([
     admin.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', data.group_id),
     admin.from('profiles').select('name').eq('id', data.created_by).maybeSingle(),
+    admin.from('groups').select('name').eq('id', data.group_id).single(),
   ])
 
   return {
     groupId: data.group_id,
-    groupName: data.group_name,
+    groupName: groupRes.data?.name ?? '',
     memberCount: countRes.count ?? 0,
     invitedBy: profileRes.data?.name ?? 'Alguien',
   }

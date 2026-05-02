@@ -56,7 +56,7 @@ export async function getOrCreateInvite(
 
 export async function getInviteData(
   token: string
-): Promise<{ groupId: string; groupName: string; memberCount: number; invitedBy: string } | { error: string }> {
+): Promise<{ groupId: string; groupName: string; groupEmoji: string; memberCount: number; invitedBy: string } | { error: string }> {
   const admin = createAdminClient()
 
   const { data, error } = await admin
@@ -73,12 +73,14 @@ export async function getInviteData(
   const [countRes, profileRes, groupRes] = await Promise.all([
     admin.from('group_members').select('*', { count: 'exact', head: true }).eq('group_id', data.group_id),
     admin.from('profiles').select('name').eq('id', data.created_by).maybeSingle(),
-    admin.from('groups').select('name').eq('id', data.group_id).single(),
+    admin.from('groups').select('name, emoji').eq('id', data.group_id).single(),
   ])
 
+  const g = groupRes.data as { name: string; emoji?: string } | null
   return {
     groupId: data.group_id,
-    groupName: groupRes.data?.name ?? '',
+    groupName: g?.name ?? '',
+    groupEmoji: g?.emoji ?? '',
     memberCount: countRes.count ?? 0,
     invitedBy: profileRes.data?.name ?? 'Alguien',
   }

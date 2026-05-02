@@ -54,6 +54,7 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
   const [myRole, setMyRole] = useState<"admin" | "member">("member");
   const [myUserId, setMyUserId] = useState("");
   const [copied, setCopied] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState("");
   const [rankings, setRankings] = useState(
     RANKING_OPTIONS.reduce((acc, r) => ({ ...acc, [r.id]: r.default }), {} as Record<string, boolean>)
@@ -103,12 +104,17 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
 
   const handleCopyInvite = async () => {
     setInviteError("");
-    const result = await getOrCreateInvite(id);
-    if ("error" in result) {
-      setInviteError(result.error);
-      return;
+    let token = inviteToken;
+    if (!token) {
+      const result = await getOrCreateInvite(id);
+      if ("error" in result) {
+        setInviteError(result.error);
+        return;
+      }
+      token = result.token;
+      setInviteToken(token);
     }
-    const link = `${window.location.origin}/invite/${result.token}`;
+    const link = `${window.location.origin}/invite/${token}`;
     navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

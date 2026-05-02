@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/Button";
 interface InviteData {
   groupId: string;
   groupName: string;
+  groupEmoji: string;
   memberCount: number;
   invitedBy: string;
 }
@@ -18,7 +19,6 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
   const router = useRouter();
   const [invite, setInvite] = useState<InviteData | null>(null);
   const [notFound, setNotFound] = useState(false);
-  const [notFoundReason, setNotFoundReason] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState("");
@@ -31,7 +31,6 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 
       const result = await getInviteData(token);
       if ("error" in result) {
-        setNotFoundReason(`token="${token}" error="${result.error}"`);
         setNotFound(true);
         return;
       }
@@ -69,9 +68,6 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
         <div className="text-5xl mb-4">🔗</div>
         <h2 className="font-display font-bold text-xl text-humo mb-2">Link inválido o expirado</h2>
         <p className="text-sm text-niebla">Pedile al admin del grupo que te mande uno nuevo.</p>
-        {notFoundReason && (
-          <p className="mt-4 text-xs text-niebla/60 break-all font-mono">{notFoundReason}</p>
-        )}
         <button
           onClick={() => router.push("/login")}
           className="mt-8 text-sm text-fuego font-semibold bg-transparent border-none cursor-pointer"
@@ -102,7 +98,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
 
       <div className="w-full bg-noche-media rounded-3xl p-6 text-center mb-6">
         <div className="w-20 h-20 rounded-3xl bg-fuego/10 flex items-center justify-center text-4xl mx-auto mb-4">
-          🎉
+          {invite.groupEmoji || "🎉"}
         </div>
         <h2 className="font-display font-bold text-2xl text-humo mb-1">
           {invite.groupName}

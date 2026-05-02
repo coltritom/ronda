@@ -51,6 +51,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
   const [sheetOpen, setSheetOpen] = useState(false);
   const [showAllPast, setShowAllPast] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState("");
 
   const load = useCallback(async () => {
@@ -215,12 +216,17 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
 
   const handleCopyInvite = async () => {
     setInviteError("");
-    const result = await getOrCreateInvite(id);
-    if ("error" in result) {
-      setInviteError(result.error);
-      return;
+    let token = inviteToken;
+    if (!token) {
+      const result = await getOrCreateInvite(id);
+      if ("error" in result) {
+        setInviteError(result.error);
+        return;
+      }
+      token = result.token;
+      setInviteToken(token);
     }
-    const link = `${window.location.origin}/invite/${result.token}`;
+    const link = `${window.location.origin}/invite/${token}`;
     navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

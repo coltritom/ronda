@@ -70,7 +70,7 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
       supabase.from("groups").select("id, name").eq("id", id).single(),
       supabase
         .from("group_members")
-        .select("user_id, role, profiles(name)")
+        .select("user_id, role")
         .eq("group_id", id),
     ]);
 
@@ -83,15 +83,19 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
     if ((emojiRow as { emoji?: string } | null)?.emoji)
       setGroupEmoji((emojiRow as { emoji: string }).emoji);
 
-    const mapped: Member[] = (membersRes.data ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return {
-        userId: m.user_id,
-        name: (p as { name: string } | null)?.name ?? "Usuario",
-        role: m.role as "admin" | "member",
-        colorIndex: i,
-      };
-    });
+    const memberUserIds = (membersRes.data ?? []).map(m => m.user_id);
+    const { data: profilesRes } = await supabase
+      .from("profiles")
+      .select("id, name")
+      .in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesRes ?? []).map(p => [p.id, p.name]));
+
+    const mapped: Member[] = (membersRes.data ?? []).map((m, i) => ({
+      userId: m.user_id,
+      name: profileMap[m.user_id] ?? "Usuario",
+      role: m.role as "admin" | "member",
+      colorIndex: i,
+    }));
     setMembers(mapped);
 
     const me = mapped.find((m) => m.userId === user.id);

@@ -67,14 +67,19 @@ export function TabAsistencia({ closed = false, upcoming = false, juntadaId, gro
     const supabase = createClient();
 
     const [membersResult, guestsResult] = await Promise.all([
-      supabase.from("group_members").select("user_id, profiles(name)").eq("group_id", groupId),
+      supabase.from("group_members").select("user_id").eq("group_id", groupId),
       supabase.from("event_guests").select("id, name").eq("event_id", juntadaId),
     ]);
 
-    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
-    });
+    const memberUserIds = (membersResult.data ?? []).map(m => m.user_id);
+    const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+
+    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => ({
+      id: m.user_id,
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
     setMembers(memberList);
 
     const guestList: GuestMember[] = (guestsResult.data ?? []).map(g => ({ id: g.id, name: g.name }));

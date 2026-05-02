@@ -41,13 +41,22 @@ function GastoContent({ id }: { id: string }) {
 
     const { data: membersRaw } = await supabase
       .from("group_members")
-      .select("user_id, profiles(name)")
+      .select("user_id")
       .eq("group_id", eventData.group_id);
 
-    const memberList: Participant[] = (membersRaw ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
-    });
+    const userIds = (membersRaw ?? []).map(m => m.user_id);
+    const { data: profilesRaw } = await supabase
+      .from("profiles")
+      .select("id, name")
+      .in("id", userIds);
+
+    const profileMap = Object.fromEntries((profilesRaw ?? []).map(p => [p.id, p.name]));
+
+    const memberList: Participant[] = (membersRaw ?? []).map((m, i) => ({
+      id: m.user_id,
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
     setParticipants(memberList);
 
     if (editId) {

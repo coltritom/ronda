@@ -87,13 +87,18 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
 
     const { data: membersRaw } = await supabase
       .from("group_members")
-      .select("user_id, profiles(name)")
+      .select("user_id")
       .eq("group_id", id);
 
-    const memberList: Member[] = (membersRaw ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
-    });
+    const memberUserIds = (membersRaw ?? []).map(m => m.user_id);
+    const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+
+    const memberList: Member[] = (membersRaw ?? []).map((m, i) => ({
+      id: m.user_id,
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
     setMembers(memberList);
 
     const { data: eventsRaw } = await supabase

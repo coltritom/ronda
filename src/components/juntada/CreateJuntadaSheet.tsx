@@ -41,18 +41,18 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
       const supabase = createClient();
       const { data } = await supabase
         .from("group_members")
-        .select("user_id, profiles(name)")
+        .select("user_id")
         .eq("group_id", groupId);
+      const userIds = (data ?? []).map(m => m.user_id);
+      const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", userIds);
+      const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
       setMembers(
-        (data ?? []).map((m, i) => {
-          const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-          return {
-            id: m.user_id,
-            name: (p as { name: string } | null)?.name ?? "Miembro",
-            emoji: "",
-            colorIndex: i,
-          };
-        })
+        (data ?? []).map((m, i) => ({
+          id: m.user_id,
+          name: profileMap[m.user_id] ?? "Miembro",
+          emoji: "",
+          colorIndex: i,
+        }))
       );
     }
     loadMembers();

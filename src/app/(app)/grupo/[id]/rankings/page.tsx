@@ -32,13 +32,18 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const { data: membersRaw } = await supabase
       .from("group_members")
-      .select("user_id, profiles(name)")
+      .select("user_id")
       .eq("group_id", id);
 
-    const members = (membersRaw ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return { userId: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
-    });
+    const memberUserIds = (membersRaw ?? []).map(m => m.user_id);
+    const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+
+    const members = (membersRaw ?? []).map((m, i) => ({
+      userId: m.user_id,
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
 
     const { data: eventsRaw } = await supabase
       .from("events")

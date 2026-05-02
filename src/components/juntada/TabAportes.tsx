@@ -40,16 +40,21 @@ export function TabAportes({ juntadaId, groupId }: TabAportesProps) {
     if (!groupId) return;
     const supabase = createClient();
     const [membersResult, guestsResult, aportesResult] = await Promise.all([
-      supabase.from("group_members").select("user_id, profiles(name)").eq("group_id", groupId),
+      supabase.from("group_members").select("user_id").eq("group_id", groupId),
       supabase.from("event_guests").select("id, name").eq("event_id", juntadaId),
       supabase.from("event_aportes").select("id, member_id, member_name, category_id, note")
         .eq("event_id", juntadaId).order("created_at"),
     ]);
 
-    const memberList: Participant[] = (membersResult.data ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
-    });
+    const memberUserIds = (membersResult.data ?? []).map(m => m.user_id);
+    const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+
+    const memberList: Participant[] = (membersResult.data ?? []).map((m, i) => ({
+      id: m.user_id,
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
     const guestList: Participant[] = (guestsResult.data ?? []).map((g, i) => ({
       id: g.id, name: g.name, colorIndex: (memberList.length + i) % 8,
     }));

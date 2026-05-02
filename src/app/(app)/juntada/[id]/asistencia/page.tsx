@@ -26,14 +26,19 @@ export default function AsistenciaPage({ params }: { params: Promise<{ id: strin
     if (!eventData?.group_id) return;
 
     const [membersResult, attendanceResult] = await Promise.all([
-      supabase.from("group_members").select("user_id, profiles(name)").eq("group_id", eventData.group_id),
+      supabase.from("group_members").select("user_id").eq("group_id", eventData.group_id),
       supabase.from("event_attendance").select("user_id").eq("event_id", id),
     ]);
 
-    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => {
-      const p = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles;
-      return { id: m.user_id, name: (p as { name: string } | null)?.name ?? "Usuario", colorIndex: i };
-    });
+    const memberUserIds = (membersResult.data ?? []).map(m => m.user_id);
+    const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+
+    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => ({
+      id: m.user_id,
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
     const attendedIds = new Set((attendanceResult.data ?? []).map(a => a.user_id));
     setMembers(memberList);
     setChecks(memberList.map(m => attendedIds.has(m.id)));

@@ -83,7 +83,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       return;
     }
 
-    router.push(`/groups/${result.groupId}`);
+    router.push(`/grupo/${result.groupId}`);
   };
 
   // Token inválido o expirado

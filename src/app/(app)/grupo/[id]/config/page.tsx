@@ -54,6 +54,7 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
   const [myRole, setMyRole] = useState<"admin" | "member">("member");
   const [myUserId, setMyUserId] = useState("");
   const [copied, setCopied] = useState(false);
+  const [inviteError, setInviteError] = useState("");
   const [rankings, setRankings] = useState(
     RANKING_OPTIONS.reduce((acc, r) => ({ ...acc, [r.id]: r.default }), {} as Record<string, boolean>)
   );
@@ -101,8 +102,12 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
   useEffect(() => { load(); }, [load]);
 
   const handleCopyInvite = async () => {
+    setInviteError("");
     const result = await getOrCreateInvite(id);
-    if ("error" in result) return;
+    if ("error" in result) {
+      setInviteError(result.error);
+      return;
+    }
     const link = `${window.location.origin}/invite/${result.token}`;
     navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
@@ -178,6 +183,9 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
             {copied ? <Check size={16} /> : <Copy size={16} />}
             {copied ? "Link copiado. Mandalo al grupo." : "Copiar link de invitación"}
           </button>
+          {inviteError && (
+            <p className="text-xs text-error mt-2 text-center">{inviteError}</p>
+          )}
         </div>
 
         {/* Miembros */}

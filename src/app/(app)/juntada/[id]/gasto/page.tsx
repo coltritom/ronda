@@ -116,7 +116,7 @@ function GastoContent({ id }: { id: string }) {
         p_description: desc || "Sin descripción",
         p_amount: numericAmount,
         p_paid_by: payer.id,
-        p_split_type: "equal",
+        p_split_type: "equal_all",
         p_split_user_ids: splitIds,
       });
     }

@@ -30,10 +30,19 @@ export async function getOrCreateInvite(
 
   if (existing?.token) return { token: existing.token }
 
+  /* Obtener el nombre del grupo */
+  const { data: group } = await admin
+    .from('groups')
+    .select('name')
+    .eq('id', groupId)
+    .single()
+
+  if (!group) return { error: 'Grupo no encontrado.' }
+
   /* Crear el invite */
   const { data, error } = await admin
     .from('invites')
-    .insert({ group_id: groupId, created_by: user.id })
+    .insert({ group_id: groupId, created_by: user.id, group_name: group.name })
     .select('token')
     .single()
 

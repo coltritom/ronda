@@ -22,7 +22,6 @@ type TagKey = keyof typeof TAG_DEFS;
 
 interface MemberInput {
   userId: string;
-  joinedAt: string;
   attendance: number;
   maybeCount: number;
   eventsCreated: number;
@@ -44,10 +43,7 @@ function assignTags(member: MemberInput, group: GroupStats): TagKey[] {
   const tags: TagKey[] = [];
   const { totalEvents } = group;
 
-  if (group.memberCount > 1) {
-    if (member.joinedAt === group.oldestJoin) tags.push("veterano");
-    if (member.joinedAt === group.newestJoin)  tags.push("nuevo");
-  }
+  // veterano/nuevo require created_at on group_members — skipped until column exists
   if (member.eventsCreated > 0 && member.eventsCreated === group.maxEventsCreated)
     tags.push("organizador");
   if (member.contributions > 0 && member.contributions === group.maxContributions)
@@ -82,7 +78,7 @@ export function MyBadges() {
 
       const { data: myMemberships } = await supabase
         .from("group_members")
-        .select("group_id, created_at")
+        .select("group_id")
         .eq("user_id", user.id);
 
       if (!myMemberships?.length) { setLoaded(true); return; }
@@ -90,7 +86,7 @@ export function MyBadges() {
       const groupIds = myMemberships.map(m => m.group_id);
 
       const [membersRes, eventsRes, groupsRes] = await Promise.all([
-        supabase.from("group_members").select("user_id, group_id, created_at").in("group_id", groupIds),
+        supabase.from("group_members").select("user_id, group_id").in("group_id", groupIds),
         supabase.from("events").select("id, group_id, created_by").in("group_id", groupIds),
         supabase.from("groups").select("id, name").in("id", groupIds),
       ]);
@@ -121,7 +117,7 @@ export function MyBadges() {
       const allBadges: Badge[] = [];
 
       for (const membership of myMemberships) {
-        const { group_id, created_at: myJoinedAt } = membership;
+        const { group_id } = membership;
         const groupName = groupNameMap[group_id] ?? "";
 
         const groupMembers = (membersRes.data ?? []).filter(m => m.group_id === group_id);
@@ -132,13 +128,13 @@ export function MyBadges() {
 
         type Stats = {
           attendance: number; maybeCount: number; eventsCreated: number;
-          contributions: number; expensesPaid: number; joinedAt: string;
+          contributions: number; expensesPaid: number;
         };
         const statsMap: Record<string, Stats> = {};
         for (const gm of groupMembers) {
           statsMap[gm.user_id] = {
             attendance: 0, maybeCount: 0, eventsCreated: 0,
-            contributions: 0, expensesPaid: 0, joinedAt: gm.created_at,
+            contributions: 0, expensesPaid: 0,
           };
         }
 
@@ -156,12 +152,11 @@ export function MyBadges() {
             statsMap[e.paid_by].expensesPaid += Number(e.amount);
 
         const allStats = Object.values(statsMap);
-        const sorted   = [...groupMembers].sort((a, b) => a.created_at.localeCompare(b.created_at));
 
         const groupStats: GroupStats = {
           totalEvents:      groupEvents.length,
-          oldestJoin:       sorted[0]?.created_at ?? "",
-          newestJoin:       sorted[sorted.length - 1]?.created_at ?? "",
+          oldestJoin:       "",
+          newestJoin:       "",
           maxEventsCreated: Math.max(0, ...allStats.map(s => s.eventsCreated)),
           maxContributions: Math.max(0, ...allStats.map(s => s.contributions)),
           maxExpensesPaid:  Math.max(0, ...allStats.map(s => s.expensesPaid)),

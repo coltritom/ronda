@@ -70,7 +70,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     // Datos del grupo
     const { data: groupData } = await supabase
       .from("groups")
-      .select("id, name")
+      .select("id, name, emoji")
       .eq("id", id)
       .single();
 
@@ -80,15 +80,8 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
       return;
     }
     setGroupName(groupData.name);
-
-    // Fetch emoji separately so a missing column doesn't block the whole page
-    const { data: emojiRow } = await supabase
-      .from("groups")
-      .select("emoji")
-      .eq("id", id)
-      .single();
-    if ((emojiRow as { emoji?: string } | null)?.emoji) {
-      setGroupEmoji((emojiRow as { emoji: string }).emoji);
+    if ((groupData as { emoji?: string }).emoji) {
+      setGroupEmoji((groupData as { id: string; name: string; emoji: string }).emoji);
     }
 
     // Integrantes
@@ -236,7 +229,14 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8 flex flex-col gap-4 animate-pulse">
+      <div className="h-8 w-48 rounded-xl bg-noche-media" />
+      <div className="h-4 w-32 rounded-lg bg-noche-media" />
+      <div className="h-32 rounded-2xl bg-noche-media" />
+      <div className="h-24 rounded-2xl bg-noche-media" />
+    </div>
+  );
 
   if (notFound) {
     return (

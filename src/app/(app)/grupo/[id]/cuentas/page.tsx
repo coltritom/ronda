@@ -175,7 +175,13 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
     setConfirmDeuda(null);
   };
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="max-w-lg mx-auto px-4 md:px-6 pt-8 flex flex-col gap-4 animate-pulse">
+      <div className="h-6 w-40 rounded-xl bg-noche-media" />
+      <div className="h-20 rounded-2xl bg-noche-media" />
+      <div className="h-20 rounded-2xl bg-noche-media" />
+    </div>
+  );
 
   const pendientes = deudas.filter((d) => !d.paid);
   const pagadas = deudas.filter((d) => d.paid);

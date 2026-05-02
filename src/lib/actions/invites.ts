@@ -20,11 +20,12 @@ export async function getOrCreateInvite(
 
   const admin = createAdminClient()
 
-  /* ¿Ya existe un invite para este grupo? */
+  /* ¿Ya existe un invite vigente para este grupo? */
   const { data: existing } = await admin
     .from('invites')
-    .select('token')
+    .select('token, expires_at')
     .eq('group_id', groupId)
+    .gt('expires_at', new Date().toISOString())
     .limit(1)
     .maybeSingle()
 
@@ -61,8 +62,9 @@ export async function getInviteData(
 
   const { data, error } = await admin
     .from('invites')
-    .select('group_id, created_by')
+    .select('group_id, created_by, expires_at')
     .eq('token', token)
+    .gt('expires_at', new Date().toISOString())
     .single()
 
   if (error || !data) {
@@ -95,11 +97,12 @@ export async function acceptInvite(
 
   const admin = createAdminClient()
 
-  /* Buscar el invite */
+  /* Buscar el invite vigente */
   const { data: invite } = await admin
     .from('invites')
-    .select('group_id')
+    .select('group_id, expires_at')
     .eq('token', token)
+    .gt('expires_at', new Date().toISOString())
     .single()
 
   if (!invite) return { error: 'Invitación inválida o expirada.' }

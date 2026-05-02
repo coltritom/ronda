@@ -8,6 +8,7 @@ export function InviteButton({ groupId }: { groupId: string }) {
   const [link, setLink]     = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [copyError, setCopyError] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   /* Cerrar al hacer click fuera */
@@ -35,9 +36,14 @@ export function InviteButton({ groupId }: { groupId: string }) {
 
   async function handleCopy() {
     if (!link) return
-    await navigator.clipboard.writeText(link)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopyError(true)
+      setTimeout(() => setCopyError(false), 3000)
+    }
   }
 
   return (
@@ -63,7 +69,7 @@ export function InviteButton({ groupId }: { groupId: string }) {
               onClick={handleCopy}
               className="flex-shrink-0 text-xs font-medium text-accent hover:text-accent-hover transition-colors"
             >
-              {copied ? '✓ Copiado' : 'Copiar'}
+              {copied ? '✓ Copiado' : copyError ? '✗ Error' : 'Copiar'}
             </button>
           </div>
           <p className="mt-2 text-xs text-muted">

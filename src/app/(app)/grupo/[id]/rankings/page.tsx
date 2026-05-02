@@ -201,7 +201,13 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
   useEffect(() => { load(); }, [load]);
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="max-w-lg mx-auto px-4 md:px-6 pt-8 flex flex-col gap-4 animate-pulse">
+      <div className="h-6 w-40 rounded-xl bg-noche-media" />
+      <div className="h-24 rounded-2xl bg-noche-media" />
+      <div className="h-24 rounded-2xl bg-noche-media" />
+    </div>
+  );
 
   return (
     <div>

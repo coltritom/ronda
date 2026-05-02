@@ -20,6 +20,12 @@ export async function createExpense(
   if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
   if (splitUserIds.length === 0) return { error: 'Debe haber al menos un participante.' }
 
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (!ev) return { error: 'Evento no encontrado.' }
+
+  const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
+  if (memberError) return memberError
+
   const { data: expenseId, error } = await supabase
     .rpc('create_expense_with_splits', {
       p_event_id:       eventId,
@@ -35,8 +41,7 @@ export async function createExpense(
     return { error: 'No se pudo agregar el gasto.' }
   }
 
-  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
-  if (ev) revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
 
   return null
 }

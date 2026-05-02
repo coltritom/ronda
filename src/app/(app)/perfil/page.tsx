@@ -42,8 +42,8 @@ export default function PerfilPage() {
   const router = useRouter();
   const { theme, toggle } = useTheme();
 
-  const [displayName, setDisplayName] = useState("Tomi");
-  const [email, setEmail] = useState("tomi@email.com");
+  const [displayName, setDisplayName] = useState("");
+  const [email, setEmail] = useState("");
   const [avatarEmoji, setAvatarEmoji] = useState("🙋‍♂️");
   const [profileGroups, setProfileGroups] = useState<{ id: string; name: string; emoji: string }[]>([]);
 

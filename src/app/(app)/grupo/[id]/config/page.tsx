@@ -142,7 +142,13 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
     router.push("/grupos");
   };
 
-  if (loading) return null;
+  if (loading) return (
+    <div className="max-w-lg mx-auto px-4 md:px-6 pt-8 flex flex-col gap-4 animate-pulse">
+      <div className="h-6 w-40 rounded-xl bg-noche-media" />
+      <div className="h-28 rounded-2xl bg-noche-media" />
+      <div className="h-20 rounded-2xl bg-noche-media" />
+    </div>
+  );
 
   return (
     <div className="max-w-lg mx-auto pb-8">

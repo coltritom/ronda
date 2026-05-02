@@ -36,11 +36,11 @@ export function TabGastos({ juntadaId }: TabGastosProps) {
     const expenseIds = expensesRaw.map(e => e.id);
 
     const [profilesResult, splitsResult] = await Promise.all([
-      supabase.from("profiles").select("user_id, name").in("user_id", payerIds),
+      supabase.from("profiles").select("id, name").in("id", payerIds),
       supabase.from("expense_splits").select("expense_id, user_id").in("expense_id", expenseIds),
     ]);
 
-    const profileMap = Object.fromEntries((profilesResult.data ?? []).map(p => [p.user_id, p.name]));
+    const profileMap = Object.fromEntries((profilesResult.data ?? []).map(p => [p.id, p.name]));
     const splitCounts: Record<string, number> = {};
     for (const s of splitsResult.data ?? []) {
       splitCounts[s.expense_id] = (splitCounts[s.expense_id] ?? 0) + 1;

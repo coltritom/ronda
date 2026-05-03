@@ -31,6 +31,31 @@ type MemberData = {
   colorIndex?: number;
 };
 
+type MemberRpcItem = { user_id: string; name: string };
+
+type EventRpcItem = {
+  id: string;
+  name: string;
+  date: string;
+  location: string | null;
+  status: string;
+  going: number;
+  maybe: number;
+  not_going: number;
+  attendance_count: number;
+  total_spent: number;
+};
+
+type GroupPageRpcResult = {
+  error?: string;
+  group?: { id: string; name: string; emoji: string };
+  members?: MemberRpcItem[];
+  events?: EventRpcItem[];
+  pending_count?: number;
+  pending_amount?: number;
+  attendance_by_member?: Record<string, number>;
+};
+
 const RANK_EMOJIS = ["🏆", "🥈", "🥉"];
 const RANK_LABELS = ["El Presente", "El Constante", "El Fiel"];
 const RANK_VARIANTS = ["ambar", "uva", "rosa"] as const;
@@ -59,107 +84,32 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push("/login"); return; }
 
-    // Verificar membresía
-    const { data: membership } = await supabase
-      .from("group_members")
-      .select("role")
-      .eq("group_id", id)
-      .eq("user_id", user.id)
-      .single();
+    const { data, error } = await supabase.rpc("get_group_page_data", {
+      p_group_id: id,
+      p_user_id: user.id,
+    });
 
-    // Datos del grupo
-    const { data: groupData } = await supabase
-      .from("groups")
-      .select("id, name, emoji")
-      .eq("id", id)
-      .single();
+    const result = data as GroupPageRpcResult | null;
 
-    if (!groupData || !membership) {
+    if (error || !result || result.error) {
       setNotFound(true);
       setLoading(false);
       return;
     }
-    setGroupName(groupData.name);
-    if ((groupData as { emoji?: string }).emoji) {
-      setGroupEmoji((groupData as { id: string; name: string; emoji: string }).emoji);
-    }
 
-    // Integrantes
-    const { data: membersRaw } = await supabase
-      .from("group_members")
-      .select("user_id")
-      .eq("group_id", id);
+    setGroupName(result.group!.name);
+    setGroupEmoji(result.group!.emoji);
 
-    const memberUserIds = (membersRaw ?? []).map(m => m.user_id);
-    const { data: profilesData } = await supabase
-      .from("profiles")
-      .select("id, name")
-      .in("id", memberUserIds);
-    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
-
-    const memberList: MemberData[] = (membersRaw ?? []).map((m, i) => ({
-      name: profileMap[m.user_id] ?? "Usuario",
+    const rpcMembers = result.members ?? [];
+    const memberList: MemberData[] = rpcMembers.map((m, i) => ({
+      name: m.name,
       colorIndex: i,
     }));
     setMembers(memberList);
 
-    // Eventos del grupo
-    const { data: eventsRaw } = await supabase
-      .from("events")
-      .select("id, name, date, location, status, event_rsvps ( response )")
-      .eq("group_id", id)
-      .neq("status", "cancelled")
-      .order("date", { ascending: true });
-
-    const eventIds = (eventsRaw ?? []).map((e) => e.id);
-
-    // Asistencia por evento y por miembro
-    const { data: attendanceRaw } = eventIds.length > 0
-      ? await supabase.from("event_attendance").select("event_id, user_id").in("event_id", eventIds)
-      : { data: [] };
-
-    const attendanceByEvent: Record<string, number> = {};
-    const attendanceByMember: Record<string, number> = {};
-    for (const a of attendanceRaw ?? []) {
-      attendanceByEvent[a.event_id] = (attendanceByEvent[a.event_id] ?? 0) + 1;
-      attendanceByMember[a.user_id] = (attendanceByMember[a.user_id] ?? 0) + 1;
-    }
-
-    // Gastos por evento
-    const { data: expensesRaw } = eventIds.length > 0
-      ? await supabase.from("expenses").select("id, event_id, amount").in("event_id", eventIds)
-      : { data: [] };
-
-    const spentByEvent: Record<string, number> = {};
-    const allExpenseIds: string[] = [];
-    for (const e of expensesRaw ?? []) {
-      spentByEvent[e.event_id] = (spentByEvent[e.event_id] ?? 0) + (e.amount ?? 0);
-      allExpenseIds.push(e.id);
-    }
-
-    // Splits pendientes del usuario
-    const { data: pendingSplits } = allExpenseIds.length > 0
-      ? await supabase
-          .from("expense_splits")
-          .select("amount")
-          .eq("user_id", user.id)
-          .eq("is_settled", false)
-          .in("expense_id", allExpenseIds)
-      : { data: [] };
-
-    const pendingAmount = (pendingSplits ?? []).reduce((sum, s) => sum + (s.amount ?? 0), 0);
-    const pendingCount = (pendingSplits ?? []).length;
-    setPending(pendingCount > 0 ? { count: pendingCount, amount: pendingAmount } : null);
-
-    // Mapear eventos → JuntadaItem
     const memberCount = memberList.length;
-    const mappedJuntadas: JuntadaItem[] = (eventsRaw ?? []).map((e) => {
-      const rsvps = (e.event_rsvps as { response: string }[]) ?? [];
-      const going = rsvps.filter((r) => r.response === "going").length;
-      const maybe = rsvps.filter((r) => r.response === "maybe").length;
-      const declined = rsvps.filter((r) => r.response === "not_going").length;
-      const noResponse = Math.max(0, memberCount - going - maybe - declined);
-
+    const mappedJuntadas: JuntadaItem[] = (result.events ?? []).map((e) => {
+      const noResponse = Math.max(0, memberCount - e.going - e.maybe - e.not_going);
       const formattedDate = new Intl.DateTimeFormat("es-AR", {
         weekday: "short",
         day: "numeric",
@@ -172,21 +122,25 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
         isoDate: e.date.slice(0, 10),
         date: formattedDate,
         name: e.name,
-        attendees: attendanceByEvent[e.id] ?? 0,
-        totalSpent: spentByEvent[e.id] ?? 0,
+        attendees: e.attendance_count,
+        totalSpent: e.total_spent,
         closed: e.status === "completed",
-        confirmed: going,
-        unsure: maybe,
+        confirmed: e.going,
+        unsure: e.maybe,
         noResponse,
       };
     });
     setJuntadas(mappedJuntadas);
 
-    // Ranking top 3 por asistencia
-    const topMembers = (membersRaw ?? [])
+    const pendingCount = result.pending_count ?? 0;
+    const pendingAmount = result.pending_amount ?? 0;
+    setPending(pendingCount > 0 ? { count: pendingCount, amount: pendingAmount } : null);
+
+    const attendanceByMember = result.attendance_by_member ?? {};
+    const topMembers = rpcMembers
       .map((m, i) => ({
         user_id: m.user_id,
-        name: profileMap[m.user_id] ?? "Usuario",
+        name: m.name,
         count: attendanceByMember[m.user_id] ?? 0,
         colorIndex: i,
       }))

@@ -80,6 +80,58 @@ export async function markAttendance(
   return null
 }
 
+export async function addEventGuest(
+  eventId: string,
+  name: string
+): Promise<{ guest: { id: string; name: string } } | { error: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado.' }
+
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
+  if (memberError) return memberError
+
+  const { data: guest, error } = await supabase
+    .from('event_guests')
+    .insert({ event_id: eventId, name: name.trim() })
+    .select('id, name')
+    .single()
+
+  if (error || !guest) return { error: 'No se pudo agregar el invitado.' }
+
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
+  return { guest }
+}
+
+export async function removeEventGuest(
+  guestId: string,
+  eventId: string
+): Promise<{ error: string } | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado.' }
+
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
+  if (memberError) return memberError
+
+  const { error } = await supabase
+    .from('event_guests')
+    .delete()
+    .eq('id', guestId)
+    .eq('event_id', eventId)
+
+  if (error) return { error: 'No se pudo eliminar el invitado.' }
+
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
+  return null
+}
+
 export async function upsertRsvp(
   eventId: string,
   status: 'going' | 'maybe' | 'not_going'

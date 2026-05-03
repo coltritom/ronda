@@ -66,12 +66,14 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     .eq('event_id', eventId)
 
   let attendanceRaw: { user_id: string }[] = []
+  let guestsRaw: { id: string; name: string }[] = []
   if (isPast) {
-    const { data } = await supabase
-      .from('event_attendance')
-      .select('user_id')
-      .eq('event_id', eventId)
-    attendanceRaw = data ?? []
+    const [{ data: attData }, { data: guestData }] = await Promise.all([
+      supabase.from('event_attendance').select('user_id').eq('event_id', eventId),
+      supabase.from('event_guests').select('id, name').eq('event_id', eventId).order('created_at', { ascending: true }),
+    ])
+    attendanceRaw = attData ?? []
+    guestsRaw = guestData ?? []
   }
 
   const { data: contributionsRaw } = await supabase
@@ -185,7 +187,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     {
       id:    'asistencia',
       label: 'Asistencia',
-      count: isPast ? attendanceList.length : going.length + maybe.length,
+      count: isPast ? attendanceList.length + guestsRaw.length : going.length + maybe.length,
     },
     { id: 'aportes', label: 'Aportes', count: contributions.length },
     { id: 'gastos',  label: 'Gastos',  count: expenses.length },
@@ -253,6 +255,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
                 currentUserId={user.id}
                 myAttendance={myAttendance}
                 attendees={attendanceList}
+                guests={guestsRaw}
               />
             )}
             {!isPast && (

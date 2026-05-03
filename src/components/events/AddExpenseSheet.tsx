@@ -29,7 +29,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
     ? attendees
     : [{ user_id: currentUserId, name: currentUserName }, ...attendees]
 
-  const [amount, setAmount]           = useState('')
+  const [amount, setAmount]           = useState('') // raw digits only
   const [paidBy, setPaidBy]           = useState(currentUserId)
   const [splitIds, setSplitIds]       = useState<string[]>(allAttendees.map((a) => a.user_id))
   const [description, setDescription] = useState('')
@@ -63,11 +63,18 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
     setSplitIds(allSelected ? [] : allAttendees.map((a) => a.user_id))
   }
 
-  const amtNum    = parseFloat(amount) || 0
+  const amtNum    = parseInt(amount, 10) || 0
   const perPerson = splitIds.length > 0 ? amtNum / splitIds.length : 0
 
+  function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const digits = e.target.value.replace(/\D/g, '')
+    setAmount(digits)
+  }
+
+  const displayAmount = amount ? parseInt(amount, 10).toLocaleString('es-AR') : ''
+
   async function handleSubmit() {
-    const amt = parseFloat(amount)
+    const amt = parseInt(amount, 10)
     if (!amt || amt <= 0) return
     const ids       = splitIds.length > 0 ? splitIds : [paidBy]
     const splitType = ids.length === allAttendees.length ? 'equal_all' : 'equal_some'
@@ -117,12 +124,12 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
             <div className="flex items-center justify-center">
               <span className="text-[32px] font-bold text-niebla leading-none mr-1">$</span>
               <input
-                type="number"
-                inputMode="decimal"
+                type="text"
+                inputMode="numeric"
                 placeholder="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                className="text-[52px] font-bold text-humo bg-transparent border-none outline-none w-[180px] text-center placeholder:text-humo/20 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                value={displayAmount}
+                onChange={handleAmountChange}
+                className="text-[52px] font-bold text-humo bg-transparent border-none outline-none w-[200px] text-center placeholder:text-humo/20"
               />
             </div>
           </div>
@@ -130,7 +137,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
           {/* ¿Quién pagó? */}
           <div className="flex flex-col gap-3">
             <span className="text-sm font-semibold text-humo">¿Quién pagó?</span>
-            <div className="flex gap-5 overflow-x-auto pb-1 -mx-4 px-4">
+            <div className="flex gap-4 overflow-x-auto py-1 -mx-4 px-4">
               {allAttendees.map((a, i) => {
                 const c     = COLORS[i % COLORS.length]
                 const sel   = paidBy === a.user_id
@@ -140,9 +147,9 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
                     key={a.user_id}
                     type="button"
                     onClick={() => setPaidBy(a.user_id)}
-                    className="flex flex-col items-center gap-2 shrink-0 bg-transparent border-none cursor-pointer p-0"
+                    className="flex flex-col items-center gap-1.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
                   >
-                    <div className={`w-14 h-14 rounded-full flex items-center justify-center font-bold text-xl transition-all ${c.bg} ${c.text} ${sel ? 'ring-[2.5px] ring-fuego ring-offset-2 ring-offset-noche-media' : ''}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${c.bg} ${c.text} ${sel ? 'ring-2 ring-fuego ring-offset-2 ring-offset-noche-media' : ''}`}>
                       {a.name.charAt(0).toUpperCase()}
                     </div>
                     <span className={`text-xs font-semibold ${sel ? 'text-fuego' : 'text-niebla'}`}>
@@ -221,7 +228,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
         >
           <button
             onClick={handleSubmit}
-            disabled={loading || !amount || parseFloat(amount) <= 0}
+            disabled={loading || !amount || parseInt(amount, 10) <= 0}
             className="w-full rounded-2xl bg-fuego py-4 text-base font-bold text-white transition-colors hover:bg-fuego/90 disabled:opacity-50"
           >
             {loading ? 'Guardando…' : 'Agregar gasto'}

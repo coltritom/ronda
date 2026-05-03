@@ -17,7 +17,7 @@ export function GroupsEmptyState() {
         </div>
       </div>
 
-      <h2 className="font-heading text-lg font-semibold text-humo">
+      <h2 className="font-display text-lg font-semibold text-humo">
         Todavía no tenés grupos
       </h2>
       <p className="mt-2 max-w-[260px] font-body text-sm leading-relaxed text-niebla">

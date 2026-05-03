@@ -33,14 +33,14 @@ export function GroupCard({ group }: GroupCardProps) {
       className="group flex items-center gap-4 rounded-2xl border border-transparent bg-noche-media p-4 hover:border-fuego/30 hover:bg-noche transition-all duration-150"
     >
       {/* Avatar del grupo */}
-      <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl font-heading text-xl font-bold transition-colors ${colorClass}`}>
+      <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl font-display text-xl font-bold transition-colors ${colorClass}`}>
         {group.emoji ?? initial}
       </div>
 
       {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="font-heading font-semibold text-humo truncate">
+          <h3 className="font-display font-semibold text-humo truncate">
             {group.name}
           </h3>
           {group.role === 'admin' && (

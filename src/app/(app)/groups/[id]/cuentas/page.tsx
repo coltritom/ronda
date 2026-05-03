@@ -175,7 +175,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
   const allClear = pendientes.length === 0 && deudas.length > 0 || deudas.length === 0;
 
   return (
-    <div className="max-w-lg mx-auto pb-8">
+    <div className="max-w-2xl mx-auto pb-8">
       <div className="px-4 md:px-6 pt-4 pb-2">
         <button
           onClick={() => router.push(`/groups/${id}`)}
@@ -184,7 +184,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
           <ChevronLeft size={16} />
           {groupName}
         </button>
-        <h1 className="font-display font-semibold text-xl text-humo">
+        <h1 className="font-display font-bold text-[22px] text-humo">
           Cuentas del grupo
         </h1>
         <p className="text-sm text-niebla mt-1">
@@ -324,8 +324,8 @@ function DeudaCard({
 
       {deuda.paid ? (
         <div className="flex items-center gap-1.5">
-          <span className="text-exito text-base">✓</span>
-          <span className="text-sm font-semibold text-exito">Cuenta cerrada. Estás en paz.</span>
+          <span className="text-menta text-base">✓</span>
+          <span className="text-sm font-semibold text-menta">Cuenta cerrada. Estás en paz.</span>
         </div>
       ) : (
         <>

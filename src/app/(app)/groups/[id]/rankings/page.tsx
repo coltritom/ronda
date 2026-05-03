@@ -203,7 +203,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
   );
 
   return (
-    <div>
+    <div className="max-w-2xl mx-auto">
       <div className="px-4 md:px-6 pt-4">
         <button
           onClick={() => router.push(`/groups/${id}`)}

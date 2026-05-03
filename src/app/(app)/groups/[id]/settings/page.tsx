@@ -98,7 +98,7 @@ function SectionCard({
       }`}
     >
       <h2
-        className={`font-heading text-base font-semibold mb-4 ${
+        className={`font-display text-base font-semibold mb-4 ${
           danger ? "text-error" : "text-humo"
         }`}
       >
@@ -458,12 +458,12 @@ export default function GroupSettingsPage({
 
   return (
     <>
-      <div className="flex-1 p-5 lg:p-8 max-w-2xl space-y-5">
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-4 pb-8 flex flex-col gap-4">
 
         {/* Back */}
         <button
           onClick={() => router.push(`/groups/${id}`)}
-          className="flex items-center gap-1.5 text-fuego text-sm font-semibold bg-transparent border-none cursor-pointer p-0"
+          className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0"
         >
           <ChevronLeft size={16} />
           Volver al grupo
@@ -580,7 +580,7 @@ export default function GroupSettingsPage({
                     py-2.5 rounded-xl text-sm font-semibold
                     border-none cursor-pointer transition-all
                     ${copied
-                      ? "bg-exito/10 text-exito"
+                      ? "bg-menta/[0.12] text-menta"
                       : "bg-fuego/10 text-fuego hover:bg-fuego/15"
                     }
                   `}
@@ -887,7 +887,7 @@ export default function GroupSettingsPage({
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4">
           <Overlay onClose={() => setShowRegenConfirm(false)} />
           <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-noche-media p-6">
-            <h3 className="font-heading text-base font-semibold text-humo mb-2">
+            <h3 className="font-display text-base font-semibold text-humo mb-2">
               ¿Regenerar link?
             </h3>
             <p className="font-body text-sm text-niebla mb-4">
@@ -911,7 +911,7 @@ export default function GroupSettingsPage({
           <Overlay onClose={() => setShowQR(false)} />
           <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-noche-media p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading text-base font-semibold text-humo">
+              <h3 className="font-display text-base font-semibold text-humo">
                 Link de invitación
               </h3>
               <button
@@ -932,7 +932,7 @@ export default function GroupSettingsPage({
                 py-3 rounded-xl text-sm font-semibold
                 border-none cursor-pointer transition-all
                 ${copied
-                  ? "bg-exito/10 text-exito"
+                  ? "bg-menta/[0.12] text-menta"
                   : "bg-fuego/10 text-fuego hover:bg-fuego/15"
                 }
               `}
@@ -950,7 +950,7 @@ export default function GroupSettingsPage({
           <Overlay onClose={() => setShowPromoteModal(false)} />
           <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-noche-media">
             <div className="flex items-center justify-between p-5 border-b border-noche">
-              <h3 className="font-heading text-base font-semibold text-humo">
+              <h3 className="font-display text-base font-semibold text-humo">
                 Promover a admin
               </h3>
               <button

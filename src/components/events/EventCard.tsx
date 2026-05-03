@@ -54,7 +54,7 @@ export function EventCard({ event, groupId }: EventCardProps) {
       {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-heading font-semibold text-humo truncate">
+          <h3 className="font-display font-semibold text-humo truncate">
             {event.name}
           </h3>
           <span className={`flex-shrink-0 rounded-full px-2 py-0.5 font-body text-xs font-semibold ${badge.className}`}>

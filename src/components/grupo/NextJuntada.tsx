@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Minus, ChevronRight } from "lucide-react";
-import { LUGAR_OPTIONS } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/clients";
 
 type RSVPStatus = "going" | "not_going" | "maybe" | "none";
@@ -15,11 +14,7 @@ interface NextJuntadaProps {
   noResponse: number;
   juntadaId?: string;
   juntadaName?: string;
-  lugarId?: string;
-  hostName?: string;
-  isoDate?: string;
   groupId?: string;
-  groupName?: string;
 }
 
 const CHIPS: {
@@ -49,7 +44,7 @@ const CHIPS: {
 
 export function NextJuntada({
   date, confirmed, unsure, noResponse,
-  juntadaId, juntadaName, lugarId, hostName, isoDate, groupId, groupName,
+  juntadaId, juntadaName, groupId,
 }: NextJuntadaProps) {
   const router = useRouter();
   const [status, setStatus] = useState<RSVPStatus>("none");
@@ -90,23 +85,8 @@ export function NextJuntada({
   };
 
   const goToDetail = () => {
-    if (!juntadaId) return;
-    const params = new URLSearchParams();
-    if (juntadaName) params.set("n", juntadaName);
-    if (date) params.set("d", date);
-    if (isoDate) params.set("iso", isoDate);
-    if (lugarId) {
-      const lugarOption = LUGAR_OPTIONS.find((l) => l.id === lugarId);
-      if (lugarOption) {
-        const lugarDisplay = hostName
-          ? `${lugarOption.emoji} En lo de ${hostName}`
-          : `${lugarOption.emoji} ${lugarOption.label}`;
-        params.set("l", lugarDisplay);
-      }
-    }
-    if (groupId) params.set("g", groupId);
-    if (groupName) params.set("gn", groupName);
-    router.push(`/juntada/${juntadaId}?${params.toString()}`);
+    if (!juntadaId || !groupId) return;
+    router.push(`/groups/${groupId}/events/${juntadaId}`);
   };
 
   const currentChip = CHIPS.find((c) => c.id === status);

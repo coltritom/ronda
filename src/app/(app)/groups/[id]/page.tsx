@@ -231,12 +231,10 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
             juntadaId={j.id}
             juntadaName={j.name}
             date={j.date}
-            isoDate={j.isoDate}
             confirmed={j.confirmed ?? 0}
             unsure={j.unsure ?? 0}
             noResponse={j.noResponse ?? 0}
             groupId={id}
-            groupName={groupName}
           />
         ))}
 
@@ -272,7 +270,6 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
             totalSpent={j.totalSpent}
             closed={j.closed}
             groupId={id}
-            groupName={groupName}
           />
         ))}
 

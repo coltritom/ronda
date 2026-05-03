@@ -14,19 +14,15 @@ interface JuntadaCardProps {
   lugarId?: string;
   hostName?: string;
   groupId?: string;
-  groupName?: string;
 }
 
-export function JuntadaCard({ id, date, name, attendees, totalSpent, closed, lugarId, hostName, groupId, groupName }: JuntadaCardProps) {
+export function JuntadaCard({ id, date, name, attendees, totalSpent, closed, lugarId, hostName, groupId }: JuntadaCardProps) {
   const router = useRouter();
   const lugar = LUGAR_OPTIONS.find((l) => l.id === lugarId);
 
   const handleClick = () => {
-    const params = new URLSearchParams();
-    if (groupId) params.set("g", groupId);
-    if (groupName) params.set("gn", groupName);
-    const qs = params.toString();
-    router.push(`/juntada/${id}${qs ? `?${qs}` : ""}`);
+    if (!groupId) return;
+    router.push(`/groups/${groupId}/events/${id}`);
   };
 
   return (

@@ -23,7 +23,7 @@ export function TabBar() {
   const getActiveTab = () => {
     if (pathname === "/perfil") return "perfil";
     if (pathname === "/home") return "home";
-    if (pathname === "/groups" || pathname.startsWith("/groups/") || pathname === "/grupos" || pathname.startsWith("/grupo/") || pathname.startsWith("/juntada/")) return "grupos";
+    if (pathname === "/groups" || pathname.startsWith("/groups/")) return "grupos";
     return "home";
   };
 

@@ -188,7 +188,6 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
               totalSpent={j.totalSpent}
               closed={j.closed}
               groupId={id}
-              groupName={groupName}
             />
           ))
         )}

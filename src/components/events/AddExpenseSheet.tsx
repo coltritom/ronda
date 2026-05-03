@@ -72,6 +72,8 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
   }
 
   const displayAmount = amount ? parseInt(amount, 10).toLocaleString('es-AR') : ''
+  const amountFontSize = displayAmount.length > 9 ? 30 : displayAmount.length > 6 ? 40 : 52
+  const signFontSize   = Math.round(amountFontSize * 0.6)
 
   async function handleSubmit() {
     const amt = parseInt(amount, 10)
@@ -121,15 +123,19 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
           {/* Monto */}
           <div className="flex flex-col items-center gap-2 pt-2">
             <span className="text-xs font-semibold text-niebla">¿Cuánto fue?</span>
-            <div className="flex items-center justify-center">
-              <span className="text-[32px] font-bold text-niebla leading-none mr-1">$</span>
+            <div className="flex items-center justify-center w-full px-2">
+              <span
+                className="font-bold text-niebla leading-none mr-1 shrink-0 transition-all duration-150"
+                style={{ fontSize: `${signFontSize}px` }}
+              >$</span>
               <input
                 type="text"
                 inputMode="numeric"
                 placeholder="0"
                 value={displayAmount}
                 onChange={handleAmountChange}
-                className="text-[52px] font-bold text-humo bg-transparent border-none outline-none w-[200px] text-center placeholder:text-humo/20"
+                className="font-bold text-humo bg-transparent border-none outline-none min-w-0 flex-1 text-center placeholder:text-humo/20 transition-all duration-150"
+                style={{ fontSize: `${amountFontSize}px` }}
               />
             </div>
           </div>

@@ -35,7 +35,7 @@ export function RemoveMemberButton({ groupId, userId, name, isSelf }: Props) {
       <div className="flex flex-col items-end gap-1">
         <button
           onClick={() => setConfirm(true)}
-          className="rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted hover:border-red-500/40 hover:text-red-500 transition-colors"
+          className="rounded-lg border border-niebla/20 px-3 py-1.5 text-xs font-medium text-niebla hover:border-red-500/40 hover:text-red-500 transition-colors"
         >
           {isSelf ? 'Salir' : 'Remover'}
         </button>
@@ -46,13 +46,13 @@ export function RemoveMemberButton({ groupId, userId, name, isSelf }: Props) {
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs text-muted">
+      <span className="text-xs text-niebla">
         {isSelf ? '¿Salir del grupo?' : `¿Remover a ${name}?`}
       </span>
       <button
         onClick={() => setConfirm(false)}
         disabled={pending}
-        className="rounded-lg border border-border px-2.5 py-1 text-xs text-muted hover:text-foreground transition-colors disabled:opacity-50"
+        className="rounded-lg border border-niebla/20 px-2.5 py-1 text-xs text-niebla hover:text-humo transition-colors disabled:opacity-50"
       >
         No
       </button>

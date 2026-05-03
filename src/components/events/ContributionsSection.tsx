@@ -88,7 +88,7 @@ export function ContributionsSection({
 
       {/* Formulario */}
       {showForm && (
-        <form onSubmit={handleAdd} className="flex flex-col gap-3 rounded-2xl border border-border bg-surface-2 p-4">
+        <form onSubmit={handleAdd} className="flex flex-col gap-3 rounded-2xl bg-noche p-4">
 
           {/* Categoría */}
           <div className="flex flex-wrap gap-2">
@@ -100,7 +100,7 @@ export function ContributionsSection({
                 className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 font-body text-xs font-medium transition-all ${
                   category === cat.value
                     ? 'border-fuego bg-fuego/10 text-fuego'
-                    : 'border-border text-muted hover:border-fuego/30 hover:text-foreground'
+                    : 'border-noche text-niebla hover:border-fuego/30 hover:text-humo'
                 }`}
               >
                 <span>{cat.emoji}</span>
@@ -117,7 +117,7 @@ export function ContributionsSection({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={80}
-              className="min-w-0 flex-1 rounded-[10px] border-[1.5px] border-border bg-surface px-3 py-2 font-body text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              className="min-w-0 flex-1 rounded-[10px] border-[1.5px] bg-noche px-3 py-2 font-body text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
             <input
               type="number"
@@ -125,7 +125,7 @@ export function ContributionsSection({
               max={99}
               value={quantity}
               onChange={(e) => setQuantity(Number(e.target.value))}
-              className="w-16 rounded-[10px] border-[1.5px] border-border bg-surface px-3 py-2 text-center font-body text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              className="w-16 rounded-[10px] border-[1.5px] bg-noche px-3 py-2 text-center font-body text-sm text-humo focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
           </div>
 
@@ -133,7 +133,7 @@ export function ContributionsSection({
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="flex-1 rounded-xl border border-border py-2 font-body text-sm font-medium text-muted hover:text-foreground transition-colors"
+              className="flex-1 rounded-xl border border-niebla/20 py-2 font-body text-sm font-medium text-niebla hover:text-humo transition-colors"
             >
               Cancelar
             </button>
@@ -153,32 +153,32 @@ export function ContributionsSection({
         <div className="flex flex-col gap-4">
           {byCat.map((cat) => (
             <div key={cat.value}>
-              <p className="mb-2 flex items-center gap-1.5 font-body text-xs font-semibold uppercase tracking-wider text-muted">
+              <p className="mb-2 flex items-center gap-1.5 font-body text-xs font-semibold uppercase tracking-wider text-niebla">
                 {cat.emoji} {cat.label}
               </p>
               <div className="flex flex-col gap-2">
                 {cat.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-2.5"
+                    className="flex items-center justify-between gap-3 rounded-xl bg-noche-media px-4 py-2.5"
                   >
                     <div className="min-w-0">
-                      <span className="font-body text-sm font-medium text-foreground">
+                      <span className="font-body text-sm font-medium text-humo">
                         {item.user_id === currentUserId ? 'Yo' : (item.profiles?.name ?? 'Alguien')}
                       </span>
                       {item.description && (
-                        <span className="ml-2 font-body text-sm text-muted">— {item.description}</span>
+                        <span className="ml-2 font-body text-sm text-niebla">— {item.description}</span>
                       )}
                     </div>
                     <div className="flex flex-shrink-0 items-center gap-3">
                       {item.quantity > 1 && (
-                        <span className="font-body text-xs font-medium text-muted">×{item.quantity}</span>
+                        <span className="font-body text-xs font-medium text-niebla">×{item.quantity}</span>
                       )}
                       {item.user_id === currentUserId && (
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={deleting === item.id}
-                          className="text-muted hover:text-error transition-colors disabled:opacity-40"
+                          className="text-niebla hover:text-error transition-colors disabled:opacity-40"
                           title="Eliminar"
                         >
                           <Trash2 size={14} />
@@ -192,7 +192,7 @@ export function ContributionsSection({
           ))}
         </div>
       ) : (
-        <p className="font-body text-sm text-muted">
+        <p className="font-body text-sm text-niebla">
           {isUpcoming ? 'Nadie agregó aportes todavía.' : 'No hubo aportes registrados.'}
         </p>
       )}

@@ -52,10 +52,10 @@ export default async function GroupsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-4">
         <div>
-          <h1 className="font-heading text-2xl font-bold text-foreground lg:text-3xl">
+          <h1 className="font-heading text-2xl font-bold text-humo lg:text-3xl">
             Mis grupos
           </h1>
-          <p className="mt-1 font-body text-sm text-muted">
+          <p className="mt-1 font-body text-sm text-niebla">
             {groups.length === 0
               ? 'Creá tu primer grupo para empezar'
               : `${groups.length} ${groups.length === 1 ? 'grupo' : 'grupos'}`

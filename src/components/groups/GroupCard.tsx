@@ -30,7 +30,7 @@ export function GroupCard({ group }: GroupCardProps) {
   return (
     <Link
       href={`/groups/${group.id}`}
-      className="group flex items-center gap-4 rounded-2xl border border-border bg-surface p-4 hover:border-fuego/30 hover:bg-surface-2 transition-all duration-150"
+      className="group flex items-center gap-4 rounded-2xl border border-transparent bg-noche-media p-4 hover:border-fuego/30 hover:bg-noche transition-all duration-150"
     >
       {/* Avatar del grupo */}
       <div className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl font-heading text-xl font-bold transition-colors ${colorClass}`}>
@@ -40,7 +40,7 @@ export function GroupCard({ group }: GroupCardProps) {
       {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="font-heading font-semibold text-foreground truncate">
+          <h3 className="font-heading font-semibold text-humo truncate">
             {group.name}
           </h3>
           {group.role === 'admin' && (
@@ -51,12 +51,12 @@ export function GroupCard({ group }: GroupCardProps) {
         </div>
 
         {group.description && (
-          <p className="mt-0.5 font-body text-sm text-muted truncate">
+          <p className="mt-0.5 font-body text-sm text-niebla truncate">
             {group.description}
           </p>
         )}
 
-        <div className="mt-1.5 flex items-center gap-1.5 text-muted">
+        <div className="mt-1.5 flex items-center gap-1.5 text-niebla">
           <Users size={12} />
           <span className="font-body text-xs">
             {group.member_count} {group.member_count === 1 ? 'miembro' : 'miembros'}
@@ -67,7 +67,7 @@ export function GroupCard({ group }: GroupCardProps) {
       {/* Flecha */}
       <ChevronRight
         size={16}
-        className="flex-shrink-0 text-muted group-hover:text-fuego transition-colors"
+        className="flex-shrink-0 text-niebla group-hover:text-fuego transition-colors"
       />
     </Link>
   )

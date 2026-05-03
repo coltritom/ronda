@@ -32,10 +32,10 @@ export default async function ConfiguracionPage({ params }: PageProps) {
   return (
     <div className="flex-1 p-6 lg:p-8">
       <div className="max-w-lg">
-        <h2 className="font-heading mb-1 text-lg font-semibold text-foreground">
+        <h2 className="font-heading mb-1 text-lg font-semibold text-humo">
           Configuración del grupo
         </h2>
-        <p className="mb-8 text-sm text-muted">
+        <p className="mb-8 text-sm text-niebla">
           Solo los admins pueden modificar esto.
         </p>
 

@@ -4,7 +4,7 @@ import { CreateGroupModal } from './CreateGroupModal'
 
 export function GroupsEmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-16 px-6 text-center">
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-niebla/20 bg-noche-media py-16 px-6 text-center">
 
       {/* Anillos decorativos */}
       <div className="relative mb-6 h-20 w-20">
@@ -17,10 +17,10 @@ export function GroupsEmptyState() {
         </div>
       </div>
 
-      <h2 className="font-heading text-lg font-semibold text-foreground">
+      <h2 className="font-heading text-lg font-semibold text-humo">
         Todavía no tenés grupos
       </h2>
-      <p className="mt-2 max-w-[260px] font-body text-sm leading-relaxed text-muted">
+      <p className="mt-2 max-w-[260px] font-body text-sm leading-relaxed text-niebla">
         Creá un grupo, mandá el link a tus amigos y empezá a registrar juntadas, gastos y quién siempre llega tarde.
       </p>
 

@@ -41,8 +41,8 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
     <div className="flex flex-col gap-4">
 
       {/* Toggle del usuario */}
-      <div className="flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3.5">
-        <span className="font-body text-sm text-foreground">¿Fuiste a esta juntada?</span>
+      <div className="flex items-center justify-between rounded-2xl bg-noche-media px-4 py-3.5">
+        <span className="font-body text-sm text-humo">¿Fuiste a esta juntada?</span>
         <div className="flex gap-2">
           <button
             onClick={() => handleToggle(true)}
@@ -50,7 +50,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
             className={`rounded-xl px-3.5 py-1.5 font-body text-xs font-semibold transition-colors disabled:opacity-50 ${
               attended
                 ? 'bg-exito/15 text-exito ring-1 ring-exito/30'
-                : 'border border-border text-muted hover:text-foreground'
+                : 'bg-noche text-niebla hover:text-humo'
             }`}
           >
             Fui
@@ -61,7 +61,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
             className={`rounded-xl px-3.5 py-1.5 font-body text-xs font-semibold transition-colors disabled:opacity-50 ${
               !attended
                 ? 'bg-error/10 text-error ring-1 ring-error/20'
-                : 'border border-border text-muted hover:text-foreground'
+                : 'bg-noche text-niebla hover:text-humo'
             }`}
           >
             No fui
@@ -74,7 +74,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
       {/* Lista de asistentes */}
       {(attended || others.length > 0) && (
         <div>
-          <p className="mb-2 font-body text-xs font-semibold uppercase tracking-wider text-muted">
+          <p className="mb-2 font-body text-xs font-semibold uppercase tracking-wider text-niebla">
             Fueron ({attendees.length})
           </p>
           <div className="flex flex-wrap gap-2">
@@ -83,20 +83,20 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-exito/20 font-body text-[10px] font-bold text-exito">
                   Yo
                 </div>
-                <span className="font-body text-sm text-foreground">
-                  Yo <span className="text-xs text-muted">(vos)</span>
+                <span className="font-body text-sm text-humo">
+                  Yo <span className="text-xs text-niebla">(vos)</span>
                 </span>
               </div>
             )}
             {others.map((a) => (
               <div
                 key={a.user_id}
-                className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5"
+                className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
               >
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 font-body text-[10px] font-bold text-fuego">
                   {a.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="font-body text-sm text-foreground">{a.name}</span>
+                <span className="font-body text-sm text-humo">{a.name}</span>
               </div>
             ))}
           </div>
@@ -104,7 +104,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
       )}
 
       {!attended && others.length === 0 && (
-        <p className="font-body text-sm text-muted">Nadie confirmó asistencia todavía.</p>
+        <p className="font-body text-sm text-niebla">Nadie confirmó asistencia todavía.</p>
       )}
     </div>
   )

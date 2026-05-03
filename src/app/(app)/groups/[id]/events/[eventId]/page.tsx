@@ -205,20 +205,20 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     <div className="flex flex-col min-h-full">
 
       {/* ── Header del evento ─────────────────────────────────── */}
-      <div className="border-b border-border bg-surface px-5 py-5 lg:px-8">
+      <div className="border-b border-noche bg-noche-media px-5 py-5 lg:px-8">
         <div className="max-w-2xl">
           {/* Breadcrumb */}
-          <nav className="mb-3 flex items-center gap-1 font-body text-xs text-muted">
-            <Link href={`/groups/${groupId}`} className="hover:text-foreground transition-colors">
+          <nav className="mb-3 flex items-center gap-1 font-body text-xs text-niebla">
+            <Link href={`/groups/${groupId}`} className="hover:text-humo transition-colors">
               Grupo
             </Link>
-            <ChevronRight size={12} className="text-muted/50" />
-            <span className="text-foreground">Juntada</span>
+            <ChevronRight size={12} className="text-niebla/50" />
+            <span className="text-humo">Juntada</span>
           </nav>
 
           {/* Título + badge */}
           <div className="flex items-start justify-between gap-3">
-            <h1 className="font-heading text-xl font-bold text-foreground lg:text-2xl">
+            <h1 className="font-heading text-xl font-bold text-humo lg:text-2xl">
               {event.name}
             </h1>
             <span className={`mt-0.5 flex-shrink-0 rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${badge.className}`}>
@@ -228,12 +228,12 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
 
           {/* Meta info */}
           <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-            <div className="flex items-center gap-1.5 font-body text-sm text-muted">
+            <div className="flex items-center gap-1.5 font-body text-sm text-niebla">
               <CalendarDays size={13} />
               <span className="capitalize">{formatEventDate(event.date)}</span>
             </div>
             {event.location && (
-              <div className="flex items-center gap-1.5 font-body text-sm text-muted">
+              <div className="flex items-center gap-1.5 font-body text-sm text-niebla">
                 <MapPin size={13} />
                 <span>{event.location}</span>
               </div>
@@ -241,7 +241,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
           </div>
 
           {event.description && (
-            <p className="mt-2 font-body text-sm leading-relaxed text-muted">
+            <p className="mt-2 font-body text-sm leading-relaxed text-niebla">
               {event.description}
             </p>
           )}
@@ -295,15 +295,15 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
                           {list.map((rsvp) => (
                             <div
                               key={rsvp.user_id}
-                              className="flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1.5"
+                              className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
                             >
                               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 font-body text-[10px] font-bold text-fuego">
                                 {(rsvp.profiles?.name ?? '?').charAt(0).toUpperCase()}
                               </div>
-                              <span className="font-body text-sm text-foreground">
+                              <span className="font-body text-sm text-humo">
                                 {rsvp.profiles?.name ?? 'Usuario'}
                                 {rsvp.user_id === user.id && (
-                                  <span className="ml-1 text-xs text-muted">(vos)</span>
+                                  <span className="ml-1 text-xs text-niebla">(vos)</span>
                                 )}
                               </span>
                             </div>
@@ -313,7 +313,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
                     ))
                   }
                   {rsvps.length === 0 && (
-                    <p className="font-body text-sm text-muted">
+                    <p className="font-body text-sm text-niebla">
                       Nadie confirmó todavía. ¡Sé el primero!
                     </p>
                   )}

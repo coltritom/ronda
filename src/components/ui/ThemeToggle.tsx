@@ -29,8 +29,8 @@ export function ThemeToggle() {
       className="
         flex items-center justify-center
         w-9 h-9 rounded-lg
-        text-muted hover:text-foreground
-        hover:bg-surface-2
+        text-niebla hover:text-humo
+        hover:bg-noche
         transition-colors duration-150
       "
     >

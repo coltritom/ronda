@@ -227,16 +227,16 @@ export default async function EtiquetasPage({ params }: PageProps) {
   return (
     <div className="flex-1 p-6 lg:p-8">
       <div className="max-w-2xl">
-        <h2 className="font-heading mb-1 text-lg font-semibold text-foreground">
+        <h2 className="font-heading mb-1 text-lg font-semibold text-humo">
           Etiquetas
         </h2>
-        <p className="mb-6 text-sm text-muted">
+        <p className="mb-6 text-sm text-niebla">
           Auto-generadas según el comportamiento de cada uno.
         </p>
 
         {totalEvents === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface py-12 text-center">
-            <p className="text-sm text-muted">
+          <div className="rounded-2xl border border-dashed border-niebla/20 bg-noche-media py-12 text-center">
+            <p className="text-sm text-niebla">
               Todavía no hay juntadas para generar etiquetas.
             </p>
           </div>
@@ -248,19 +248,19 @@ export default async function EtiquetasPage({ params }: PageProps) {
                 className={`rounded-2xl border px-5 py-4 ${
                   m.userId === user!.id
                     ? 'border-accent/30 bg-accent/5'
-                    : 'border-border bg-surface'
+                    : 'bg-noche-media'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-surface-2 text-sm font-bold text-foreground">
+                    <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-noche text-sm font-bold text-humo">
                       {m.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">
+                      <p className="text-sm font-semibold text-humo">
                         {m.userId === user!.id ? 'Yo' : m.name}
                       </p>
-                      <p className="text-xs text-muted">
+                      <p className="text-xs text-niebla">
                         {m.attendance} juntadas · {m.contributions} aportes
                       </p>
                     </div>
@@ -280,7 +280,7 @@ export default async function EtiquetasPage({ params }: PageProps) {
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-2 text-xs text-muted italic">
+                  <p className="mt-2 text-xs text-niebla italic">
                     Sin etiqueta todavía — hace falta más actividad.
                   </p>
                 )}

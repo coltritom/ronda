@@ -27,7 +27,7 @@ const VARIANTS = {
   uva:     'bg-uva/15 border-uva/40 text-uva',
   rosa:    'bg-rosa/15 border-rosa/40 text-rosa',
   fuego:   'bg-fuego/15 border-fuego/40 text-fuego',
-  neutral: 'bg-surface-2 border-border text-muted',
+  neutral: 'bg-noche border-noche-media text-niebla',
 }
 
 export function Badge({

@@ -46,22 +46,22 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
         role="dialog"
         aria-modal="true"
         aria-labelledby="modal-title"
-        className="relative z-10 w-full sm:max-w-md rounded-t-[20px] sm:rounded-[20px] bg-surface border border-border shadow-2xl max-h-[90vh] flex flex-col"
+        className="relative z-10 w-full sm:max-w-md rounded-t-[20px] sm:rounded-[20px] bg-noche-media shadow-2xl max-h-[90vh] flex flex-col"
       >
         {/* Handle — solo visible en mobile */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
-          <div className="h-1 w-10 rounded-full bg-muted/40" />
+          <div className="h-1 w-10 rounded-full bg-niebla/40" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-4 shrink-0">
-          <h2 id="modal-title" className="font-heading text-lg font-semibold text-foreground">
+        <div className="flex items-center justify-between border-b border-noche px-6 py-4 shrink-0">
+          <h2 id="modal-title" className="font-heading text-lg font-semibold text-humo">
             {title}
           </h2>
           <button
             onClick={onClose}
             aria-label="Cerrar"
-            className="flex h-8 w-8 items-center justify-center rounded-xl text-muted hover:text-foreground hover:bg-surface-2 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-xl text-niebla hover:text-humo hover:bg-noche transition-colors"
           >
             <X size={18} />
           </button>
@@ -74,7 +74,7 @@ export function Modal({ open, onClose, title, children, footer }: ModalProps) {
 
         {/* Footer sticky (botones de acción) */}
         {footer && (
-          <div className="px-6 pt-3 shrink-0 border-t border-border" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
+          <div className="px-6 pt-3 shrink-0 border-t border-noche" style={{ paddingBottom: 'max(2rem, env(safe-area-inset-bottom, 2rem))' }}>
             {footer}
           </div>
         )}

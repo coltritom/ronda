@@ -35,12 +35,12 @@ export function Card({
   className = '',
   ...props
 }: CardProps) {
-  const base = 'rounded-2xl bg-surface'
+  const base = 'rounded-2xl bg-noche-media'
 
   const variants = {
     default:      '',
-    bordered:     'border border-border',
-    'accent-left': `border-l-4 border border-border ${accentColors[accentColor]}`,
+    bordered:     'border border-noche',
+    'accent-left': `border-l-4 border border-noche ${accentColors[accentColor]}`,
   }
 
   const paddings = {

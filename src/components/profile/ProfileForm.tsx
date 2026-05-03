@@ -26,7 +26,7 @@ export function ProfileForm({ initialName }: { initialName: string }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <label className="text-sm font-medium text-foreground" htmlFor="profile-name">
+        <label className="text-sm font-medium text-humo" htmlFor="profile-name">
           Nombre
         </label>
         <input
@@ -36,7 +36,7 @@ export function ProfileForm({ initialName }: { initialName: string }) {
           onChange={(e) => { setName(e.target.value); setSaved(false) }}
           required
           maxLength={80}
-          className="w-full rounded-lg border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+          className="w-full rounded-lg border border-niebla/20 bg-noche px-3.5 py-2.5 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
         />
       </div>
 

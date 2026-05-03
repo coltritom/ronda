@@ -31,7 +31,7 @@ export function GroupTabs({ groupId, isAdmin }: { groupId: string; isAdmin: bool
               transition-colors whitespace-nowrap
               ${isActive
                 ? 'border-fuego text-fuego'
-                : 'border-transparent text-muted hover:text-foreground'
+                : 'border-transparent text-niebla hover:text-humo'
               }
             `}
           >

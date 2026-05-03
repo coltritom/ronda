@@ -51,7 +51,7 @@ export function InviteButton({ groupId }: { groupId: string }) {
       <button
         onClick={handleOpen}
         disabled={loading}
-        className="flex items-center gap-2 rounded-lg border border-border px-3.5 py-2 text-sm font-medium text-foreground hover:border-accent hover:text-accent transition-colors disabled:opacity-50"
+        className="flex items-center gap-2 rounded-lg border border-niebla/20 px-3.5 py-2 text-sm font-medium text-humo hover:border-fuego hover:text-fuego transition-colors disabled:opacity-50"
       >
         <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
@@ -61,10 +61,10 @@ export function InviteButton({ groupId }: { groupId: string }) {
       </button>
 
       {open && link && (
-        <div className="absolute right-0 top-full z-20 mt-2 w-72 rounded-xl border border-border bg-surface p-3 shadow-lg">
-          <p className="mb-2 text-xs font-medium text-muted">Link de invitación</p>
-          <div className="flex items-center gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2">
-            <span className="min-w-0 flex-1 truncate text-xs text-foreground">{link}</span>
+        <div className="absolute right-0 top-full z-20 mt-2 w-72 rounded-xl bg-noche-media p-3 shadow-lg">
+          <p className="mb-2 text-xs font-medium text-niebla">Link de invitación</p>
+          <div className="flex items-center gap-2 rounded-lg bg-noche px-3 py-2">
+            <span className="min-w-0 flex-1 truncate text-xs text-humo">{link}</span>
             <button
               onClick={handleCopy}
               className="flex-shrink-0 text-xs font-medium text-accent hover:text-accent-hover transition-colors"
@@ -72,7 +72,7 @@ export function InviteButton({ groupId }: { groupId: string }) {
               {copied ? '✓ Copiado' : copyError ? '✗ Error' : 'Copiar'}
             </button>
           </div>
-          <p className="mt-2 text-xs text-muted">
+          <p className="mt-2 text-xs text-niebla">
             Cualquiera con este link puede unirse al grupo.
           </p>
         </div>

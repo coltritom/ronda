@@ -88,7 +88,7 @@ export function CreateEventModal({ groupId }: CreateEventModalProps) {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground" htmlFor="event-date">
+            <label className="text-sm font-medium text-humo" htmlFor="event-date">
               Fecha y hora
             </label>
             <input
@@ -98,8 +98,8 @@ export function CreateEventModal({ groupId }: CreateEventModalProps) {
               onChange={(e) => setDateTime(e.target.value)}
               required
               className="
-                w-full rounded-lg border border-border bg-surface-2
-                px-3.5 py-2.5 text-sm text-foreground
+                w-full rounded-lg border border-niebla/20 bg-noche
+                px-3.5 py-2.5 text-sm text-humo
                 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
                 transition-colors
                 [color-scheme:dark]
@@ -117,9 +117,9 @@ export function CreateEventModal({ groupId }: CreateEventModalProps) {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground">
+            <label className="text-sm font-medium text-humo">
               Descripción{' '}
-              <span className="font-normal text-muted">(opcional)</span>
+              <span className="font-normal text-niebla">(opcional)</span>
             </label>
             <textarea
               placeholder="Detalles, qué llevar, etc."
@@ -128,9 +128,9 @@ export function CreateEventModal({ groupId }: CreateEventModalProps) {
               maxLength={300}
               rows={2}
               className="
-                w-full resize-none rounded-lg border border-border bg-surface-2
-                px-3.5 py-2.5 text-sm text-foreground
-                placeholder:text-muted
+                w-full resize-none rounded-lg border border-niebla/20 bg-noche
+                px-3.5 py-2.5 text-sm text-humo
+                placeholder:text-niebla
                 focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent
                 transition-colors
               "

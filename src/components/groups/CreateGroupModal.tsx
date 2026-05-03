@@ -74,9 +74,9 @@ export function CreateGroupModal() {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label className="font-body text-sm font-medium text-foreground">
+            <label className="font-body text-sm font-medium text-humo">
               Descripción{' '}
-              <span className="font-normal text-muted">(opcional)</span>
+              <span className="font-normal text-niebla">(opcional)</span>
             </label>
             <textarea
               placeholder="¿De qué va el grupo?"
@@ -84,7 +84,7 @@ export function CreateGroupModal() {
               onChange={(e) => setDescription(e.target.value)}
               maxLength={200}
               rows={2}
-              className="w-full resize-none rounded-[10px] border-[1.5px] border-border bg-surface-2 px-3.5 py-2.5 font-body text-[15px] text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+              className="w-full resize-none rounded-[10px] border-[1.5px] border-niebla/20 bg-noche px-3.5 py-2.5 font-body text-[15px] text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
             />
           </div>
 

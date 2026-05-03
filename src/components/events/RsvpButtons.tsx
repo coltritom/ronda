@@ -35,7 +35,7 @@ export function RsvpButtons({ eventId, currentStatus }: RsvpButtonsProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="font-body text-sm font-medium text-foreground">¿Vas?</p>
+      <p className="font-body text-sm font-medium text-humo">¿Vas?</p>
       <div className="flex gap-2">
         {OPTIONS.map((opt) => {
           const isActive = status === opt.value
@@ -51,7 +51,7 @@ export function RsvpButtons({ eventId, currentStatus }: RsvpButtonsProps) {
                 disabled:opacity-60 disabled:cursor-not-allowed
                 ${isActive
                   ? opt.activeClass
-                  : 'border-border bg-surface-2 text-muted hover:border-fuego/30 hover:text-foreground'
+                  : 'bg-noche text-niebla hover:border-fuego/30 hover:text-humo'
                 }
               `}
             >

@@ -55,7 +55,7 @@ export function GroupSettingsForm({ groupId, initialName, initialDescription }: 
       {/* ── Editar nombre y descripción ─────────────────────────── */}
       <form onSubmit={handleSave} className="flex flex-col gap-5">
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-foreground" htmlFor="group-name">
+          <label className="text-sm font-medium text-humo" htmlFor="group-name">
             Nombre del grupo
           </label>
           <input
@@ -65,14 +65,14 @@ export function GroupSettingsForm({ groupId, initialName, initialDescription }: 
             onChange={(e) => { setName(e.target.value); setSaved(false) }}
             required
             maxLength={80}
-            className="w-full rounded-lg border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+            className="w-full rounded-lg border border-niebla/20 bg-noche px-3.5 py-2.5 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
           />
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label className="text-sm font-medium text-foreground" htmlFor="group-desc">
+          <label className="text-sm font-medium text-humo" htmlFor="group-desc">
             Descripción{' '}
-            <span className="font-normal text-muted">(opcional)</span>
+            <span className="font-normal text-niebla">(opcional)</span>
           </label>
           <textarea
             id="group-desc"
@@ -80,7 +80,7 @@ export function GroupSettingsForm({ groupId, initialName, initialDescription }: 
             onChange={(e) => { setDescription(e.target.value); setSaved(false) }}
             maxLength={300}
             rows={3}
-            className="w-full resize-none rounded-lg border border-border bg-surface-2 px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
+            className="w-full resize-none rounded-lg border border-niebla/20 bg-noche px-3.5 py-2.5 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-colors"
           />
         </div>
 
@@ -107,7 +107,7 @@ export function GroupSettingsForm({ groupId, initialName, initialDescription }: 
         <h3 className="mb-1 text-sm font-semibold text-red-500">
           Zona de peligro
         </h3>
-        <p className="mb-4 text-sm text-muted">
+        <p className="mb-4 text-sm text-niebla">
           Eliminar el grupo borra todas las juntadas, aportes y gastos asociados. Esta acción no se puede deshacer.
         </p>
 
@@ -120,14 +120,14 @@ export function GroupSettingsForm({ groupId, initialName, initialDescription }: 
           </button>
         ) : (
           <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium text-foreground">
+            <p className="text-sm font-medium text-humo">
               ¿Seguro? No hay vuelta atrás.
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setDeleteConfirm(false)}
                 disabled={deletePending}
-                className="rounded-lg border border-border px-4 py-2 text-sm text-muted hover:text-foreground transition-colors disabled:opacity-50"
+                className="rounded-lg border border-niebla/20 px-4 py-2 text-sm text-niebla hover:text-humo transition-colors disabled:opacity-50"
               >
                 Cancelar
               </button>

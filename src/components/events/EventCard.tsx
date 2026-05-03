@@ -33,17 +33,17 @@ export function EventCard({ event, groupId }: EventCardProps) {
   return (
     <Link
       href={`/groups/${groupId}/events/${event.id}`}
-      className="group flex gap-4 rounded-2xl border border-border bg-surface p-4 sm:p-5 hover:bg-surface-2 hover:border-fuego/30 transition-all duration-150"
+      className="group flex gap-4 rounded-2xl border border-transparent bg-noche-media p-4 sm:p-5 hover:bg-noche hover:border-fuego/30 transition-all duration-150"
     >
       {/* Bloque de fecha */}
-      <div className="flex w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-surface-2 py-2 text-center group-hover:bg-background transition-colors">
-        <span className="font-mono text-xl font-bold leading-none text-foreground">
+      <div className="flex w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-noche py-2 text-center group-hover:bg-noche-media transition-colors">
+        <span className="font-mono text-xl font-bold leading-none text-humo">
           {new Intl.DateTimeFormat('es-AR', {
             day: 'numeric',
             timeZone: 'America/Argentina/Buenos_Aires',
           }).format(new Date(event.date))}
         </span>
-        <span className="mt-0.5 font-body text-xs uppercase text-muted">
+        <span className="mt-0.5 font-body text-xs uppercase text-niebla">
           {new Intl.DateTimeFormat('es-AR', {
             month: 'short',
             timeZone: 'America/Argentina/Buenos_Aires',
@@ -54,7 +54,7 @@ export function EventCard({ event, groupId }: EventCardProps) {
       {/* Info */}
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-heading font-semibold text-foreground truncate">
+          <h3 className="font-heading font-semibold text-humo truncate">
             {event.name}
           </h3>
           <span className={`flex-shrink-0 rounded-full px-2 py-0.5 font-body text-xs font-semibold ${badge.className}`}>
@@ -62,21 +62,21 @@ export function EventCard({ event, groupId }: EventCardProps) {
           </span>
         </div>
 
-        <p className="mt-0.5 font-body text-xs text-muted">
+        <p className="mt-0.5 font-body text-xs text-niebla">
           {formatEventDate(event.date)}
         </p>
 
         {event.location && (
-          <p className="mt-1 flex items-center gap-1 font-body text-xs text-muted">
+          <p className="mt-1 flex items-center gap-1 font-body text-xs text-niebla">
             <MapPin size={11} />
             {event.location}
           </p>
         )}
 
         {event.going_count > 0 && (
-          <p className="mt-1.5 flex items-center gap-1 font-body text-xs text-muted">
+          <p className="mt-1.5 flex items-center gap-1 font-body text-xs text-niebla">
             <Users size={11} />
-            <span className="font-medium text-foreground">{event.going_count}</span>
+            <span className="font-medium text-humo">{event.going_count}</span>
             {' '}{event.going_count === 1 ? 'confirmado' : 'confirmados'}
           </p>
         )}
@@ -85,7 +85,7 @@ export function EventCard({ event, groupId }: EventCardProps) {
       {/* Flecha */}
       <ChevronRight
         size={16}
-        className="mt-1 flex-shrink-0 text-muted group-hover:text-fuego transition-colors"
+        className="mt-1 flex-shrink-0 text-niebla group-hover:text-fuego transition-colors"
       />
     </Link>
   )

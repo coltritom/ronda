@@ -194,7 +194,7 @@ export function ExpensesSection({
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-foreground">Gastos</p>
+        <p className="text-sm font-semibold text-humo">Gastos</p>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
@@ -207,7 +207,7 @@ export function ExpensesSection({
 
       {/* ── Formulario ──────────────────────────────────────── */}
       {showForm && (
-        <form onSubmit={handleAdd} className="mb-4 flex flex-col gap-3 rounded-xl border border-border bg-surface-2 p-4">
+        <form onSubmit={handleAdd} className="mb-4 flex flex-col gap-3 rounded-xl bg-noche p-4">
 
           {/* Descripción + Monto */}
           <div className="flex gap-2">
@@ -217,10 +217,10 @@ export function ExpensesSection({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={80}
-              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              className="min-w-0 flex-1 rounded-lg bg-noche px-3 py-2 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
             />
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted">$</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-niebla">$</span>
               <input
                 type="number"
                 min="0.01"
@@ -229,7 +229,7 @@ export function ExpensesSection({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
-                className="w-24 rounded-lg border border-border bg-surface pl-6 pr-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="w-24 rounded-lg bg-noche pl-6 pr-3 py-2 text-sm text-humo focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
               />
             </div>
           </div>
@@ -237,7 +237,7 @@ export function ExpensesSection({
           {/* ¿Quién pagó? */}
           {allAttendees.length > 1 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-muted">¿Quién pagó?</span>
+              <span className="text-xs font-medium text-niebla">¿Quién pagó?</span>
               <div className="flex flex-wrap gap-2">
                 {allAttendees.map((a) => (
                   <button
@@ -248,7 +248,7 @@ export function ExpensesSection({
                       flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all
                       ${paidBy === a.user_id
                         ? 'border-accent bg-accent/10 text-accent'
-                        : 'border-border text-muted hover:border-accent/40 hover:text-foreground'
+                        : 'border-noche text-niebla hover:border-fuego/40 hover:text-humo'
                       }
                     `}
                   >
@@ -264,7 +264,7 @@ export function ExpensesSection({
 
           {/* División */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted">Dividir entre</span>
+            <span className="text-xs font-medium text-niebla">Dividir entre</span>
             <div className="flex gap-2">
               {(['equal_all', 'equal_some'] as const).map((type) => (
                 <button
@@ -275,7 +275,7 @@ export function ExpensesSection({
                     flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all
                     ${splitType === type
                       ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-border text-muted hover:border-accent/40 hover:text-foreground'
+                      : 'border-noche text-niebla hover:border-fuego/40 hover:text-humo'
                     }
                   `}
                 >
@@ -297,7 +297,7 @@ export function ExpensesSection({
                     flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all
                     ${selectedSplit.includes(a.user_id)
                       ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-border text-muted hover:border-accent/40 hover:text-foreground'
+                      : 'border-noche text-niebla hover:border-fuego/40 hover:text-humo'
                     }
                   `}
                 >
@@ -318,7 +318,7 @@ export function ExpensesSection({
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="flex-1 rounded-lg border border-border py-2 text-sm font-medium text-muted hover:text-foreground transition-colors"
+              className="flex-1 rounded-lg border border-niebla/20 py-2 text-sm font-medium text-niebla hover:text-humo transition-colors"
             >
               Cancelar
             </button>
@@ -344,17 +344,17 @@ export function ExpensesSection({
             return (
               <div
                 key={exp.id}
-                className="flex items-center justify-between gap-3 rounded-xl border border-border bg-surface px-4 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-xl bg-noche px-4 py-2.5"
               >
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-sm font-medium text-foreground">{payerLabel}</span>
-                    <span className="text-sm text-muted">pagó</span>
+                    <span className="text-sm font-medium text-humo">{payerLabel}</span>
+                    <span className="text-sm text-niebla">pagó</span>
                     <span className="text-sm font-semibold text-accent">
                       ${exp.amount.toLocaleString('es-AR')}
                     </span>
                   </div>
-                  <p className="text-xs text-muted mt-0.5">
+                  <p className="text-xs text-niebla mt-0.5">
                     {exp.description && <span className="mr-2">{exp.description}</span>}
                     {splitCount > 0 && (
                       <span>
@@ -367,7 +367,7 @@ export function ExpensesSection({
                   <button
                     onClick={() => handleDelete(exp.id)}
                     disabled={deleting === exp.id}
-                    className="flex-shrink-0 text-muted hover:text-red-400 transition-colors disabled:opacity-40"
+                    className="flex-shrink-0 text-niebla hover:text-red-400 transition-colors disabled:opacity-40"
                     title="Eliminar"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -380,13 +380,13 @@ export function ExpensesSection({
           })}
 
           {/* ── Resumen de deudas ────────────────────────────── */}
-          <div className="mt-2 rounded-xl border border-border bg-surface-2 p-4">
-            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">Resumen</p>
+          <div className="mt-2 rounded-xl bg-noche p-4">
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-niebla">Resumen</p>
             {settlement.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {settlement.map((t, i) => (
                   <div key={i} className="flex items-center justify-between gap-3">
-                    <p className="text-sm text-foreground">
+                    <p className="text-sm text-humo">
                       <span className="font-medium">
                         {t.fromUserId === currentUserId ? 'Vos' : t.fromName}
                       </span>
@@ -415,12 +415,12 @@ export function ExpensesSection({
                 )}
               </div>
             ) : (
-              <p className="text-xs text-muted">Todos están al día ✓</p>
+              <p className="text-xs text-niebla">Todos están al día ✓</p>
             )}
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted">Nadie agregó gastos todavía.</p>
+        <p className="text-sm text-niebla">Nadie agregó gastos todavía.</p>
       )}
     </section>
   )

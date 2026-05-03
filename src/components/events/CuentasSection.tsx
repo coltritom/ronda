@@ -115,10 +115,10 @@ export function CuentasSection({
   if (expenses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-14 text-center px-6">
-        <p className="font-heading text-base font-semibold text-foreground">
+        <p className="font-heading text-base font-semibold text-humo">
           Sin gastos registrados
         </p>
-        <p className="mt-1.5 max-w-xs font-body text-sm text-muted">
+        <p className="mt-1.5 max-w-xs font-body text-sm text-niebla">
           Agregá gastos en la pestaña Gastos para ver quién le debe a quién.
         </p>
       </div>
@@ -130,7 +130,7 @@ export function CuentasSection({
 
       {/* Tabla de balances */}
       <div>
-        <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-muted">
+        <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-niebla">
           Balances
         </p>
         <div className="flex flex-col gap-2">
@@ -145,16 +145,16 @@ export function CuentasSection({
                 <div
                   key={b.userId}
                   className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 ${
-                    isMe ? 'border-fuego/30 bg-fuego/5' : 'border-border bg-surface'
+                    isMe ? 'border-fuego/30 bg-fuego/5' : 'bg-noche-media'
                   }`}
                 >
-                  <span className="font-body text-sm text-foreground">
+                  <span className="font-body text-sm text-humo">
                     {isMe ? 'Vos' : b.name}
                   </span>
                   <span className={`font-body text-sm font-semibold ${
                     isPositive ? 'text-exito' :
                     isNegative ? 'text-error' :
-                    'text-muted'
+                    'text-niebla'
                   }`}>
                     {isPositive
                       ? `+$${b.net.toLocaleString('es-AR', { maximumFractionDigits: 2 })}`
@@ -172,7 +172,7 @@ export function CuentasSection({
 
       {/* Transacciones sugeridas */}
       <div>
-        <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-muted">
+        <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-niebla">
           Pagos sugeridos
         </p>
 
@@ -185,18 +185,18 @@ export function CuentasSection({
                 <div
                   key={i}
                   className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
-                    isMyDebt ? 'border-alerta/30 bg-alerta/5' : 'border-border bg-surface'
+                    isMyDebt ? 'border-alerta/30 bg-alerta/5' : 'bg-noche-media'
                   }`}
                 >
-                  <p className="font-body text-sm text-foreground">
+                  <p className="font-body text-sm text-humo">
                     <span className="font-semibold">
                       {t.fromUserId === currentUserId ? 'Vos' : t.fromName}
                     </span>
-                    <span className="text-muted"> le debe </span>
+                    <span className="text-niebla"> le debe </span>
                     <span className="font-semibold text-fuego">
                       ${t.amount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                     </span>
-                    <span className="text-muted"> a </span>
+                    <span className="text-niebla"> a </span>
                     <span className="font-semibold">
                       {t.toUserId === currentUserId ? 'vos' : t.toName}
                     </span>
@@ -222,7 +222,7 @@ export function CuentasSection({
         ) : (
           <div className="flex items-center gap-2.5 rounded-xl border border-exito/30 bg-exito/5 px-4 py-3">
             <CheckCircle2 size={16} className="text-exito" />
-            <p className="font-body text-sm text-foreground">Todos están al día</p>
+            <p className="font-body text-sm text-humo">Todos están al día</p>
           </div>
         )}
       </div>

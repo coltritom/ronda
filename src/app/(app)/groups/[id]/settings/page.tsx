@@ -94,12 +94,12 @@ function SectionCard({
   return (
     <div
       className={`rounded-2xl border p-5 ${
-        danger ? "border-error/30 bg-error/[0.04]" : "border-border bg-surface"
+        danger ? "border-error/30 bg-error/[0.04]" : "bg-noche-media"
       }`}
     >
       <h2
         className={`font-heading text-base font-semibold mb-4 ${
-          danger ? "text-error" : "text-foreground"
+          danger ? "text-error" : "text-humo"
         }`}
       >
         {title}
@@ -446,7 +446,7 @@ export default function GroupSettingsPage({
   if (loading) {
     return (
       <div className="flex items-center justify-center p-16">
-        <Loader2 size={22} className="animate-spin text-muted" />
+        <Loader2 size={22} className="animate-spin text-niebla" />
       </div>
     );
   }
@@ -475,7 +475,7 @@ export default function GroupSettingsPage({
 
             {/* Emoji selector */}
             <div>
-              <p className="font-body text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+              <p className="font-body text-xs font-semibold text-niebla uppercase tracking-wider mb-2">
                 Emoji del grupo
               </p>
               <div className="flex flex-wrap gap-2">
@@ -491,7 +491,7 @@ export default function GroupSettingsPage({
                       disabled:cursor-default
                       ${editEmoji === e
                         ? "bg-fuego/15 ring-2 ring-fuego/40"
-                        : "bg-surface-2 hover:bg-border disabled:opacity-60"
+                        : "bg-noche hover:bg-noche/60 disabled:opacity-60"
                       }
                     `}
                   >
@@ -503,7 +503,7 @@ export default function GroupSettingsPage({
 
             {/* Name */}
             <div>
-              <label className="block font-body text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">
+              <label className="block font-body text-xs font-semibold text-niebla uppercase tracking-wider mb-1.5">
                 Nombre
               </label>
               <input
@@ -513,8 +513,8 @@ export default function GroupSettingsPage({
                 disabled={!isAdmin}
                 className="
                   w-full px-4 py-3 rounded-xl
-                  bg-surface-2 border border-border
-                  text-foreground text-sm font-body
+                  bg-noche border border-niebla/20
+                  text-humo text-sm font-body
                   outline-none focus:border-fuego/50
                   disabled:opacity-60 disabled:cursor-not-allowed
                   transition-colors
@@ -524,7 +524,7 @@ export default function GroupSettingsPage({
 
             {/* Description */}
             <div>
-              <label className="block font-body text-xs font-semibold text-muted uppercase tracking-wider mb-1.5">
+              <label className="block font-body text-xs font-semibold text-niebla uppercase tracking-wider mb-1.5">
                 Descripción <span className="normal-case font-normal">(opcional)</span>
               </label>
               <textarea
@@ -535,12 +535,12 @@ export default function GroupSettingsPage({
                 placeholder="De qué va el grupo…"
                 className="
                   w-full px-4 py-3 rounded-xl
-                  bg-surface-2 border border-border
-                  text-foreground text-sm font-body
+                  bg-noche border border-niebla/20
+                  text-humo text-sm font-body
                   outline-none focus:border-fuego/50
                   disabled:opacity-60 disabled:cursor-not-allowed
                   resize-none transition-colors
-                  placeholder:text-muted/50
+                  placeholder:text-niebla/50
                 "
               />
             </div>
@@ -552,7 +552,7 @@ export default function GroupSettingsPage({
             )}
 
             {!isAdmin && (
-              <p className="text-xs text-muted">
+              <p className="text-xs text-niebla">
                 Solo los admins pueden editar los datos del grupo.
               </p>
             )}
@@ -562,14 +562,14 @@ export default function GroupSettingsPage({
         {/* ── 2. Invitación ────────────────────────────────────────────── */}
         <SectionCard title="Invitación">
           {!isAdmin ? (
-            <p className="text-sm text-muted">
+            <p className="text-sm text-niebla">
               Solo los admins pueden gestionar el link de invitación.
             </p>
           ) : inviteCode ? (
             <div className="flex flex-col gap-3">
-              <div className="rounded-xl bg-surface-2 border border-border px-4 py-3">
-                <p className="font-body text-xs text-muted mb-1">Link de invitación</p>
-                <p className="font-mono text-sm text-foreground break-all">{inviteUrl}</p>
+              <div className="rounded-xl bg-noche px-4 py-3">
+                <p className="font-body text-xs text-niebla mb-1">Link de invitación</p>
+                <p className="font-mono text-sm text-humo break-all">{inviteUrl}</p>
               </div>
 
               <div className="flex gap-2">
@@ -593,8 +593,8 @@ export default function GroupSettingsPage({
                   onClick={() => setShowQR(true)}
                   className="
                     flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
-                    text-sm font-semibold bg-surface-2 text-foreground
-                    border-none cursor-pointer hover:bg-border transition-colors
+                    text-sm font-semibold bg-noche text-humo
+                    border-none cursor-pointer hover:bg-noche/60 transition-colors
                   "
                 >
                   <QrCode size={14} />
@@ -606,8 +606,8 @@ export default function GroupSettingsPage({
                   disabled={regenerating}
                   className="
                     flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl
-                    text-sm font-semibold bg-surface-2 text-muted
-                    border-none cursor-pointer hover:bg-border
+                    text-sm font-semibold bg-noche text-niebla
+                    border-none cursor-pointer hover:bg-noche/60
                     disabled:opacity-50 transition-colors
                   "
                 >
@@ -621,7 +621,7 @@ export default function GroupSettingsPage({
             </div>
           ) : (
             <div className="flex flex-col gap-3">
-              <p className="text-sm text-muted">
+              <p className="text-sm text-niebla">
                 Todavía no hay un link activo para este grupo.
               </p>
               <Button primary={false} onClick={handleCreateInvite}>
@@ -637,10 +637,10 @@ export default function GroupSettingsPage({
             <div className="flex flex-col gap-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="font-body text-sm text-foreground font-medium">
+                  <p className="font-body text-sm text-humo font-medium">
                     Activar etiquetas
                   </p>
-                  <p className="font-body text-xs text-muted mt-0.5">
+                  <p className="font-body text-xs text-niebla mt-0.5">
                     Los miembros reciben badges según su comportamiento
                   </p>
                 </div>
@@ -652,7 +652,7 @@ export default function GroupSettingsPage({
 
               {settings.humor_enabled && (
                 <div className="flex flex-col gap-2">
-                  <p className="font-body text-xs font-semibold text-muted uppercase tracking-wider">
+                  <p className="font-body text-xs font-semibold text-niebla uppercase tracking-wider">
                     Intensidad
                   </p>
                   {HUMOR_OPTIONS.map((opt) => {
@@ -667,16 +667,16 @@ export default function GroupSettingsPage({
                           cursor-pointer transition-all
                           ${active
                             ? "border-fuego/40 bg-fuego/5"
-                            : "border-border bg-surface-2 hover:border-muted/40"
+                            : "border-noche bg-noche hover:border-niebla/40"
                           }
                         `}
                       >
                         <span className="text-xl">{opt.icon}</span>
                         <div className="flex-1">
-                          <p className={`font-body text-sm font-semibold ${active ? "text-fuego" : "text-foreground"}`}>
+                          <p className={`font-body text-sm font-semibold ${active ? "text-fuego" : "text-humo"}`}>
                             {opt.label}
                           </p>
-                          <p className="font-body text-xs text-muted">{opt.sub}</p>
+                          <p className="font-body text-xs text-niebla">{opt.sub}</p>
                         </div>
                         {active && <Check size={14} className="text-fuego flex-shrink-0" />}
                       </button>
@@ -692,7 +692,7 @@ export default function GroupSettingsPage({
         {isAdmin && (
           <SectionCard title="Gastos">
             <div>
-              <p className="font-body text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+              <p className="font-body text-xs font-semibold text-niebla uppercase tracking-wider mb-2">
                 Moneda por defecto
               </p>
               <div className="flex gap-2">
@@ -706,7 +706,7 @@ export default function GroupSettingsPage({
                       border-none cursor-pointer transition-all
                       ${settings.default_currency === c
                         ? "bg-fuego text-white"
-                        : "bg-surface-2 text-foreground hover:bg-border"
+                        : "bg-noche text-humo hover:bg-noche/60"
                       }
                     `}
                   >
@@ -724,7 +724,7 @@ export default function GroupSettingsPage({
 
             {/* Badges */}
             <div className="flex items-center gap-2 flex-wrap">
-              <span className={`rounded-full px-3 py-1 text-sm font-semibold ${isAdmin ? "bg-fuego/10 text-fuego" : "bg-muted/10 text-muted"}`}>
+              <span className={`rounded-full px-3 py-1 text-sm font-semibold ${isAdmin ? "bg-fuego/10 text-fuego" : "bg-niebla/10 text-niebla"}`}>
                 {isAdmin ? "👑 Admin" : "👤 Miembro"}
               </span>
               {isCreator && (
@@ -737,21 +737,21 @@ export default function GroupSettingsPage({
             {/* Admins list */}
             {isAdmin && admins.length > 0 && (
               <div>
-                <p className="font-body text-xs font-semibold text-muted uppercase tracking-wider mb-2">
+                <p className="font-body text-xs font-semibold text-niebla uppercase tracking-wider mb-2">
                   Admins del grupo
                 </p>
                 <div className="flex flex-col gap-1.5">
                   {admins.map((m) => (
                     <div
                       key={m.user_id}
-                      className="flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-2.5"
+                      className="flex items-center gap-3 rounded-xl bg-noche px-3 py-2.5"
                     >
                       <Avatar
                         name={m.profiles?.name ?? "?"}
                         src={m.profiles?.avatar_url}
                         size="sm"
                       />
-                      <span className="font-body text-sm text-foreground flex-1">
+                      <span className="font-body text-sm text-humo flex-1">
                         {m.user_id === currentUserId ? "Vos" : (m.profiles?.name ?? "Usuario")}
                       </span>
                       <span className="text-xs text-fuego font-semibold">Admin</span>
@@ -768,9 +768,9 @@ export default function GroupSettingsPage({
                 onClick={() => setShowPromoteModal(true)}
                 className="
                   flex items-center gap-2 py-2.5 px-4 rounded-xl
-                  bg-surface-2 border border-border
-                  text-sm font-semibold text-foreground
-                  cursor-pointer hover:bg-border transition-colors
+                  bg-noche border border-niebla/20
+                  text-sm font-semibold text-humo
+                  cursor-pointer hover:bg-noche/60 transition-colors
                 "
               >
                 <Shield size={15} className="text-fuego" />
@@ -800,7 +800,7 @@ export default function GroupSettingsPage({
               </button>
             ) : (
               <div className="rounded-xl border border-error/30 bg-error/5 p-4">
-                <p className="text-sm text-foreground font-semibold mb-3">
+                <p className="text-sm text-humo font-semibold mb-3">
                   ¿Seguro que querés irte?
                 </p>
                 <div className="flex gap-2">
@@ -832,12 +832,12 @@ export default function GroupSettingsPage({
 
             {isCreator && showDeleteConfirm && (
               <div className="rounded-xl border border-error/40 bg-error/[0.08] p-4">
-                <p className="text-sm text-foreground font-semibold mb-1">
+                <p className="text-sm text-humo font-semibold mb-1">
                   Esta acción no se puede deshacer.
                 </p>
-                <p className="text-xs text-muted mb-3">
+                <p className="text-xs text-niebla mb-3">
                   Escribí{" "}
-                  <span className="font-mono font-bold text-foreground">
+                  <span className="font-mono font-bold text-humo">
                     {group?.name}
                   </span>{" "}
                   para confirmar.
@@ -849,9 +849,9 @@ export default function GroupSettingsPage({
                   placeholder={group?.name ?? ""}
                   className="
                     w-full px-3 py-2.5 rounded-xl mb-3
-                    bg-surface border border-error/30
-                    text-foreground text-sm font-body
-                    outline-none placeholder:text-muted/40
+                    bg-noche border border-error/30
+                    text-humo text-sm font-body
+                    outline-none placeholder:text-niebla/40
                   "
                 />
                 <div className="flex gap-2">
@@ -886,11 +886,11 @@ export default function GroupSettingsPage({
       {showRegenConfirm && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4">
           <Overlay onClose={() => setShowRegenConfirm(false)} />
-          <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-surface border border-border p-6">
-            <h3 className="font-heading text-base font-semibold text-foreground mb-2">
+          <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-noche-media p-6">
+            <h3 className="font-heading text-base font-semibold text-humo mb-2">
               ¿Regenerar link?
             </h3>
-            <p className="font-body text-sm text-muted mb-4">
+            <p className="font-body text-sm text-niebla mb-4">
               El link anterior va a dejar de funcionar y nadie más podrá usarlo para unirse.
             </p>
             <div className="flex gap-2">
@@ -909,21 +909,21 @@ export default function GroupSettingsPage({
       {showQR && inviteUrl && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4">
           <Overlay onClose={() => setShowQR(false)} />
-          <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-surface border border-border p-6">
+          <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-noche-media p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading text-base font-semibold text-foreground">
+              <h3 className="font-heading text-base font-semibold text-humo">
                 Link de invitación
               </h3>
               <button
                 onClick={() => setShowQR(false)}
-                className="text-muted hover:text-foreground transition-colors bg-transparent border-none cursor-pointer"
+                className="text-niebla hover:text-humo transition-colors bg-transparent border-none cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
-            <div className="rounded-xl bg-surface-2 border border-border px-4 py-5 mb-4 text-center">
-              <p className="font-body text-xs text-muted mb-2">Compartí este link con quien querés invitar</p>
-              <p className="font-mono text-sm text-foreground break-all">{inviteUrl}</p>
+            <div className="rounded-xl bg-noche px-4 py-5 mb-4 text-center">
+              <p className="font-body text-xs text-niebla mb-2">Compartí este link con quien querés invitar</p>
+              <p className="font-mono text-sm text-humo break-all">{inviteUrl}</p>
             </div>
             <button
               onClick={handleCopy}
@@ -948,35 +948,35 @@ export default function GroupSettingsPage({
       {showPromoteModal && (
         <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4">
           <Overlay onClose={() => setShowPromoteModal(false)} />
-          <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-surface border border-border">
-            <div className="flex items-center justify-between p-5 border-b border-border">
-              <h3 className="font-heading text-base font-semibold text-foreground">
+          <div className="relative z-10 w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl bg-noche-media">
+            <div className="flex items-center justify-between p-5 border-b border-noche">
+              <h3 className="font-heading text-base font-semibold text-humo">
                 Promover a admin
               </h3>
               <button
                 onClick={() => setShowPromoteModal(false)}
-                className="text-muted hover:text-foreground transition-colors bg-transparent border-none cursor-pointer"
+                className="text-niebla hover:text-humo transition-colors bg-transparent border-none cursor-pointer"
               >
                 <X size={18} />
               </button>
             </div>
             <div className="p-4 max-h-72 overflow-y-auto" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom, 1rem))" }}>
               {nonAdmins.length === 0 ? (
-                <p className="text-sm text-muted text-center py-4">
+                <p className="text-sm text-niebla text-center py-4">
                   Todos los miembros ya son admins.
                 </p>
               ) : (
                 nonAdmins.map((m, i) => (
                   <div
                     key={m.user_id}
-                    className={`flex items-center gap-3 py-3 ${i > 0 ? "border-t border-border" : ""}`}
+                    className={`flex items-center gap-3 py-3 ${i > 0 ? "border-t border-noche" : ""}`}
                   >
                     <Avatar
                       name={m.profiles?.name ?? "?"}
                       src={m.profiles?.avatar_url}
                       size="sm"
                     />
-                    <span className="flex-1 font-body text-sm text-foreground">
+                    <span className="flex-1 font-body text-sm text-humo">
                       {m.profiles?.name ?? "Usuario"}
                     </span>
                     <button

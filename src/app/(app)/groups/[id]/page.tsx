@@ -225,18 +225,42 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
           <PendingAlert count={pending.count} amount={pending.amount} groupId={id} />
         )}
 
-        {upcomingJuntadas.map((j) => (
+        {upcomingJuntadas.length === 1 && (
           <NextJuntada
-            key={j.id}
-            juntadaId={j.id}
-            juntadaName={j.name}
-            date={j.date}
-            confirmed={j.confirmed ?? 0}
-            unsure={j.unsure ?? 0}
-            noResponse={j.noResponse ?? 0}
+            key={upcomingJuntadas[0].id}
+            juntadaId={upcomingJuntadas[0].id}
+            juntadaName={upcomingJuntadas[0].name}
+            date={upcomingJuntadas[0].date}
+            confirmed={upcomingJuntadas[0].confirmed ?? 0}
+            unsure={upcomingJuntadas[0].unsure ?? 0}
+            noResponse={upcomingJuntadas[0].noResponse ?? 0}
             groupId={id}
           />
-        ))}
+        )}
+
+        {upcomingJuntadas.length > 1 && (
+          <div className="bg-noche-media rounded-2xl p-4">
+            <p className="text-[11px] text-fuego font-semibold uppercase tracking-[0.08em] mb-4">
+              Próximas juntadas
+            </p>
+            {upcomingJuntadas.map((j, idx) => (
+              <div key={j.id}>
+                {idx > 0 && <div className="border-t border-white/[0.06] my-4" />}
+                <NextJuntada
+                  juntadaId={j.id}
+                  juntadaName={j.name}
+                  date={j.date}
+                  confirmed={j.confirmed ?? 0}
+                  unsure={j.unsure ?? 0}
+                  noResponse={j.noResponse ?? 0}
+                  groupId={id}
+                  wrapCard={false}
+                  showLabel={false}
+                />
+              </div>
+            ))}
+          </div>
+        )}
 
         {ranking.length > 0 && <MiniRanking entries={ranking} groupId={id} />}
 

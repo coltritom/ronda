@@ -15,6 +15,8 @@ interface NextJuntadaProps {
   juntadaId?: string;
   juntadaName?: string;
   groupId?: string;
+  wrapCard?: boolean;
+  showLabel?: boolean;
 }
 
 const CHIPS: {
@@ -45,6 +47,7 @@ const CHIPS: {
 export function NextJuntada({
   date, confirmed, unsure, noResponse,
   juntadaId, juntadaName, groupId,
+  wrapCard = true, showLabel = true,
 }: NextJuntadaProps) {
   const router = useRouter();
   const [status, setStatus] = useState<RSVPStatus>("none");
@@ -98,6 +101,37 @@ export function NextJuntada({
     return { c, u, n };
   };
 
+  const header = (
+    <div className={`flex items-start ${showLabel ? "justify-between" : "justify-end"} mb-1.5`}>
+      {showLabel && (
+        <p className="text-[11px] text-fuego font-semibold uppercase tracking-[0.08em]">
+          Próxima juntada
+        </p>
+      )}
+      {juntadaId && (
+        <button
+          onClick={goToDetail}
+          className="flex items-center gap-0.5 text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer"
+        >
+          Ver detalle <ChevronRight size={13} />
+        </button>
+      )}
+    </div>
+  );
+
+  const nameDate = (
+    <>
+      {juntadaName && (
+        <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>
+      )}
+      <p className={juntadaName ? "text-[13px] text-niebla" : "font-display font-semibold text-[17px] text-humo"}>
+        {date}
+      </p>
+    </>
+  );
+
+  let inner: React.ReactNode;
+
   if (status !== "none" && currentChip) {
     const { c, u, n } = getUpdatedCounts();
     const Icon = currentChip.icon;
@@ -106,31 +140,13 @@ export function NextJuntada({
       : status === "not_going" ? "No vas a ir"
       : "Todavía no sabés";
 
-    return (
-      <div className="bg-noche-media rounded-2xl p-4">
-        <div className="flex items-start justify-between mb-1.5">
-          <p className="text-[11px] text-fuego font-semibold uppercase tracking-[0.08em]">
-            Próxima juntada
-          </p>
-          {juntadaId && (
-            <button
-              onClick={goToDetail}
-              className="flex items-center gap-0.5 text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer"
-            >
-              Ver detalle <ChevronRight size={13} />
-            </button>
-          )}
-        </div>
-        {juntadaName && (
-          <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>
-        )}
-        <p className={juntadaName ? "text-[13px] text-niebla" : "font-display font-semibold text-[17px] text-humo"}>
-          {date}
-        </p>
+    inner = (
+      <>
+        {header}
+        {nameDate}
         <p className="text-[13px] text-niebla mt-1 mb-3">
           {c} van{u > 0 ? ` · ${u} no sabe${u > 1 ? "n" : ""}` : ""}{n > 0 ? ` · ${n} sin respuesta` : ""}
         </p>
-
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center ${currentChip.bgConfirmed}`}>
@@ -145,57 +161,42 @@ export function NextJuntada({
             Cambiar
           </button>
         </div>
-      </div>
+      </>
+    );
+  } else {
+    inner = (
+      <>
+        {header}
+        {nameDate}
+        <p className="text-[13px] text-niebla mt-1 mb-3">
+          {confirmed} van
+          {unsure > 0 ? ` · ${unsure} no sabe${unsure > 1 ? "n" : ""}` : ""}
+          {" "}· {noResponse} sin respuesta
+        </p>
+        <div className="flex gap-2">
+          {CHIPS.map((chip) => {
+            const Icon = chip.icon;
+            return (
+              <button
+                key={chip.id}
+                onClick={() => handleRSVP(chip.id)}
+                className="
+                  flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-semibold
+                  border-none cursor-pointer transition-all
+                  bg-white/5 text-niebla
+                  hover:bg-white/10 active:scale-[0.97]
+                "
+              >
+                <Icon size={15} strokeWidth={2.5} />
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
+      </>
     );
   }
 
-  return (
-    <div className="bg-noche-media rounded-2xl p-4">
-      <div className="flex items-start justify-between mb-1.5">
-        <p className="text-[11px] text-fuego font-semibold uppercase tracking-[0.08em]">
-          Próxima juntada
-        </p>
-        {juntadaId && (
-          <button
-            onClick={goToDetail}
-            className="flex items-center gap-0.5 text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer"
-          >
-            Ver detalle <ChevronRight size={13} />
-          </button>
-        )}
-      </div>
-      {juntadaName && (
-        <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>
-      )}
-      <p className={juntadaName ? "text-[13px] text-niebla" : "font-display font-semibold text-[17px] text-humo"}>
-        {date}
-      </p>
-      <p className="text-[13px] text-niebla mt-1 mb-3">
-        {confirmed} van
-        {unsure > 0 ? ` · ${unsure} no sabe${unsure > 1 ? "n" : ""}` : ""}
-        {" "}· {noResponse} sin respuesta
-      </p>
-
-      <div className="flex gap-2">
-        {CHIPS.map((chip) => {
-          const Icon = chip.icon;
-          return (
-            <button
-              key={chip.id}
-              onClick={() => handleRSVP(chip.id)}
-              className="
-                flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-semibold
-                border-none cursor-pointer transition-all
-                bg-white/5 text-niebla
-                hover:bg-white/10 active:scale-[0.97]
-              "
-            >
-              <Icon size={15} strokeWidth={2.5} />
-              {chip.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
+  if (!wrapCard) return <>{inner}</>;
+  return <div className="bg-noche-media rounded-2xl p-4">{inner}</div>;
 }

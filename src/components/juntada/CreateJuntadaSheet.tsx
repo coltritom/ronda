@@ -122,7 +122,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
     onCreated?.();
     resetForm();
     onClose();
-    router.push(`/grupo/${groupId}`);
+    router.push(`/groups/${groupId}`);
   };
 
   const handleClose = () => {

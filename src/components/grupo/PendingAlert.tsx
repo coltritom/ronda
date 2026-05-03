@@ -24,7 +24,7 @@ export function PendingAlert({ count, amount, groupId }: PendingAlertProps) {
           </p>
         </div>
         <button
-          onClick={() => router.push(`/grupo/${groupId}/cuentas`)}
+          onClick={() => router.push(`/groups/${groupId}/cuentas`)}
           className="bg-transparent border-none text-fuego font-semibold text-[13px] cursor-pointer p-0"
         >
           Ver cuentas →

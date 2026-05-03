@@ -44,7 +44,7 @@ export default function CrearGrupoPage() {
   };
 
   const handleDone = () => {
-    router.push(`/grupo/${groupId}`);
+    router.push(`/groups/${groupId}`);
   };
 
   if (currentStep === "invite") {

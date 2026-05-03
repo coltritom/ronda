@@ -178,7 +178,7 @@ export function UpcomingJuntadas() {
                   </p>
                 </div>
                 <button
-                  onClick={() => router.push(`/grupo/${j.groupId}`)}
+                  onClick={() => router.push(`/groups/${j.groupId}`)}
                   className="text-[11px] font-semibold text-fuego bg-transparent border-none cursor-pointer shrink-0 ml-2"
                 >
                   Ver grupo →

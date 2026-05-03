@@ -133,13 +133,13 @@ export default function GroupConfigPage({ params }: { params: Promise<{ id: stri
       .delete()
       .eq("group_id", id)
       .eq("user_id", user.id);
-    router.push("/grupos");
+    router.push("/groups");
   };
 
   const handleDelete = async () => {
     const supabase = createClient();
     await supabase.from("groups").delete().eq("id", id);
-    router.push("/grupos");
+    router.push("/groups");
   };
 
   if (loading) return (

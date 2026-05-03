@@ -80,7 +80,7 @@ export function MyGroups() {
           {groups.map((g) => (
             <button
               key={g.id}
-              onClick={() => router.push(`/grupo/${g.id}`)}
+              onClick={() => router.push(`/groups/${g.id}`)}
               className="
                 flex-1 bg-noche-media dark:bg-noche-media bg-crema rounded-[14px]
                 py-3.5 px-2.5 text-center cursor-pointer border-none

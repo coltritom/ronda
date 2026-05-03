@@ -1,281 +1,366 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import { EventCard } from '@/components/events/EventCard'
-import { CreateEventModal } from '@/components/events/CreateEventModal'
-import { AlertCircle, Trophy, ChevronRight, CalendarDays } from 'lucide-react'
-import Link from 'next/link'
+"use client";
 
-interface PageProps {
-  params: Promise<{ id: string }>
-}
+import { use, useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Check, Link } from "lucide-react";
+import { createClient } from "@/lib/supabase/clients";
+import { getOrCreateInvite } from "@/lib/actions/invites";
+import { GroupHeader } from "@/components/grupo/GroupHeader";
+import { PendingAlert } from "@/components/grupo/PendingAlert";
+import { NextJuntada } from "@/components/grupo/NextJuntada";
+import { MiniRanking } from "@/components/grupo/MiniRanking";
+import { JuntadaCard } from "@/components/juntada/JuntadaCard";
+import { Button } from "@/components/ui/Button";
+import { FAB } from "@/components/ui/FAB";
+import { CreateJuntadaSheet } from "@/components/juntada/CreateJuntadaSheet";
+import type { JuntadaItem } from "@/lib/constants";
 
-const MEDALS = ['🥇', '🥈', '🥉']
+type RankingEntry = {
+  emoji: string;
+  label: string;
+  name: string;
+  detail: string;
+  memberEmoji: string;
+  memberColorIndex: number;
+  variant: "ambar" | "uva" | "rosa";
+};
 
-export default async function GroupDetailPage({ params }: PageProps) {
-  const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+type MemberData = {
+  emoji?: string;
+  name: string;
+  colorIndex?: number;
+};
 
-  /* ── Membresía ────────────────────────────────────────────── */
-  const { data: membership } = await supabase
-    .from('group_members')
-    .select('role')
-    .eq('group_id', id)
-    .eq('user_id', user.id)
-    .single()
+const RANK_EMOJIS = ["🏆", "🥈", "🥉"];
+const RANK_LABELS = ["El Presente", "El Constante", "El Fiel"];
+const RANK_VARIANTS = ["ambar", "uva", "rosa"] as const;
+const PAST_PREVIEW = 3;
 
-  const isAdmin = membership?.role === 'admin'
+export default function GrupoPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
+  const router = useRouter();
 
-  /* ── Eventos del grupo ────────────────────────────────────── */
-  const { data: eventsRaw } = await supabase
-    .from('events')
-    .select(`
-      id, name, description, date, location, status,
-      event_rsvps ( response )
-    `)
-    .eq('group_id', id)
-    .neq('status', 'cancelled')
-    .order('date', { ascending: true })
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [groupName, setGroupName] = useState("");
+  const [groupEmoji, setGroupEmoji] = useState("🔥");
+  const [members, setMembers] = useState<MemberData[]>([]);
+  const [juntadas, setJuntadas] = useState<JuntadaItem[]>([]);
+  const [pending, setPending] = useState<{ count: number; amount: number } | null>(null);
+  const [ranking, setRanking] = useState<RankingEntry[]>([]);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [showAllPast, setShowAllPast] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState("");
 
-  const now = new Date()
-  const events = (eventsRaw ?? []).map((e) => ({
-    id:          e.id,
-    name:        e.name,
-    description: e.description,
-    date:        e.date,
-    location:    e.location,
-    status:      e.status as 'upcoming' | 'completed' | 'cancelled',
-    going_count: (e.event_rsvps as { response: string }[]).filter((r) => r.response === 'going').length,
-  }))
+  const load = useCallback(async () => {
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) { router.push("/login"); return; }
 
-  const upcoming  = events.filter((e) => new Date(e.date) >= now)
-  const past      = events.filter((e) => new Date(e.date) < now).reverse()
-  const nextEvent = upcoming[0] ?? null
+    // Verificar membresía
+    const { data: membership } = await supabase
+      .from("group_members")
+      .select("role")
+      .eq("group_id", id)
+      .eq("user_id", user.id)
+      .single();
 
-  const eventIds = events.map((e) => e.id)
+    // Datos del grupo
+    const { data: groupData } = await supabase
+      .from("groups")
+      .select("id, name, emoji")
+      .eq("id", id)
+      .single();
 
-  /* ── Deudas pendientes del usuario ───────────────────────── */
-  let pendingAmount = 0
-
-  if (eventIds.length > 0) {
-    const { data: expenseIds } = await supabase
-      .from('expenses')
-      .select('id')
-      .in('event_id', eventIds)
-
-    const ids = (expenseIds ?? []).map((e) => e.id)
-
-    if (ids.length > 0) {
-      const { data: splits } = await supabase
-        .from('expense_splits')
-        .select('amount')
-        .eq('user_id', user.id)
-        .eq('is_settled', false)
-        .neq('expense_id', null)
-        .in('expense_id', ids)
-
-      pendingAmount = (splits ?? []).reduce((sum, s) => sum + (s.amount ?? 0), 0)
+    if (!groupData || !membership) {
+      setNotFound(true);
+      setLoading(false);
+      return;
     }
-  }
+    setGroupName(groupData.name);
+    if ((groupData as { emoji?: string }).emoji) {
+      setGroupEmoji((groupData as { id: string; name: string; emoji: string }).emoji);
+    }
 
-  /* ── Mini-ranking: top 3 por asistencia ──────────────────── */
-  const { data: membersRaw } = await supabase
-    .from('group_members')
-    .select('user_id')
-    .eq('group_id', id)
+    // Integrantes
+    const { data: membersRaw } = await supabase
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", id);
 
-  const memberUserIds = (membersRaw ?? []).map(m => m.user_id)
-  const { data: profilesData } = await supabase
-    .from('profiles')
-    .select('id, name')
-    .in('id', memberUserIds)
-  const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]))
+    const memberUserIds = (membersRaw ?? []).map(m => m.user_id);
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, name")
+      .in("id", memberUserIds);
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
 
-  let miniRanking: { user_id: string; name: string; count: number }[] = []
+    const memberList: MemberData[] = (membersRaw ?? []).map((m, i) => ({
+      name: profileMap[m.user_id] ?? "Usuario",
+      colorIndex: i,
+    }));
+    setMembers(memberList);
 
-  if (eventIds.length > 0) {
-    const { data: attendance } = await supabase
-      .from('event_attendance')
-      .select('user_id')
-      .in('event_id', eventIds)
+    // Eventos del grupo
+    const { data: eventsRaw } = await supabase
+      .from("events")
+      .select("id, name, date, location, status, event_rsvps ( response )")
+      .eq("group_id", id)
+      .neq("status", "cancelled")
+      .order("date", { ascending: true });
 
-    const attendanceMap: Record<string, number> = {}
-    for (const r of attendance ?? [])
-      attendanceMap[r.user_id] = (attendanceMap[r.user_id] ?? 0) + 1
+    const eventIds = (eventsRaw ?? []).map((e) => e.id);
 
-    miniRanking = (membersRaw ?? [])
-      .map((m) => ({
+    // Asistencia por evento y por miembro
+    const { data: attendanceRaw } = eventIds.length > 0
+      ? await supabase.from("event_attendance").select("event_id, user_id").in("event_id", eventIds)
+      : { data: [] };
+
+    const attendanceByEvent: Record<string, number> = {};
+    const attendanceByMember: Record<string, number> = {};
+    for (const a of attendanceRaw ?? []) {
+      attendanceByEvent[a.event_id] = (attendanceByEvent[a.event_id] ?? 0) + 1;
+      attendanceByMember[a.user_id] = (attendanceByMember[a.user_id] ?? 0) + 1;
+    }
+
+    // Gastos por evento
+    const { data: expensesRaw } = eventIds.length > 0
+      ? await supabase.from("expenses").select("id, event_id, amount").in("event_id", eventIds)
+      : { data: [] };
+
+    const spentByEvent: Record<string, number> = {};
+    const allExpenseIds: string[] = [];
+    for (const e of expensesRaw ?? []) {
+      spentByEvent[e.event_id] = (spentByEvent[e.event_id] ?? 0) + (e.amount ?? 0);
+      allExpenseIds.push(e.id);
+    }
+
+    // Splits pendientes del usuario
+    const { data: pendingSplits } = allExpenseIds.length > 0
+      ? await supabase
+          .from("expense_splits")
+          .select("amount")
+          .eq("user_id", user.id)
+          .eq("is_settled", false)
+          .in("expense_id", allExpenseIds)
+      : { data: [] };
+
+    const pendingAmount = (pendingSplits ?? []).reduce((sum, s) => sum + (s.amount ?? 0), 0);
+    const pendingCount = (pendingSplits ?? []).length;
+    setPending(pendingCount > 0 ? { count: pendingCount, amount: pendingAmount } : null);
+
+    // Mapear eventos → JuntadaItem
+    const memberCount = memberList.length;
+    const mappedJuntadas: JuntadaItem[] = (eventsRaw ?? []).map((e) => {
+      const rsvps = (e.event_rsvps as { response: string }[]) ?? [];
+      const going = rsvps.filter((r) => r.response === "going").length;
+      const maybe = rsvps.filter((r) => r.response === "maybe").length;
+      const declined = rsvps.filter((r) => r.response === "not_going").length;
+      const noResponse = Math.max(0, memberCount - going - maybe - declined);
+
+      const formattedDate = new Intl.DateTimeFormat("es-AR", {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        timeZone: "America/Argentina/Buenos_Aires",
+      }).format(new Date(e.date));
+
+      return {
+        id: e.id,
+        isoDate: e.date.slice(0, 10),
+        date: formattedDate,
+        name: e.name,
+        attendees: attendanceByEvent[e.id] ?? 0,
+        totalSpent: spentByEvent[e.id] ?? 0,
+        closed: e.status === "completed",
+        confirmed: going,
+        unsure: maybe,
+        noResponse,
+      };
+    });
+    setJuntadas(mappedJuntadas);
+
+    // Ranking top 3 por asistencia
+    const topMembers = (membersRaw ?? [])
+      .map((m, i) => ({
         user_id: m.user_id,
-        name:    profileMap[m.user_id] ?? 'Usuario',
-        count:   attendanceMap[m.user_id] ?? 0,
+        name: profileMap[m.user_id] ?? "Usuario",
+        count: attendanceByMember[m.user_id] ?? 0,
+        colorIndex: i,
       }))
+      .filter((m) => m.count > 0)
       .sort((a, b) => b.count - a.count)
-      .slice(0, 3)
-      .filter((r) => r.count > 0)
+      .slice(0, 3);
+
+    setRanking(
+      topMembers.map((m, i) => ({
+        emoji: RANK_EMOJIS[i],
+        label: RANK_LABELS[i],
+        name: m.name,
+        detail: `${m.count} juntada${m.count !== 1 ? "s" : ""}`,
+        memberEmoji: "",
+        memberColorIndex: m.colorIndex,
+        variant: RANK_VARIANTS[i % 3],
+      }))
+    );
+
+    setLoading(false);
+  }, [id, router]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const handleCopyInvite = async () => {
+    setInviteError("");
+    let token = inviteToken;
+    if (!token) {
+      const result = await getOrCreateInvite(id);
+      if ("error" in result) {
+        setInviteError(result.error);
+        return;
+      }
+      token = result.token;
+      setInviteToken(token);
+    }
+    const link = `${window.location.origin}/invite/${token}`;
+    navigator.clipboard.writeText(link).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  if (loading) return (
+    <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8 flex flex-col gap-4 animate-pulse">
+      <div className="h-8 w-48 rounded-xl bg-noche-media" />
+      <div className="h-4 w-32 rounded-lg bg-noche-media" />
+      <div className="h-32 rounded-2xl bg-noche-media" />
+      <div className="h-24 rounded-2xl bg-noche-media" />
+    </div>
+  );
+
+  if (notFound) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-8 pb-8 text-center">
+        <p className="text-sm text-niebla mb-4">Grupo no encontrado.</p>
+        <a href="/groups" className="text-fuego text-sm font-semibold">Ir al inicio</a>
+      </div>
+    );
   }
 
-  /* ── Render ───────────────────────────────────────────────── */
+  const TODAY = new Date().toISOString().slice(0, 10);
+  const upcomingJuntadas = juntadas
+    .filter((j) => j.isoDate >= TODAY)
+    .sort((a, b) => a.isoDate.localeCompare(b.isoDate));
+  const pastJuntadas = juntadas
+    .filter((j) => j.isoDate < TODAY)
+    .sort((a, b) => b.isoDate.localeCompare(a.isoDate));
+
+  const emoji = groupEmoji;
+
   return (
-    <div className="flex-1 p-5 lg:p-8 max-w-3xl space-y-6">
+    <div className="max-w-2xl mx-auto pb-8">
+      <GroupHeader
+        groupId={id}
+        name={groupName}
+        emoji={emoji}
+        members={members}
+      />
 
-      {/* Alerta deudas pendientes */}
-      {pendingAmount > 0 && (
-        <div className="flex items-center gap-3 rounded-2xl border border-alerta/30 bg-alerta/10 px-4 py-3.5">
-          <AlertCircle size={18} className="flex-shrink-0 text-alerta" />
-          <div className="min-w-0 flex-1">
-            <p className="font-body text-sm font-semibold text-foreground">
-              Tenés{' '}
-              <span className="text-alerta">
-                ${pendingAmount.toLocaleString('es-AR', { maximumFractionDigits: 0 })}
-              </span>{' '}
-              pendiente de pago
-            </p>
-            <p className="font-body text-xs text-muted">Revisá los gastos en tus juntadas</p>
-          </div>
-        </div>
-      )}
+      <div className="px-4 md:px-6 flex flex-col gap-3">
+        {pending && (
+          <PendingAlert count={pending.count} amount={pending.amount} groupId={id} />
+        )}
 
-      {/* Próxima juntada — card destacada */}
-      {nextEvent && (
-        <section>
-          <p className="mb-3 flex items-center gap-1.5 font-body text-xs font-semibold uppercase tracking-wider text-muted">
-            <CalendarDays size={12} />
-            Próxima juntada
-          </p>
-          <Link
-            href={`/groups/${id}/events/${nextEvent.id}`}
-            className="group flex items-center gap-4 rounded-2xl border border-fuego/30 bg-fuego/5 p-4 hover:bg-fuego/10 transition-all duration-150"
-          >
-            {/* Bloque fecha */}
-            <div className="flex w-14 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-fuego/10 py-2 text-center">
-              <span className="font-mono text-xl font-bold leading-none text-fuego">
-                {new Intl.DateTimeFormat('es-AR', {
-                  day: 'numeric',
-                  timeZone: 'America/Argentina/Buenos_Aires',
-                }).format(new Date(nextEvent.date))}
-              </span>
-              <span className="mt-0.5 font-body text-xs uppercase text-fuego/70">
-                {new Intl.DateTimeFormat('es-AR', {
-                  month: 'short',
-                  timeZone: 'America/Argentina/Buenos_Aires',
-                }).format(new Date(nextEvent.date))}
-              </span>
-            </div>
+        {upcomingJuntadas.map((j) => (
+          <NextJuntada
+            key={j.id}
+            juntadaId={j.id}
+            juntadaName={j.name}
+            date={j.date}
+            isoDate={j.isoDate}
+            confirmed={j.confirmed ?? 0}
+            unsure={j.unsure ?? 0}
+            noResponse={j.noResponse ?? 0}
+            groupId={id}
+            groupName={groupName}
+          />
+        ))}
 
-            {/* Info */}
-            <div className="min-w-0 flex-1">
-              <h3 className="font-heading font-semibold text-foreground truncate">
-                {nextEvent.name}
-              </h3>
-              {nextEvent.location && (
-                <p className="mt-0.5 font-body text-xs text-muted truncate">
-                  📍 {nextEvent.location}
-                </p>
-              )}
-              {nextEvent.going_count > 0 && (
-                <p className="mt-1 font-body text-xs text-muted">
-                  <span className="font-semibold text-foreground">{nextEvent.going_count}</span>
-                  {' '}{nextEvent.going_count === 1 ? 'confirmado' : 'confirmados'}
-                </p>
-              )}
-            </div>
+        {ranking.length > 0 && <MiniRanking entries={ranking} groupId={id} />}
 
-            <ChevronRight size={16} className="flex-shrink-0 text-fuego/60 group-hover:text-fuego transition-colors" />
-          </Link>
-        </section>
-      )}
-
-      {/* Mini-ranking */}
-      {miniRanking.length > 0 && (
-        <section>
-          <div className="mb-3 flex items-center justify-between">
-            <p className="flex items-center gap-1.5 font-body text-xs font-semibold uppercase tracking-wider text-muted">
-              <Trophy size={12} />
-              Ranking
-            </p>
-            <Link
-              href={`/groups/${id}/rankings`}
-              className="font-body text-xs text-fuego hover:underline"
+        {pastJuntadas.length > 0 && (
+          <div className="flex justify-between items-center mt-1">
+            <span className="font-display font-semibold text-base text-humo">
+              Últimas juntadas
+            </span>
+            <button
+              onClick={() => router.push(`/groups/${id}/historial`)}
+              className="bg-transparent border-none text-fuego font-semibold text-xs cursor-pointer p-0"
             >
-              Ver completo
-            </Link>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            {miniRanking.map((entry, i) => (
-              <div
-                key={entry.user_id}
-                className={`flex items-center gap-3 rounded-xl border px-4 py-2.5 ${
-                  entry.user_id === user.id
-                    ? 'border-fuego/30 bg-fuego/5'
-                    : 'border-border bg-surface'
-                }`}
-              >
-                <span className="w-6 text-center text-base leading-none">
-                  {MEDALS[i]}
-                </span>
-                <span className="flex-1 font-body text-sm text-foreground">
-                  {entry.user_id === user.id ? 'Vos' : entry.name}
-                </span>
-                <span className="font-body text-sm font-semibold text-fuego">
-                  {entry.count} {entry.count === 1 ? 'juntada' : 'juntadas'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
-
-      {/* Lista de juntadas */}
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <p className="font-body text-xs font-semibold uppercase tracking-wider text-muted">
-            Todas las juntadas
-          </p>
-          {isAdmin && <CreateEventModal groupId={id} />}
-        </div>
-
-        {events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-14 text-center px-6">
-            <p className="font-heading text-base font-semibold text-foreground">
-              Todavía no hay juntadas
-            </p>
-            <p className="mt-1.5 max-w-xs font-body text-sm text-muted">
-              Coordiná la primera, confirmá asistencias y cerrá cuentas fácil.
-            </p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-6">
-            {upcoming.length > 0 && (
-              <div>
-                <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-muted">
-                  Próximas
-                </p>
-                <div className="flex flex-col gap-3">
-                  {upcoming.map((event) => (
-                    <EventCard key={event.id} event={event} groupId={id} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {past.length > 0 && (
-              <div>
-                <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-muted">
-                  Pasadas
-                </p>
-                <div className="flex flex-col gap-3">
-                  {past.map((event) => (
-                    <EventCard key={event.id} event={event} groupId={id} />
-                  ))}
-                </div>
-              </div>
-            )}
+              Historial →
+            </button>
           </div>
         )}
-      </section>
 
+        {juntadas.length === 0 && (
+          <p className="text-sm text-niebla text-center py-4">
+            Todavía no hay juntadas. ¡Creá la primera!
+          </p>
+        )}
+
+        {(showAllPast ? pastJuntadas : pastJuntadas.slice(0, PAST_PREVIEW)).map((j) => (
+          <JuntadaCard
+            key={j.id}
+            id={j.id}
+            date={j.date}
+            name={j.name}
+            attendees={j.attendees}
+            totalSpent={j.totalSpent}
+            closed={j.closed}
+            groupId={id}
+            groupName={groupName}
+          />
+        ))}
+
+        {!showAllPast && pastJuntadas.length > PAST_PREVIEW && (
+          <button
+            onClick={() => setShowAllPast(true)}
+            className="w-full py-3 text-sm font-semibold text-fuego bg-transparent border-none cursor-pointer text-center"
+          >
+            Ver todas ({pastJuntadas.length}) →
+          </button>
+        )}
+
+        <div className="bg-noche-media rounded-2xl p-4 text-center mt-1">
+          <p className="text-sm text-niebla mb-3">
+            Sumá gente al grupo para que la próxima juntada sea mejor.
+          </p>
+          <Button primary={false} onClick={handleCopyInvite}>
+            {copied ? <Check size={15} /> : <Link size={15} />}
+            {copied ? "Link copiado. Mandalo al grupo." : "Copiar link de invitación"}
+          </Button>
+          {inviteError && (
+            <p className="text-xs text-error mt-2">{inviteError}</p>
+          )}
+        </div>
+      </div>
+
+      <FAB label="Nueva juntada" onClick={() => setSheetOpen(true)} />
+
+      <div className="hidden md:block fixed bottom-6 right-8 z-40">
+        <Button big onClick={() => setSheetOpen(true)}>
+          <Plus size={18} />
+          Nueva juntada
+        </Button>
+      </div>
+
+      <CreateJuntadaSheet
+        open={sheetOpen}
+        onClose={() => { setSheetOpen(false); load(); }}
+        groupId={id}
+        groupName={groupName}
+        onCreated={() => {}}
+      />
     </div>
-  )
+  );
 }

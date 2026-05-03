@@ -7,7 +7,7 @@ export default function RankingsRedirect() {
   const router = useRouter();
 
   useEffect(() => {
-    router.replace("/grupos");
+    router.replace("/groups");
   }, [router]);
 
   return null;

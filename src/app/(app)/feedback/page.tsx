@@ -52,7 +52,7 @@ export default function FeedbackPage() {
           <h2 className="font-display font-bold text-xl text-humo mb-2">Gracias por el feedback</h2>
           <p className="text-sm text-niebla">Lo leemos todo. En serio.</p>
           <button
-            onClick={() => router.push("/grupos")}
+            onClick={() => router.push("/groups")}
             className="mt-6 text-sm text-fuego font-semibold bg-transparent border-none cursor-pointer"
           >
             Volver al inicio

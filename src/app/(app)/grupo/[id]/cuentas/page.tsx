@@ -82,7 +82,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
 
     const { data: groupData } = await supabase
       .from("groups").select("id, name").eq("id", id).single();
-    if (!groupData) { router.push("/grupos"); return; }
+    if (!groupData) { router.push("/groups"); return; }
     setGroupName(groupData.name);
 
     const { data: membersRaw } = await supabase

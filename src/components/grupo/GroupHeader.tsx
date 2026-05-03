@@ -24,7 +24,7 @@ export function GroupHeader({ groupId, name, emoji, members, showBack = false, b
       <div className="px-4 md:px-6 pt-4 pb-3">
         {showBack && (
           <button
-            onClick={() => router.push(backHref || "/grupos")}
+            onClick={() => router.push(backHref || "/groups")}
             className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer mb-2 p-0"
           >
             <ChevronLeft size={16} />
@@ -49,7 +49,7 @@ export function GroupHeader({ groupId, name, emoji, members, showBack = false, b
             </button>
           </div>
           <button
-            onClick={() => router.push(`/grupo/${groupId}/config`)}
+            onClick={() => router.push(`/groups/${groupId}/settings`)}
             className="w-10 h-10 rounded-xl flex items-center justify-center bg-transparent border-none cursor-pointer text-niebla hover:bg-white/5 transition-colors"
           >
             <Settings size={20} />

@@ -27,7 +27,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const { data: groupData } = await supabase
       .from("groups").select("id, name").eq("id", id).single();
-    if (!groupData) { router.push("/grupos"); return; }
+    if (!groupData) { router.push("/groups"); return; }
     setGroupName(groupData.name);
 
     const { data: membersRaw } = await supabase

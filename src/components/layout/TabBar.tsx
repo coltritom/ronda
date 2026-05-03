@@ -23,7 +23,7 @@ export function TabBar() {
   const getActiveTab = () => {
     if (pathname === "/perfil") return "perfil";
     if (pathname === "/home") return "home";
-    if (pathname === "/grupos" || pathname.startsWith("/grupo/") || pathname.startsWith("/juntada/")) return "grupos";
+    if (pathname === "/groups" || pathname.startsWith("/groups/") || pathname === "/grupos" || pathname.startsWith("/grupo/") || pathname.startsWith("/juntada/")) return "grupos";
     return "home";
   };
 
@@ -31,7 +31,7 @@ export function TabBar() {
 
   const TABS = [
     { id: "home", icon: <Home size={20} strokeWidth={activeTab === "home" ? 2.5 : 2} />, label: "Inicio", href: "/home" },
-    { id: "grupos", icon: <Users size={20} strokeWidth={activeTab === "grupos" ? 2.5 : 2} />, label: "Grupos", href: "/grupos" },
+    { id: "grupos", icon: <Users size={20} strokeWidth={activeTab === "grupos" ? 2.5 : 2} />, label: "Grupos", href: "/groups" },
     {
       id: "perfil",
       icon: avatarEmoji

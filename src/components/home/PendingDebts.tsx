@@ -141,7 +141,7 @@ export function PendingDebts() {
             {debts.length} cuenta{debts.length > 1 ? "s" : ""} pendiente{debts.length > 1 ? "s" : ""}
           </p>
           <button
-            onClick={() => router.push("/grupos")}
+            onClick={() => router.push("/groups")}
             className="text-[12px] font-semibold text-fuego bg-transparent border-none cursor-pointer shrink-0 ml-2"
           >
             Ver →
@@ -155,7 +155,7 @@ export function PendingDebts() {
           {debts.map((d) => (
             <button
               key={`${d.groupId}-${d.eventId}`}
-              onClick={() => router.push(`/grupo/${d.groupId}`)}
+              onClick={() => router.push(`/groups/${d.groupId}`)}
               className="flex items-center justify-between px-2 py-1.5 rounded-[10px] bg-noche dark:bg-noche bg-hueso w-full border-none cursor-pointer text-left"
             >
               <span className="text-xs text-carbon dark:text-humo">

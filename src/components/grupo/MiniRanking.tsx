@@ -29,7 +29,7 @@ export function MiniRanking({ entries, groupId }: MiniRankingProps) {
           El ranking no miente
         </span>
         <button
-          onClick={() => router.push(`/grupo/${groupId}/rankings`)}
+          onClick={() => router.push(`/groups/${groupId}/rankings`)}
           className="bg-transparent border-none text-fuego font-semibold text-xs cursor-pointer p-0"
         >
           Ver todo →

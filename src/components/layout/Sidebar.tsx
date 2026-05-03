@@ -134,7 +134,7 @@ export function Sidebar() {
             Tus grupos
           </span>
           <button
-            onClick={() => router.push("/grupos")}
+            onClick={() => router.push("/groups")}
             className="w-6 h-6 rounded-lg bg-fuego/10 flex items-center justify-center text-fuego cursor-pointer border-none hover:bg-fuego/20 transition-colors"
             title="Ver grupos"
           >
@@ -146,7 +146,7 @@ export function Sidebar() {
           <div className="px-3 py-6 text-center">
             <p className="text-xs text-niebla mb-2">Todavía no tenés grupos.</p>
             <button
-              onClick={() => router.push("/grupos")}
+              onClick={() => router.push("/groups")}
               className="text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer"
             >
               Crear grupo
@@ -154,11 +154,11 @@ export function Sidebar() {
           </div>
         ) : (
           groups.map((g) => {
-            const active = pathname === `/grupo/${g.id}` || pathname.startsWith(`/grupo/${g.id}/`);
+            const active = pathname === `/groups/${g.id}` || pathname.startsWith(`/groups/${g.id}/`);
             return (
               <button
                 key={g.id}
-                onClick={() => router.push(`/grupo/${g.id}`)}
+                onClick={() => router.push(`/groups/${g.id}`)}
                 className={`
                   flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm w-full text-left
                   transition-colors cursor-pointer border-none mb-0.5

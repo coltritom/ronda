@@ -35,7 +35,7 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
       return;
     }
     onClose();
-    router.push(`/grupo/${result.groupId}`);
+    router.push(`/groups/${result.groupId}`);
   };
 
   return (

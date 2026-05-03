@@ -46,7 +46,7 @@ function JuntadaContent({ id }: { id: string }) {
     <div className="max-w-2xl mx-auto pb-8">
       <div className="px-4 md:px-6 pt-4 pb-2">
         <button
-          onClick={() => router.push(`/grupo/${backGroupId || eventGroupId}`)}
+          onClick={() => router.push(`/groups/${backGroupId || eventGroupId}`)}
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
         >
           <ChevronLeft size={16} />

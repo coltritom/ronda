@@ -17,7 +17,7 @@ export function GroupCard({ id, name, emoji, memberCount, lastActivity, pendingC
 
   return (
     <button
-      onClick={() => router.push(`/grupo/${id}`)}
+      onClick={() => router.push(`/groups/${id}`)}
       className="w-full text-left bg-noche-media rounded-2xl p-4 border-none cursor-pointer transition-all active:scale-[0.98] hover:bg-noche-media/80"
     >
       <div className="flex gap-3 items-start">

@@ -13,7 +13,7 @@ export default async function GroupsPage() {
     .select(`
       role,
       groups (
-        id, name, description, created_by, created_at,
+        id, name, description, emoji, created_by, created_at,
         group_members ( count )
       )
     `)
@@ -35,7 +35,7 @@ export default async function GroupsPage() {
         id:           g.id,
         name:         g.name,
         description:  g.description,
-        emoji:        null,
+        emoji:        g.emoji ?? null,
         created_by:   g.created_by,
         created_at:   g.created_at,
         role:         m.role as 'admin' | 'member',

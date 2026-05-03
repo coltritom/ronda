@@ -61,7 +61,6 @@ export default function RankingsContent({ groupName, rankings, destacados, datos
   const cur = RANKING_TYPES.find((r) => r.id === active)!;
   const allMembers = rankings[active] ?? [];
   const podium = allMembers.slice(0, 3).map((m, i) => ({ ...m, position: i + 1 }));
-  const fullList = allMembers.slice(3).map((m, i) => ({ ...m, position: i + 4 }));
 
   return (
     <div className="max-w-2xl mx-auto pb-8">

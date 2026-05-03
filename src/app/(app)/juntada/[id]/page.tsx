@@ -15,7 +15,7 @@ const TABS = ["Asistencia", "Aportes", "Gastos", "Cuentas"];
 function JuntadaContent({ id }: { id: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState("Asistencia");
+  const [activeTab, setActiveTab] = useState(() => searchParams.get("tab") ?? "Asistencia");
   const [eventStatus, setEventStatus] = useState("upcoming");
   const [eventGroupId, setEventGroupId] = useState("");
 
@@ -29,13 +29,14 @@ function JuntadaContent({ id }: { id: string }) {
   useEffect(() => {
     const supabase = createClient();
     supabase.from("events").select("status, group_id").eq("id", id).single()
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) { router.push("/groups"); return; }
         if (data) {
           setEventStatus(data.status ?? "upcoming");
           setEventGroupId(data.group_id ?? "");
         }
       });
-  }, [id]);
+  }, [id, router]);
 
   const TODAY = new Date().toISOString().slice(0, 10);
   const isClosed = eventStatus === "completed";
@@ -69,7 +70,12 @@ function JuntadaContent({ id }: { id: string }) {
         </div>
       </div>
 
-      <InnerTabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+      <InnerTabs tabs={TABS} active={activeTab} onChange={(tab) => {
+          setActiveTab(tab);
+          const p = new URLSearchParams(searchParams.toString());
+          p.set("tab", tab);
+          router.replace(`/juntada/${id}?${p.toString()}`, { scroll: false });
+        }} />
 
       {activeTab === "Asistencia" && <TabAsistencia closed={isClosed} upcoming={isUpcoming} juntadaId={id} groupId={groupId} />}
       {activeTab === "Aportes" && <TabAportes juntadaId={id} groupId={groupId} />}

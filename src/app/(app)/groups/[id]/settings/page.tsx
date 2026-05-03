@@ -7,6 +7,7 @@ import {
   LogOut, Trash2, Loader2, Shield, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { getOrCreateInvite } from "@/lib/actions/invites";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
@@ -95,7 +96,7 @@ export default function GroupSettingsPage({
   const [members, setMembers] = useState<Member[]>([]);
 
   // ── Invite
-  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
   // ── Danger zone
@@ -166,9 +167,6 @@ export default function GroupSettingsPage({
       })));
     }
 
-    const { data: inviteData } = await supabase
-      .from("invite_links").select("code").eq("group_id", id).eq("is_active", true).maybeSingle();
-    setInviteCode(inviteData?.code ?? null);
     setLoading(false);
   }, [id, router]);
 
@@ -193,33 +191,18 @@ export default function GroupSettingsPage({
 
   // ─── Invite helpers ───────────────────────────────────────────────────────
 
-  const inviteUrl =
-    inviteCode && typeof window !== "undefined"
-      ? `${window.location.origin}/invite/${inviteCode}`
-      : inviteCode
-      ? `https://ordenalaronda.com/invite/${inviteCode}`
-      : null;
-
-  const generateCode = () => {
-    const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-    return Array.from({ length: 8 }, () => chars[Math.floor(Math.random() * chars.length)]).join("");
-  };
-
   const handleCopy = async () => {
-    if (!inviteUrl) return;
-    await navigator.clipboard.writeText(inviteUrl).catch(() => {});
+    let token = inviteToken;
+    if (!token) {
+      const result = await getOrCreateInvite(id);
+      if ("error" in result) { toast.error("No se pudo generar el link."); return; }
+      token = result.token;
+      setInviteToken(token);
+    }
+    const link = `${window.location.origin}/invite/${token}`;
+    await navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
-  };
-
-  const handleCreateInvite = async () => {
-    const supabase = createClient();
-    const newCode = generateCode();
-    const { error } = await supabase.from("invite_links")
-      .insert({ group_id: id, code: newCode, is_active: true });
-    if (error) { toast.error("No se pudo crear el link."); return; }
-    setInviteCode(newCode);
-    toast.success("Link de invitación creado ✓");
   };
 
   // ─── Promote ──────────────────────────────────────────────────────────────
@@ -348,7 +331,7 @@ export default function GroupSettingsPage({
 
           {!isAdmin ? (
             <p className="text-sm text-niebla">Solo los admins pueden gestionar el link de invitación.</p>
-          ) : inviteCode ? (
+          ) : (
             <button
               onClick={handleCopy}
               className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-semibold border-none cursor-pointer transition-all
@@ -359,14 +342,6 @@ export default function GroupSettingsPage({
             >
               {copied ? <Check size={15} /> : <Copy size={15} />}
               {copied ? "¡Link copiado!" : "Copiar link de invitación"}
-            </button>
-          ) : (
-            <button
-              onClick={handleCreateInvite}
-              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-noche text-fuego text-sm font-semibold border-none cursor-pointer hover:bg-noche/60 transition-colors"
-            >
-              <Copy size={15} />
-              Crear link de invitación
             </button>
           )}
         </div>

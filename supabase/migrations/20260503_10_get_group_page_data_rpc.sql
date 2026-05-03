@@ -39,7 +39,6 @@ BEGIN
   -- Members with display names, ordered by join date (preserves colorIndex)
   SELECT jsonb_agg(
     jsonb_build_object('user_id', gm.user_id, 'name', COALESCE(p.name, 'Usuario'))
-    ORDER BY gm.created_at
   )
   INTO v_members
   FROM group_members gm

@@ -152,14 +152,14 @@ export default async function DebesPage() {
       <div className="max-w-2xl mx-auto">
         <Link
           href="/home"
-          className="inline-block font-body text-sm text-muted hover:text-foreground transition-colors mb-5"
+          className="inline-block font-body text-sm text-niebla hover:text-humo transition-colors mb-5"
         >
           ← Volver
         </Link>
 
         <div className="mb-5">
-          <h1 className="font-display font-bold text-xl text-foreground">Lo que debés</h1>
-          <p className="font-body text-sm text-muted mt-0.5">
+          <h1 className="font-display font-bold text-xl text-humo">Lo que debés</h1>
+          <p className="font-body text-sm text-niebla mt-0.5">
             Total: <span className="font-semibold text-alerta">${total.toLocaleString('es-AR')}</span>
           </p>
         </div>
@@ -167,21 +167,21 @@ export default async function DebesPage() {
         <div className="space-y-5">
           {Object.entries(byGroup).map(([groupId, groupRows]) => (
             <div key={groupId}>
-              <p className="font-body text-xs font-semibold text-muted uppercase tracking-wider mb-2 px-1">
+              <p className="font-body text-xs font-semibold text-niebla uppercase tracking-wider mb-2 px-1">
                 {groupRows[0].groupName}
               </p>
-              <div className="rounded-2xl border border-border bg-surface overflow-hidden divide-y divide-border">
+              <div className="rounded-2xl bg-noche-media overflow-hidden divide-y divide-noche">
                 {groupRows.map((row, i) => (
                   <Link
                     key={i}
                     href={`/groups/${row.groupId}/events/${row.eventId}?tab=cuentas`}
-                    className="flex items-center justify-between px-4 py-3.5 hover:bg-surface/80 transition-colors group"
+                    className="flex items-center justify-between px-4 py-3.5 hover:bg-noche/60 transition-colors group"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-body font-medium text-sm text-foreground truncate">
+                      <p className="font-body font-medium text-sm text-humo truncate">
                         {row.eventName}
                       </p>
-                      <p className="font-body text-xs text-muted mt-0.5">
+                      <p className="font-body text-xs text-niebla mt-0.5">
                         A {row.toName} ·{' '}
                         {new Date(row.eventDate).toLocaleDateString('es-AR', {
                           day: 'numeric', month: 'long',
@@ -192,7 +192,7 @@ export default async function DebesPage() {
                       <span className="font-body font-semibold text-sm text-alerta">
                         ${row.amount.toLocaleString('es-AR')}
                       </span>
-                      <ChevronRight size={14} className="text-muted group-hover:text-foreground transition-colors" />
+                      <ChevronRight size={14} className="text-niebla group-hover:text-humo transition-colors" />
                     </div>
                   </Link>
                 ))}
@@ -211,14 +211,14 @@ function EmptyState({ icon, title, sub }: { icon: string; title: string; sub: st
       <div className="max-w-2xl mx-auto">
         <Link
           href="/home"
-          className="inline-block font-body text-sm text-muted hover:text-foreground transition-colors mb-5"
+          className="inline-block font-body text-sm text-niebla hover:text-humo transition-colors mb-5"
         >
           ← Volver
         </Link>
         <div className="text-center py-16">
           <div className="text-3xl mb-3">{icon}</div>
-          <p className="font-body font-semibold text-foreground">{title}</p>
-          <p className="font-body text-sm text-muted mt-1">{sub}</p>
+          <p className="font-body font-semibold text-humo">{title}</p>
+          <p className="font-body text-sm text-niebla mt-1">{sub}</p>
         </div>
       </div>
     </div>

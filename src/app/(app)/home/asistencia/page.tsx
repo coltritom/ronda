@@ -103,14 +103,14 @@ export default async function AsistenciaPage() {
       <div className="max-w-2xl mx-auto">
         <Link
           href="/home"
-          className="inline-block font-body text-sm text-muted hover:text-foreground transition-colors mb-5"
+          className="inline-block font-body text-sm text-niebla hover:text-humo transition-colors mb-5"
         >
           ← Volver
         </Link>
 
         <div className="mb-5">
-          <h1 className="font-display font-bold text-xl text-foreground">Mi asistencia</h1>
-          <p className="font-body text-sm text-muted mt-0.5">
+          <h1 className="font-display font-bold text-xl text-humo">Mi asistencia</h1>
+          <p className="font-body text-sm text-niebla mt-0.5">
             {totalAttended} de {totalEvents} juntada{totalEvents !== 1 ? 's' : ''} asistida{totalEvents !== 1 ? 's' : ''}
           </p>
         </div>
@@ -119,26 +119,26 @@ export default async function AsistenciaPage() {
           {sections.map((section) => (
             <div key={section.groupId}>
               <div className="flex items-baseline justify-between mb-2 px-1">
-                <p className="font-body text-xs font-semibold text-muted uppercase tracking-wider">
+                <p className="font-body text-xs font-semibold text-niebla uppercase tracking-wider">
                   {section.groupName}
                 </p>
-                <p className="font-body text-xs text-muted">
+                <p className="font-body text-xs text-niebla">
                   {section.attendedCount}/{section.events.length}
                 </p>
               </div>
 
-              <div className="rounded-2xl border border-border bg-surface overflow-hidden divide-y divide-border">
+              <div className="rounded-2xl bg-noche-media overflow-hidden divide-y divide-noche">
                 {section.events.map((event) => (
                   <Link
                     key={event.eventId}
                     href={`/groups/${section.groupId}/events/${event.eventId}`}
-                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface/80 transition-colors"
+                    className="flex items-center gap-3 px-4 py-3.5 hover:bg-noche/60 transition-colors"
                   >
                     <div
                       className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
                         event.attended
                           ? 'bg-fuego/15 text-fuego'
-                          : 'bg-border text-muted'
+                          : 'bg-noche text-niebla'
                       }`}
                     >
                       {event.attended ? (
@@ -148,10 +148,10 @@ export default async function AsistenciaPage() {
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className={`font-body text-sm font-medium truncate ${event.attended ? 'text-foreground' : 'text-muted'}`}>
+                      <p className={`font-body text-sm font-medium truncate ${event.attended ? 'text-humo' : 'text-niebla'}`}>
                         {event.eventName}
                       </p>
-                      <p className="font-body text-xs text-muted mt-0.5">
+                      <p className="font-body text-xs text-niebla mt-0.5">
                         {new Date(event.eventDate).toLocaleDateString('es-AR', {
                           weekday: 'long', day: 'numeric', month: 'long',
                         })}
@@ -174,14 +174,14 @@ function EmptyState({ icon, title, sub }: { icon: string; title: string; sub: st
       <div className="max-w-2xl mx-auto">
         <Link
           href="/home"
-          className="inline-block font-body text-sm text-muted hover:text-foreground transition-colors mb-5"
+          className="inline-block font-body text-sm text-niebla hover:text-humo transition-colors mb-5"
         >
           ← Volver
         </Link>
         <div className="text-center py-16">
           <div className="text-3xl mb-3">{icon}</div>
-          <p className="font-body font-semibold text-foreground">{title}</p>
-          <p className="font-body text-sm text-muted mt-1">{sub}</p>
+          <p className="font-body font-semibold text-humo">{title}</p>
+          <p className="font-body text-sm text-niebla mt-1">{sub}</p>
         </div>
       </div>
     </div>

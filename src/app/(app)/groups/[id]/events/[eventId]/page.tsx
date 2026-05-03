@@ -2,13 +2,13 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatEventDate } from '@/lib/utils'
-import { CalendarDays, MapPin, ChevronRight } from 'lucide-react'
-import { RsvpButtons }        from '@/components/events/RsvpButtons'
-import { AttendanceSection }  from '@/components/events/AttendanceSection'
+import { CalendarDays, MapPin, ChevronLeft } from 'lucide-react'
+import { RsvpButtons }          from '@/components/events/RsvpButtons'
+import { AttendanceSection }    from '@/components/events/AttendanceSection'
 import { ContributionsSection } from '@/components/events/ContributionsSection'
-import { ExpensesSection }    from '@/components/events/ExpensesSection'
-import { CuentasSection }     from '@/components/events/CuentasSection'
-import { EventTabs }          from '@/components/events/EventTabs'
+import { ExpensesSection }      from '@/components/events/ExpensesSection'
+import { CuentasSection }       from '@/components/events/CuentasSection'
+import { EventTabs }            from '@/components/events/EventTabs'
 
 interface PageProps {
   params:       Promise<{ id: string; eventId: string }>
@@ -18,9 +18,9 @@ interface PageProps {
 type RsvpStatus = 'going' | 'maybe' | 'not_going'
 
 const STATUS_BADGE: Record<string, { label: string; className: string }> = {
-  upcoming:  { label: 'Próxima',   className: 'bg-fuego/10 text-fuego' },
-  completed: { label: 'Realizada', className: 'bg-exito/10 text-exito' },
-  cancelled: { label: 'Cancelada', className: 'bg-error/10 text-error' },
+  upcoming:  { label: 'Próxima',       className: 'bg-fuego/[0.12] text-fuego border-fuego/30' },
+  completed: { label: '✓ Realizada',  className: 'bg-menta/[0.12] text-menta border-menta/30' },
+  cancelled: { label: 'Cancelada',    className: 'bg-error/[0.12] text-error border-error/30' },
 }
 
 export default async function EventDetailPage({ params, searchParams }: PageProps) {
@@ -30,7 +30,6 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
 
-  /* ── Verificar membresía ──────────────────────────────────── */
   const { data: membership } = await supabase
     .from('group_members')
     .select('role')
@@ -40,28 +39,32 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
 
   if (!membership) notFound()
 
-  /* ── Fetchear el evento ───────────────────────────────────── */
-  const { data: event } = await supabase
-    .from('events')
-    .select('id, name, description, date, location, status')
-    .eq('id', eventId)
-    .eq('group_id', groupId)
-    .single()
+  const [{ data: event }, { data: groupData }] = await Promise.all([
+    supabase
+      .from('events')
+      .select('id, name, description, date, location, status')
+      .eq('id', eventId)
+      .eq('group_id', groupId)
+      .single(),
+    supabase
+      .from('groups')
+      .select('name')
+      .eq('id', groupId)
+      .single(),
+  ])
 
   if (!event) notFound()
 
+  const groupName = groupData?.name ?? 'Grupo'
   const isPast = new Date(event.date) < new Date()
-
   const effectiveStatus = isPast && event.status === 'upcoming' ? 'completed' : event.status
   const badge = STATUS_BADGE[effectiveStatus] ?? STATUS_BADGE.upcoming
 
-  /* ── RSVPs ────────────────────────────────────────────────── */
   const { data: rsvpsRaw } = await supabase
     .from('event_rsvps')
     .select('response, user_id')
     .eq('event_id', eventId)
 
-  /* ── Asistencia real (solo eventos pasados) ───────────────── */
   let attendanceRaw: { user_id: string }[] = []
   if (isPast) {
     const { data } = await supabase
@@ -71,14 +74,12 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     attendanceRaw = data ?? []
   }
 
-  /* ── Aportes ─────────────────────────────────────────────── */
   const { data: contributionsRaw } = await supabase
     .from('contributions')
     .select('id, category, description, quantity, user_id')
     .eq('event_id', eventId)
     .order('created_at', { ascending: true })
 
-  /* ── Gastos + splits ─────────────────────────────────────── */
   type ExpenseSplitRow = { user_id: string; amount: number; is_settled: boolean }
   type ExpenseQueryRow = {
     id: string; description: string | null; amount: number
@@ -95,13 +96,11 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     .order('created_at', { ascending: true })
   const expensesTyped = (expensesRaw ?? []) as ExpenseQueryRow[]
 
-  /* ── Settlements ─────────────────────────────────────────── */
   const { data: settlementsRaw } = await supabase
     .from('settlements')
     .select('from_user, to_user, amount')
     .eq('event_id', eventId)
 
-  /* ── Profiles (single lookup for all queries) ────────────── */
   const allUserIds = new Set<string>([
     ...(rsvpsRaw ?? []).map(r => r.user_id),
     ...attendanceRaw.map(a => a.user_id),
@@ -116,7 +115,6 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     (profilesData ?? []).map(p => [p.id, p.name ?? 'Usuario'])
   )
 
-  /* ── Enriquecer datos con nombres ────────────────────────── */
   type RsvpEnriched = { response: RsvpStatus; user_id: string; profiles: { name: string } }
   const rsvps: RsvpEnriched[] = (rsvpsRaw ?? []).map(r => ({
     response: r.response as RsvpStatus,
@@ -138,7 +136,6 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
 
   let attendanceList: { user_id: string; name: string }[] = []
   let myAttendance = false
-
   if (isPast) {
     attendanceList = attendanceRaw.map((a) => ({
       user_id: a.user_id,
@@ -180,13 +177,10 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     from_user: string; to_user: string; amount: number
   }[]
 
-  /* ── Deuda pendiente del usuario (para badge en tab) ─────── */
-  const myPendingSplits = expenses.flatMap((e) =>
-    e.expense_splits.filter((s) => s.user_id === user.id && !s.is_settled)
+  const hasPendingDebt = expenses.some((e) =>
+    e.expense_splits.some((s) => s.user_id === user.id && !s.is_settled)
   )
-  const hasPendingDebt = myPendingSplits.length > 0
 
-  /* ── Tabs ────────────────────────────────────────────────── */
   const tabs = [
     {
       id:    'asistencia',
@@ -200,165 +194,142 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
 
   const activeTab = tabs.some((t) => t.id === tab) ? tab : 'asistencia'
 
-  /* ── Render ───────────────────────────────────────────────── */
   return (
-    <div className="flex flex-col min-h-full">
+    <div className="max-w-2xl mx-auto pb-8">
 
-      {/* ── Header del evento ─────────────────────────────────── */}
-      <div className="border-b border-noche bg-noche-media px-5 py-5 lg:px-8">
-        <div className="max-w-2xl">
-          {/* Breadcrumb */}
-          <nav className="mb-3 flex items-center gap-1 font-body text-xs text-niebla">
-            <Link href={`/groups/${groupId}`} className="hover:text-humo transition-colors">
-              Grupo
-            </Link>
-            <ChevronRight size={12} className="text-niebla/50" />
-            <span className="text-humo">Juntada</span>
-          </nav>
+      {/* Header */}
+      <div className="px-4 md:px-6 pt-4 pb-2">
+        <Link
+          href={`/groups/${groupId}`}
+          className="flex items-center gap-1 text-fuego text-[13px] font-semibold mb-3"
+        >
+          <ChevronLeft size={16} />
+          {groupName}
+        </Link>
 
-          {/* Título + badge */}
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="font-heading text-xl font-bold text-humo lg:text-2xl">
-              {event.name}
-            </h1>
-            <span className={`mt-0.5 flex-shrink-0 rounded-full px-2.5 py-0.5 font-body text-xs font-semibold ${badge.className}`}>
-              {badge.label}
-            </span>
+        <div className="flex items-start justify-between gap-3">
+          <h1 className="font-display font-bold text-[22px] text-humo">
+            {event.name}
+          </h1>
+          <span className={`shrink-0 mt-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${badge.className}`}>
+            {badge.label}
+          </span>
+        </div>
+
+        <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
+          <div className="flex items-center gap-1.5 text-sm text-niebla">
+            <CalendarDays size={13} />
+            <span className="capitalize">{formatEventDate(event.date)}</span>
           </div>
-
-          {/* Meta info */}
-          <div className="mt-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-            <div className="flex items-center gap-1.5 font-body text-sm text-niebla">
-              <CalendarDays size={13} />
-              <span className="capitalize">{formatEventDate(event.date)}</span>
+          {event.location && (
+            <div className="flex items-center gap-1.5 text-sm text-niebla">
+              <MapPin size={13} />
+              <span>{event.location}</span>
             </div>
-            {event.location && (
-              <div className="flex items-center gap-1.5 font-body text-sm text-niebla">
-                <MapPin size={13} />
-                <span>{event.location}</span>
+          )}
+        </div>
+
+        {event.description && (
+          <p className="mt-2 text-sm text-niebla leading-relaxed">{event.description}</p>
+        )}
+      </div>
+
+      {/* Tabs */}
+      <div className="px-4 md:px-6 mt-3 mb-4">
+        <EventTabs tabs={tabs} activeTab={activeTab} groupId={groupId} eventId={eventId} />
+      </div>
+
+      {/* Contenido */}
+      <div className="px-4 md:px-6 flex flex-col gap-4">
+
+        {activeTab === 'asistencia' && (
+          <div className="flex flex-col gap-4">
+            {!isPast && (
+              <RsvpButtons eventId={eventId} currentStatus={myRsvp} />
+            )}
+            {isPast && (
+              <AttendanceSection
+                eventId={eventId}
+                currentUserId={user.id}
+                myAttendance={myAttendance}
+                attendees={attendanceList}
+              />
+            )}
+            {!isPast && (
+              <div className="flex flex-col gap-4">
+                {[
+                  { label: 'Van',     list: going,    color: 'text-menta' },
+                  { label: 'Tal vez', list: maybe,    color: 'text-niebla' },
+                  { label: 'No van',  list: notGoing, color: 'text-error' },
+                ]
+                  .filter(({ list }) => list.length > 0)
+                  .map(({ label, list, color }) => (
+                    <div key={label}>
+                      <p className={`mb-2 text-xs font-semibold uppercase tracking-wider ${color}`}>
+                        {label} ({list.length})
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {list.map((rsvp) => (
+                          <div
+                            key={rsvp.user_id}
+                            className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
+                          >
+                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 text-[10px] font-bold text-fuego">
+                              {(rsvp.profiles?.name ?? '?').charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-sm text-humo">
+                              {rsvp.profiles?.name ?? 'Usuario'}
+                              {rsvp.user_id === user.id && (
+                                <span className="ml-1 text-xs text-niebla">(vos)</span>
+                              )}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                }
+                {rsvps.length === 0 && (
+                  <p className="text-sm text-niebla">Nadie confirmó todavía. ¡Sé el primero!</p>
+                )}
               </div>
             )}
           </div>
+        )}
 
-          {event.description && (
-            <p className="mt-2 font-body text-sm leading-relaxed text-niebla">
-              {event.description}
-            </p>
-          )}
-        </div>
-      </div>
+        {activeTab === 'aportes' && (
+          <ContributionsSection
+            eventId={eventId}
+            currentUserId={user.id}
+            contributions={contributions}
+            isUpcoming={!isPast && event.status !== 'cancelled'}
+          />
+        )}
 
-      {/* ── Tabs ──────────────────────────────────────────────── */}
-      <EventTabs
-        tabs={tabs}
-        activeTab={activeTab}
-        groupId={groupId}
-        eventId={eventId}
-      />
+        {activeTab === 'gastos' && (
+          <ExpensesSection
+            groupId={groupId}
+            eventId={eventId}
+            currentUserId={user.id}
+            currentUserName={currentUserName}
+            expenses={expenses}
+            attendees={goingAttendees}
+            settlements={settlements}
+          />
+        )}
 
-      {/* ── Contenido por tab ─────────────────────────────────── */}
-      <div className="flex-1 p-5 lg:p-8">
-        <div className="max-w-2xl">
+        {activeTab === 'cuentas' && (
+          <CuentasSection
+            groupId={groupId}
+            eventId={eventId}
+            currentUserId={user.id}
+            currentUserName={currentUserName}
+            expenses={expenses}
+            attendees={goingAttendees}
+            settlements={settlements}
+          />
+        )}
 
-          {/* ── Asistencia ──────────────────────────────────────── */}
-          {activeTab === 'asistencia' && (
-            <div className="flex flex-col gap-6">
-
-              {/* Botones RSVP (próximas) o toggle asistencia (pasadas) */}
-              {!isPast && (
-                <RsvpButtons eventId={eventId} currentStatus={myRsvp} />
-              )}
-              {isPast && (
-                <AttendanceSection
-                  eventId={eventId}
-                  currentUserId={user.id}
-                  myAttendance={myAttendance}
-                  attendees={attendanceList}
-                />
-              )}
-
-              {/* Lista de RSVPs */}
-              {!isPast && (
-                <div className="flex flex-col gap-4">
-                  {[
-                    { status: 'going'     as RsvpStatus, label: 'Van',     list: going,    color: 'text-exito' },
-                    { status: 'maybe'     as RsvpStatus, label: 'Tal vez', list: maybe,    color: 'text-ambar' },
-                    { status: 'not_going' as RsvpStatus, label: 'No van',  list: notGoing, color: 'text-error' },
-                  ]
-                    .filter(({ list }) => list.length > 0)
-                    .map(({ label, list, color }) => (
-                      <div key={label}>
-                        <p className={`mb-2 font-body text-xs font-semibold uppercase tracking-wider ${color}`}>
-                          {label} ({list.length})
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {list.map((rsvp) => (
-                            <div
-                              key={rsvp.user_id}
-                              className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
-                            >
-                              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 font-body text-[10px] font-bold text-fuego">
-                                {(rsvp.profiles?.name ?? '?').charAt(0).toUpperCase()}
-                              </div>
-                              <span className="font-body text-sm text-humo">
-                                {rsvp.profiles?.name ?? 'Usuario'}
-                                {rsvp.user_id === user.id && (
-                                  <span className="ml-1 text-xs text-niebla">(vos)</span>
-                                )}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  }
-                  {rsvps.length === 0 && (
-                    <p className="font-body text-sm text-niebla">
-                      Nadie confirmó todavía. ¡Sé el primero!
-                    </p>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ── Aportes ─────────────────────────────────────────── */}
-          {activeTab === 'aportes' && (
-            <ContributionsSection
-              eventId={eventId}
-              currentUserId={user.id}
-              contributions={contributions}
-              isUpcoming={!isPast && event.status !== 'cancelled'}
-            />
-          )}
-
-          {/* ── Gastos ──────────────────────────────────────────── */}
-          {activeTab === 'gastos' && (
-            <ExpensesSection
-              groupId={groupId}
-              eventId={eventId}
-              currentUserId={user.id}
-              currentUserName={currentUserName}
-              expenses={expenses}
-              attendees={goingAttendees}
-              settlements={settlements}
-            />
-          )}
-
-          {/* ── Cuentas ─────────────────────────────────────────── */}
-          {activeTab === 'cuentas' && (
-            <CuentasSection
-              groupId={groupId}
-              eventId={eventId}
-              currentUserId={user.id}
-              currentUserName={currentUserName}
-              expenses={expenses}
-              attendees={goingAttendees}
-              settlements={settlements}
-            />
-          )}
-
-        </div>
       </div>
     </div>
   )

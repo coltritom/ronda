@@ -26,7 +26,6 @@ interface CuentasSectionProps {
   settlements:     Settlement[]
 }
 
-/* ── Cálculo de balances ────────────────────────────────── */
 function calcBalances(
   expenses: Expense[],
   settlements: Settlement[],
@@ -78,7 +77,6 @@ function calcSettlement(balances: { userId: string; name: string; net: number }[
   return txs
 }
 
-/* ── Componente ─────────────────────────────────────────── */
 export function CuentasSection({
   groupId,
   eventId,
@@ -89,14 +87,14 @@ export function CuentasSection({
   settlements,
 }: CuentasSectionProps) {
   const router = useRouter()
-  const [settleError, setSettleError]   = useState<string | null>(null)
-  const [settling, startSettling]       = useTransition()
+  const [settleError, setSettleError] = useState<string | null>(null)
+  const [settling, startSettling]     = useTransition()
 
   const allAttendees: Attendee[] = attendees.some((a) => a.user_id === currentUserId)
     ? attendees
     : [{ user_id: currentUserId, name: currentUserName }, ...attendees]
 
-  const nameMap   = Object.fromEntries(allAttendees.map((a) => [a.user_id, a.name]))
+  const nameMap     = Object.fromEntries(allAttendees.map((a) => [a.user_id, a.name]))
   const displayName = (uid: string, fallback = 'Alguien') =>
     uid === currentUserId ? currentUserName : (nameMap[uid] ?? fallback)
 
@@ -115,10 +113,10 @@ export function CuentasSection({
   if (expenses.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-14 text-center px-6">
-        <p className="font-heading text-base font-semibold text-humo">
+        <p className="font-display font-semibold text-base text-humo">
           Sin gastos registrados
         </p>
-        <p className="mt-1.5 max-w-xs font-body text-sm text-niebla">
+        <p className="mt-1.5 text-sm text-niebla">
           Agregá gastos en la pestaña Gastos para ver quién le debe a quién.
         </p>
       </div>
@@ -128,31 +126,26 @@ export function CuentasSection({
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Tabla de balances */}
       <div>
-        <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-niebla">
-          Balances
-        </p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-niebla">Balances</p>
         <div className="flex flex-col gap-2">
           {balances
             .sort((a, b) => b.net - a.net)
             .map((b) => {
-              const isMe = b.userId === currentUserId
+              const isMe       = b.userId === currentUserId
               const isPositive = b.net > 0.005
               const isNegative = b.net < -0.005
 
               return (
                 <div
                   key={b.userId}
-                  className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 ${
-                    isMe ? 'border-fuego/30 bg-fuego/5' : 'bg-noche-media'
+                  className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-2.5 ${
+                    isMe ? 'bg-fuego/[0.06] ring-1 ring-fuego/20' : 'bg-noche-media'
                   }`}
                 >
-                  <span className="font-body text-sm text-humo">
-                    {isMe ? 'Vos' : b.name}
-                  </span>
-                  <span className={`font-body text-sm font-semibold ${
-                    isPositive ? 'text-exito' :
+                  <span className="text-sm text-humo">{isMe ? 'Vos' : b.name}</span>
+                  <span className={`text-sm font-semibold ${
+                    isPositive ? 'text-menta' :
                     isNegative ? 'text-error' :
                     'text-niebla'
                   }`}>
@@ -170,11 +163,8 @@ export function CuentasSection({
         </div>
       </div>
 
-      {/* Transacciones sugeridas */}
       <div>
-        <p className="mb-3 font-body text-xs font-semibold uppercase tracking-wider text-niebla">
-          Pagos sugeridos
-        </p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-niebla">Pagos sugeridos</p>
 
         {settlement.length > 0 ? (
           <div className="flex flex-col gap-2">
@@ -184,11 +174,11 @@ export function CuentasSection({
               return (
                 <div
                   key={i}
-                  className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 ${
-                    isMyDebt ? 'border-alerta/30 bg-alerta/5' : 'bg-noche-media'
+                  className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 ${
+                    isMyDebt ? 'bg-alerta/[0.08] ring-1 ring-alerta/20' : 'bg-noche-media'
                   }`}
                 >
-                  <p className="font-body text-sm text-humo">
+                  <p className="text-sm text-humo">
                     <span className="font-semibold">
                       {t.fromUserId === currentUserId ? 'Vos' : t.fromName}
                     </span>
@@ -206,7 +196,7 @@ export function CuentasSection({
                     <button
                       onClick={() => handleSettle(t.toUserId, t.amount)}
                       disabled={settling}
-                      className="flex-shrink-0 rounded-xl border border-exito/30 px-3 py-1.5 font-body text-xs font-semibold text-exito hover:bg-exito/10 transition-colors disabled:opacity-50"
+                      className="shrink-0 rounded-full border border-menta/30 px-3 py-1.5 text-xs font-semibold text-menta hover:bg-menta/10 transition-colors disabled:opacity-50"
                     >
                       {settling ? '…' : 'Pagué'}
                     </button>
@@ -216,13 +206,13 @@ export function CuentasSection({
             })}
 
             {settleError && (
-              <p className="font-body text-xs text-error">{settleError}</p>
+              <p className="text-xs text-error">{settleError}</p>
             )}
           </div>
         ) : (
-          <div className="flex items-center gap-2.5 rounded-xl border border-exito/30 bg-exito/5 px-4 py-3">
-            <CheckCircle2 size={16} className="text-exito" />
-            <p className="font-body text-sm text-humo">Todos están al día</p>
+          <div className="flex items-center gap-2.5 rounded-2xl bg-menta/[0.08] ring-1 ring-menta/20 px-4 py-3">
+            <CheckCircle2 size={16} className="text-menta" />
+            <p className="text-sm text-humo">Todos están al día</p>
           </div>
         )}
       </div>

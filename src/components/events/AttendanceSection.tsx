@@ -15,7 +15,7 @@ interface Props {
 
 export function AttendanceSection({ eventId, currentUserId, myAttendance, attendees }: Props) {
   const router = useRouter()
-  const [attended, setAttended]   = useState(myAttendance)
+  const [attended, setAttended]    = useState(myAttendance)
   const [pending, startTransition] = useTransition()
   const [error, setError]          = useState<string | null>(null)
 
@@ -40,17 +40,16 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
   return (
     <div className="flex flex-col gap-4">
 
-      {/* Toggle del usuario */}
       <div className="flex items-center justify-between rounded-2xl bg-noche-media px-4 py-3.5">
-        <span className="font-body text-sm text-humo">¿Fuiste a esta juntada?</span>
+        <span className="text-sm text-humo">¿Fuiste a esta juntada?</span>
         <div className="flex gap-2">
           <button
             onClick={() => handleToggle(true)}
             disabled={pending}
-            className={`rounded-xl px-3.5 py-1.5 font-body text-xs font-semibold transition-colors disabled:opacity-50 ${
+            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
               attended
-                ? 'bg-exito/15 text-exito ring-1 ring-exito/30'
-                : 'bg-noche text-niebla hover:text-humo'
+                ? 'bg-menta/[0.15] text-menta ring-1 ring-menta/30'
+                : 'bg-white/5 text-niebla'
             }`}
           >
             Fui
@@ -58,10 +57,10 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
           <button
             onClick={() => handleToggle(false)}
             disabled={pending}
-            className={`rounded-xl px-3.5 py-1.5 font-body text-xs font-semibold transition-colors disabled:opacity-50 ${
+            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
               !attended
-                ? 'bg-error/10 text-error ring-1 ring-error/20'
-                : 'bg-noche text-niebla hover:text-humo'
+                ? 'bg-error/[0.12] text-error ring-1 ring-error/20'
+                : 'bg-white/5 text-niebla'
             }`}
           >
             No fui
@@ -69,21 +68,20 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
         </div>
       </div>
 
-      {error && <p className="font-body text-xs text-error">{error}</p>}
+      {error && <p className="text-xs text-error">{error}</p>}
 
-      {/* Lista de asistentes */}
       {(attended || others.length > 0) && (
         <div>
-          <p className="mb-2 font-body text-xs font-semibold uppercase tracking-wider text-niebla">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-niebla">
             Fueron ({attendees.length})
           </p>
           <div className="flex flex-wrap gap-2">
             {attended && (
-              <div className="flex items-center gap-2 rounded-full border border-exito/30 bg-exito/10 px-3 py-1.5">
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-exito/20 font-body text-[10px] font-bold text-exito">
+              <div className="flex items-center gap-2 rounded-full bg-menta/[0.12] px-3 py-1.5">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-menta/20 text-[10px] font-bold text-menta">
                   Yo
                 </div>
-                <span className="font-body text-sm text-humo">
+                <span className="text-sm text-humo">
                   Yo <span className="text-xs text-niebla">(vos)</span>
                 </span>
               </div>
@@ -93,10 +91,10 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
                 key={a.user_id}
                 className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
               >
-                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 font-body text-[10px] font-bold text-fuego">
+                <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 text-[10px] font-bold text-fuego">
                   {a.name.charAt(0).toUpperCase()}
                 </div>
-                <span className="font-body text-sm text-humo">{a.name}</span>
+                <span className="text-sm text-humo">{a.name}</span>
               </div>
             ))}
           </div>
@@ -104,7 +102,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
       )}
 
       {!attended && others.length === 0 && (
-        <p className="font-body text-sm text-niebla">Nadie confirmó asistencia todavía.</p>
+        <p className="text-sm text-niebla">Nadie confirmó asistencia todavía.</p>
       )}
     </div>
   )

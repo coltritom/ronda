@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 
 interface PageProps {
@@ -225,15 +227,20 @@ export default async function EtiquetasPage({ params }: PageProps) {
   })
 
   return (
-    <div className="flex-1 p-6 lg:p-8">
-      <div className="max-w-2xl">
-        <h2 className="font-heading mb-1 text-lg font-semibold text-humo">
-          Etiquetas
-        </h2>
-        <p className="mb-6 text-sm text-niebla">
-          Auto-generadas según el comportamiento de cada uno.
-        </p>
+    <div className="max-w-2xl mx-auto pb-8">
+      <div className="px-4 md:px-6 pt-4 pb-2">
+        <Link
+          href={`/groups/${groupId}`}
+          className="flex items-center gap-1 text-fuego text-[13px] font-semibold mb-3"
+        >
+          <ChevronLeft size={16} />
+          Grupo
+        </Link>
+        <h1 className="font-display font-bold text-[22px] text-humo">Etiquetas</h1>
+        <p className="text-sm text-niebla mt-1">Auto-generadas según el comportamiento de cada uno.</p>
+      </div>
 
+      <div className="px-4 md:px-6 mt-4">
         {totalEvents === 0 ? (
           <div className="rounded-2xl border border-dashed border-niebla/20 bg-noche-media py-12 text-center">
             <p className="text-sm text-niebla">
@@ -245,9 +252,9 @@ export default async function EtiquetasPage({ params }: PageProps) {
             {results.map((m) => (
               <div
                 key={m.userId}
-                className={`rounded-2xl border px-5 py-4 ${
+                className={`rounded-2xl px-4 py-4 ${
                   m.userId === user!.id
-                    ? 'border-accent/30 bg-accent/5'
+                    ? 'bg-fuego/[0.06] ring-1 ring-fuego/20'
                     : 'bg-noche-media'
                 }`}
               >

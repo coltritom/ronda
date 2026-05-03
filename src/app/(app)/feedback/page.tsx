@@ -39,7 +39,7 @@ export default function FeedbackPage() {
     return (
       <div className="max-w-2xl mx-auto pb-8 px-4 md:px-6 pt-4">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/home")}
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-4"
         >
           <ChevronLeft size={16} />
@@ -66,7 +66,7 @@ export default function FeedbackPage() {
     <div className="max-w-2xl mx-auto pb-8">
       <div className="px-4 md:px-6 pt-4 pb-2">
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push("/home")}
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-4"
         >
           <ChevronLeft size={16} />

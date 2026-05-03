@@ -16,7 +16,7 @@ interface EventTabsProps {
 
 export function EventTabs({ tabs, activeTab, groupId, eventId }: EventTabsProps) {
   return (
-    <nav className="-mb-px flex gap-1 overflow-x-auto border-b border-noche bg-noche-media px-5 lg:px-8">
+    <div className="flex gap-2 flex-wrap">
       {tabs.map((tab) => {
         const isActive = activeTab === tab.id
         const href = `/groups/${groupId}/events/${eventId}?tab=${tab.id}`
@@ -26,28 +26,23 @@ export function EventTabs({ tabs, activeTab, groupId, eventId }: EventTabsProps)
             key={tab.id}
             href={href}
             className={`
-              flex flex-shrink-0 items-center gap-1.5 border-b-2 px-3 pb-3 pt-3
-              font-body text-sm font-medium transition-colors whitespace-nowrap
+              px-3.5 py-1.5 rounded-full text-[13px] font-semibold transition-all
               ${isActive
-                ? 'border-fuego text-fuego'
-                : 'border-transparent text-niebla hover:text-humo'
+                ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
+                : 'bg-white/5 text-niebla'
               }
             `}
           >
             {tab.label}
             {tab.count !== undefined && tab.count > 0 && (
-              <span className={`rounded-full px-1.5 py-0.5 font-body text-xs font-semibold ${
-                isActive ? 'bg-fuego/10 text-fuego' : 'bg-noche text-niebla'
-              }`}>
-                {tab.count}
-              </span>
+              <span className="ml-1.5 text-[11px]">{tab.count}</span>
             )}
             {tab.alert && (
-              <span className="h-2 w-2 rounded-full bg-alerta" />
+              <span className="ml-1.5 inline-block h-2 w-2 rounded-full bg-alerta align-middle" />
             )}
           </Link>
         )
       })}
-    </nav>
+    </div>
   )
 }

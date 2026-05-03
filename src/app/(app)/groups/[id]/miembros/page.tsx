@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { RemoveMemberButton } from '@/components/groups/RemoveMemberButton'
 
@@ -41,25 +43,31 @@ export default async function MiembrosPage({ params }: PageProps) {
   }))
 
   return (
-    <div className="flex-1 p-6 lg:p-8">
-      <div className="max-w-2xl">
-        <h2 className="font-heading mb-1 text-lg font-semibold text-humo">
-          Miembros
-        </h2>
-        <p className="mb-6 text-sm text-niebla">
+    <div className="max-w-2xl mx-auto pb-8">
+      <div className="px-4 md:px-6 pt-4 pb-2">
+        <Link
+          href={`/groups/${groupId}`}
+          className="flex items-center gap-1 text-fuego text-[13px] font-semibold mb-3"
+        >
+          <ChevronLeft size={16} />
+          Grupo
+        </Link>
+        <h1 className="font-display font-bold text-[22px] text-humo">Miembros</h1>
+        <p className="text-sm text-niebla mt-1">
           {members.length} {members.length === 1 ? 'persona' : 'personas'} en el grupo.
         </p>
+      </div>
 
-        <div className="flex flex-col gap-3">
-          {members.map((m) => (
-            <div
-              key={m.userId}
-              className={`flex items-center gap-4 rounded-2xl border px-5 py-4 ${
-                m.userId === user!.id
-                  ? 'border-accent/30 bg-accent/5'
-                  : 'bg-noche-media'
-              }`}
-            >
+      <div className="px-4 md:px-6 mt-4 flex flex-col gap-3">
+        {members.map((m) => (
+          <div
+            key={m.userId}
+            className={`flex items-center gap-4 rounded-2xl px-4 py-3.5 ${
+              m.userId === user!.id
+                ? 'bg-fuego/[0.06] ring-1 ring-fuego/20'
+                : 'bg-noche-media'
+            }`}
+          >
               {/* Avatar */}
               <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-noche text-sm font-bold text-humo">
                 {m.name.charAt(0).toUpperCase()}
@@ -72,7 +80,7 @@ export default async function MiembrosPage({ params }: PageProps) {
                     {m.userId === user!.id ? 'Yo' : m.name}
                   </p>
                   {m.role === 'admin' && (
-                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
+                    <span className="rounded-full bg-fuego/[0.12] px-2 py-0.5 text-xs font-semibold text-fuego">
                       Admin
                     </span>
                   )}
@@ -89,8 +97,7 @@ export default async function MiembrosPage({ params }: PageProps) {
                 />
               )}
             </div>
-          ))}
-        </div>
+        ))}
       </div>
     </div>
   )

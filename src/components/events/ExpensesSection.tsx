@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
+import { Trash2 } from 'lucide-react'
 import { createExpense, deleteExpense, settleDebt } from '@/lib/actions/expenses'
 
 interface Attendee {
@@ -42,7 +43,6 @@ interface ExpensesSectionProps {
   settlements: Settlement[]
 }
 
-/* ── Balance calculation ────────────────────────────────── */
 function calcBalances(
   expenses: Expense[],
   settlements: Settlement[],
@@ -57,14 +57,11 @@ function calcBalances(
   for (const exp of expenses) {
     ensure(exp.paid_by, exp.profiles?.name ?? 'Alguien')
     map[exp.paid_by].net += exp.amount
-
     for (const s of exp.expense_splits) {
       ensure(s.user_id, s.profiles?.name ?? 'Alguien')
       map[s.user_id].net -= s.amount
     }
   }
-
-  /* Settlements reducen la deuda del que pagó y el crédito del que recibió */
   for (const s of settlements) {
     ensure(s.from_user, 'Alguien')
     map[s.from_user].net += s.amount
@@ -76,7 +73,7 @@ function calcBalances(
 }
 
 function calcSettlement(balances: { userId: string; name: string; net: number }[]) {
-  const eps = 0.005
+  const eps   = 0.005
   const creds = balances.filter((b) => b.net > eps).map((b) => ({ ...b, rem: b.net })).sort((a, b) => b.rem - a.rem)
   const debts = balances.filter((b) => b.net < -eps).map((b) => ({ ...b, rem: -b.net })).sort((a, b) => b.rem - a.rem)
 
@@ -86,11 +83,9 @@ function calcSettlement(balances: { userId: string; name: string; net: number }[
   while (ci < creds.length && di < debts.length) {
     const transfer = Math.min(creds[ci].rem, debts[di].rem)
     txs.push({
-      fromUserId: debts[di].userId,
-      fromName: debts[di].name,
-      toUserId: creds[ci].userId,
-      toName: creds[ci].name,
-      amount: Math.round(transfer * 100) / 100,
+      fromUserId: debts[di].userId, fromName: debts[di].name,
+      toUserId:   creds[ci].userId, toName:   creds[ci].name,
+      amount:     Math.round(transfer * 100) / 100,
     })
     creds[ci].rem -= transfer
     debts[di].rem -= transfer
@@ -101,7 +96,6 @@ function calcSettlement(balances: { userId: string; name: string; net: number }[
   return txs
 }
 
-/* ── Component ──────────────────────────────────────────── */
 export function ExpensesSection({
   groupId,
   eventId,
@@ -112,24 +106,23 @@ export function ExpensesSection({
   settlements,
 }: ExpensesSectionProps) {
   const router = useRouter()
-  const [showForm, setShowForm]               = useState(false)
-  const [description, setDescription]         = useState('')
-  const [amount, setAmount]                   = useState('')
-  const [paidBy, setPaidBy]                   = useState(currentUserId)
-  const [splitType, setSplitType]             = useState<'equal_all' | 'equal_some'>('equal_all')
-  const [selectedSplit, setSelectedSplit]     = useState<string[]>([])
-  const [loading, setLoading]                 = useState(false)
-  const [deleting, setDeleting]               = useState<string | null>(null)
-  const [error, setError]                     = useState<string | null>(null)
-  const [settleError, setSettleError]         = useState<string | null>(null)
-  const [settling, startSettling]             = useTransition()
+  const [showForm, setShowForm]           = useState(false)
+  const [description, setDescription]     = useState('')
+  const [amount, setAmount]               = useState('')
+  const [paidBy, setPaidBy]               = useState(currentUserId)
+  const [splitType, setSplitType]         = useState<'equal_all' | 'equal_some'>('equal_all')
+  const [selectedSplit, setSelectedSplit] = useState<string[]>([])
+  const [loading, setLoading]             = useState(false)
+  const [deleting, setDeleting]           = useState<string | null>(null)
+  const [error, setError]                 = useState<string | null>(null)
+  const [settleError, setSettleError]     = useState<string | null>(null)
+  const [settling, startSettling]         = useTransition()
 
-  /* Always include current user */
   const allAttendees: Attendee[] = attendees.some((a) => a.user_id === currentUserId)
     ? attendees
     : [{ user_id: currentUserId, name: currentUserName }, ...attendees]
 
-  const nameMap = Object.fromEntries(allAttendees.map((a) => [a.user_id, a.name]))
+  const nameMap     = Object.fromEntries(allAttendees.map((a) => [a.user_id, a.name]))
   const displayName = (uid: string, fallback = 'Alguien') =>
     uid === currentUserId ? currentUserName : (nameMap[uid] ?? fallback)
 
@@ -180,36 +173,34 @@ export function ExpensesSection({
     setSettleError(null)
     startSettling(async () => {
       const result = await settleDebt(groupId, eventId, toUserId, amount)
-      if (result?.error) {
-        setSettleError(result.error)
-      } else {
-        router.refresh()
-      }
+      if (result?.error) setSettleError(result.error)
+      else router.refresh()
     })
   }
 
-  const balances = calcBalances(expenses, settlements, displayName)
+  const balances   = calcBalances(expenses, settlements, displayName)
   const settlement = calcSettlement(balances)
 
   return (
-    <section>
-      <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-humo">Gastos</p>
+    <div className="flex flex-col gap-4">
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-wider text-niebla">Gastos</p>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="text-xs font-medium text-accent hover:text-accent-hover transition-colors"
+            className="text-[13px] font-semibold text-fuego bg-transparent border-none cursor-pointer"
           >
             + Agregar
           </button>
         )}
       </div>
 
-      {/* ── Formulario ──────────────────────────────────────── */}
+      {/* Formulario */}
       {showForm && (
-        <form onSubmit={handleAdd} className="mb-4 flex flex-col gap-3 rounded-xl bg-noche p-4">
+        <form onSubmit={handleAdd} className="flex flex-col gap-3 rounded-2xl bg-noche-media p-4">
 
-          {/* Descripción + Monto */}
           <div className="flex gap-2">
             <input
               type="text"
@@ -217,7 +208,7 @@ export function ExpensesSection({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               maxLength={80}
-              className="min-w-0 flex-1 rounded-lg bg-noche px-3 py-2 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+              className="min-w-0 flex-1 rounded-xl bg-noche px-3 py-2 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-fuego/30"
             />
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-niebla">$</span>
@@ -229,15 +220,14 @@ export function ExpensesSection({
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 required
-                className="w-24 rounded-lg bg-noche pl-6 pr-3 py-2 text-sm text-humo focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="w-24 rounded-xl bg-noche pl-6 pr-3 py-2 text-sm text-humo focus:outline-none focus:ring-2 focus:ring-fuego/30"
               />
             </div>
           </div>
 
-          {/* ¿Quién pagó? */}
           {allAttendees.length > 1 && (
             <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-medium text-niebla">¿Quién pagó?</span>
+              <span className="text-xs font-semibold text-niebla">¿Quién pagó?</span>
               <div className="flex flex-wrap gap-2">
                 {allAttendees.map((a) => (
                   <button
@@ -245,14 +235,14 @@ export function ExpensesSection({
                     type="button"
                     onClick={() => setPaidBy(a.user_id)}
                     className={`
-                      flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all
+                      flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all
                       ${paidBy === a.user_id
-                        ? 'border-accent bg-accent/10 text-accent'
-                        : 'border-noche text-niebla hover:border-fuego/40 hover:text-humo'
+                        ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
+                        : 'bg-white/5 text-niebla'
                       }
                     `}
                   >
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent/20 text-accent font-bold" style={{ fontSize: 9 }}>
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-fuego/20 text-fuego font-bold" style={{ fontSize: 9 }}>
                       {(a.name ?? '?').charAt(0).toUpperCase()}
                     </span>
                     <span>{a.user_id === currentUserId ? 'Yo' : a.name}</span>
@@ -262,9 +252,8 @@ export function ExpensesSection({
             </div>
           )}
 
-          {/* División */}
           <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-niebla">Dividir entre</span>
+            <span className="text-xs font-semibold text-niebla">Dividir entre</span>
             <div className="flex gap-2">
               {(['equal_all', 'equal_some'] as const).map((type) => (
                 <button
@@ -272,10 +261,10 @@ export function ExpensesSection({
                   type="button"
                   onClick={() => setSplitType(type)}
                   className={`
-                    flex-1 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all
+                    flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all
                     ${splitType === type
-                      ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-noche text-niebla hover:border-fuego/40 hover:text-humo'
+                      ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
+                      : 'bg-white/5 text-niebla'
                     }
                   `}
                 >
@@ -285,7 +274,6 @@ export function ExpensesSection({
             </div>
           </div>
 
-          {/* Selector de personas para equal_some */}
           {splitType === 'equal_some' && (
             <div className="flex flex-wrap gap-2">
               {allAttendees.map((a) => (
@@ -294,14 +282,14 @@ export function ExpensesSection({
                   type="button"
                   onClick={() => toggleSplit(a.user_id)}
                   className={`
-                    flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all
+                    flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all
                     ${selectedSplit.includes(a.user_id)
-                      ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-noche text-niebla hover:border-fuego/40 hover:text-humo'
+                      ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
+                      : 'bg-white/5 text-niebla'
                     }
                   `}
                 >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-accent/20 text-accent font-bold" style={{ fontSize: 9 }}>
+                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-fuego/20 text-fuego font-bold" style={{ fontSize: 9 }}>
                     {(a.name ?? '?').charAt(0).toUpperCase()}
                   </span>
                   <span>{a.user_id === currentUserId ? 'Yo' : a.name}</span>
@@ -310,22 +298,20 @@ export function ExpensesSection({
             </div>
           )}
 
-          {error && (
-            <p className="text-xs text-red-400">{error}</p>
-          )}
+          {error && <p className="text-xs text-error">{error}</p>}
 
           <div className="flex gap-2">
             <button
               type="button"
               onClick={() => setShowForm(false)}
-              className="flex-1 rounded-lg border border-niebla/20 py-2 text-sm font-medium text-niebla hover:text-humo transition-colors"
+              className="flex-1 rounded-full py-2 text-sm font-semibold text-niebla bg-white/5 transition-colors"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || !amount}
-              className="flex-1 rounded-lg bg-accent py-2 text-sm font-medium text-white hover:bg-accent-hover transition-colors disabled:opacity-60"
+              className="flex-1 rounded-full bg-fuego py-2 text-sm font-semibold text-white hover:bg-fuego/90 transition-colors disabled:opacity-60"
             >
               {loading ? 'Guardando…' : 'Agregar'}
             </button>
@@ -333,24 +319,24 @@ export function ExpensesSection({
         </form>
       )}
 
-      {/* ── Lista de gastos ──────────────────────────────────── */}
+      {/* Lista de gastos */}
       {expenses.length > 0 ? (
         <div className="flex flex-col gap-2">
           {expenses.map((exp) => {
             const payerLabel = exp.paid_by === currentUserId ? 'Yo' : (exp.profiles?.name ?? 'Alguien')
             const splitCount = exp.expense_splits.length
-            const perPerson = splitCount > 0 ? exp.amount / splitCount : exp.amount
+            const perPerson  = splitCount > 0 ? exp.amount / splitCount : exp.amount
 
             return (
               <div
                 key={exp.id}
-                className="flex items-center justify-between gap-3 rounded-xl bg-noche px-4 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-2xl bg-noche-media px-4 py-3"
               >
                 <div className="min-w-0">
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-sm font-medium text-humo">{payerLabel}</span>
+                    <span className="text-sm font-semibold text-humo">{payerLabel}</span>
                     <span className="text-sm text-niebla">pagó</span>
-                    <span className="text-sm font-semibold text-accent">
+                    <span className="text-sm font-semibold text-fuego">
                       ${exp.amount.toLocaleString('es-AR')}
                     </span>
                   </div>
@@ -367,35 +353,32 @@ export function ExpensesSection({
                   <button
                     onClick={() => handleDelete(exp.id)}
                     disabled={deleting === exp.id}
-                    className="flex-shrink-0 text-niebla hover:text-red-400 transition-colors disabled:opacity-40"
-                    title="Eliminar"
+                    className="shrink-0 text-niebla hover:text-error transition-colors disabled:opacity-40"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
-                    </svg>
+                    <Trash2 size={14} />
                   </button>
                 )}
               </div>
             )
           })}
 
-          {/* ── Resumen de deudas ────────────────────────────── */}
-          <div className="mt-2 rounded-xl bg-noche p-4">
+          {/* Resumen de deudas */}
+          <div className="rounded-2xl bg-noche-media p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-niebla">Resumen</p>
             {settlement.length > 0 ? (
               <div className="flex flex-col gap-2">
                 {settlement.map((t, i) => (
                   <div key={i} className="flex items-center justify-between gap-3">
                     <p className="text-sm text-humo">
-                      <span className="font-medium">
+                      <span className="font-semibold">
                         {t.fromUserId === currentUserId ? 'Vos' : t.fromName}
                       </span>
                       {' le debe '}
-                      <span className="font-semibold text-accent">
+                      <span className="font-semibold text-fuego">
                         ${t.amount.toLocaleString('es-AR', { maximumFractionDigits: 2 })}
                       </span>
                       {' a '}
-                      <span className="font-medium">
+                      <span className="font-semibold">
                         {t.toUserId === currentUserId ? 'vos' : t.toName}
                       </span>
                     </p>
@@ -403,7 +386,7 @@ export function ExpensesSection({
                       <button
                         onClick={() => handleSettle(t.toUserId, t.amount)}
                         disabled={settling}
-                        className="flex-shrink-0 rounded-lg border border-green-500/30 px-2.5 py-1 text-xs font-medium text-green-500 hover:bg-green-500/10 transition-colors disabled:opacity-50"
+                        className="shrink-0 rounded-full border border-menta/30 px-2.5 py-1 text-xs font-semibold text-menta hover:bg-menta/10 transition-colors disabled:opacity-50"
                       >
                         {settling ? '…' : 'Pagué'}
                       </button>
@@ -411,7 +394,7 @@ export function ExpensesSection({
                   </div>
                 ))}
                 {settleError && (
-                  <p className="text-xs text-red-400">{settleError}</p>
+                  <p className="text-xs text-error">{settleError}</p>
                 )}
               </div>
             ) : (
@@ -422,6 +405,6 @@ export function ExpensesSection({
       ) : (
         <p className="text-sm text-niebla">Nadie agregó gastos todavía.</p>
       )}
-    </section>
+    </div>
   )
 }

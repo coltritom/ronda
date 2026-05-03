@@ -101,32 +101,30 @@ export function NextJuntada({
     return { c, u, n };
   };
 
-  const header = (
-    <div className={`flex items-start ${showLabel ? "justify-between" : "justify-end"} mb-1.5`}>
-      {showLabel && (
-        <p className="text-[11px] text-fuego font-semibold uppercase tracking-[0.08em]">
-          Próxima juntada
-        </p>
-      )}
-      {juntadaId && (
-        <button
-          onClick={goToDetail}
-          className="flex items-center gap-0.5 text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer"
-        >
-          Ver detalle <ChevronRight size={13} />
-        </button>
-      )}
-    </div>
-  );
+  const label = showLabel ? (
+    <p className="text-[11px] text-fuego font-semibold uppercase tracking-[0.08em] mb-1.5">
+      Próxima juntada
+    </p>
+  ) : null;
 
   const nameDate = (
     <>
+      <div className="flex items-start justify-between gap-2">
+        <p className="font-display font-semibold text-[17px] text-humo flex-1 min-w-0">
+          {juntadaName || date}
+        </p>
+        {juntadaId && (
+          <button
+            onClick={goToDetail}
+            className="flex items-center gap-0.5 text-xs text-fuego font-semibold bg-transparent border-none cursor-pointer shrink-0 mt-1"
+          >
+            Ver detalle <ChevronRight size={13} />
+          </button>
+        )}
+      </div>
       {juntadaName && (
-        <p className="font-display font-semibold text-[17px] text-humo">{juntadaName}</p>
+        <p className="text-[13px] text-niebla">{date}</p>
       )}
-      <p className={juntadaName ? "text-[13px] text-niebla" : "font-display font-semibold text-[17px] text-humo"}>
-        {date}
-      </p>
     </>
   );
 
@@ -142,7 +140,7 @@ export function NextJuntada({
 
     inner = (
       <>
-        {header}
+        {label}
         {nameDate}
         <p className="text-[13px] text-niebla mt-1 mb-3">
           {c} van{u > 0 ? ` · ${u} no sabe${u > 1 ? "n" : ""}` : ""}{n > 0 ? ` · ${n} sin respuesta` : ""}
@@ -166,7 +164,7 @@ export function NextJuntada({
   } else {
     inner = (
       <>
-        {header}
+        {label}
         {nameDate}
         <p className="text-[13px] text-niebla mt-1 mb-3">
           {confirmed} van

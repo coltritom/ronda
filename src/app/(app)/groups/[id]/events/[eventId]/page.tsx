@@ -79,6 +79,12 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     .order('created_at', { ascending: true })
 
   /* ── Gastos + splits ─────────────────────────────────────── */
+  type ExpenseSplitRow = { user_id: string; amount: number; is_settled: boolean }
+  type ExpenseQueryRow = {
+    id: string; description: string | null; amount: number
+    paid_by: string; split_type: string | null
+    expense_splits: ExpenseSplitRow[]
+  }
   const { data: expensesRaw } = await supabase
     .from('expenses')
     .select(`
@@ -87,6 +93,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     `)
     .eq('event_id', eventId)
     .order('created_at', { ascending: true })
+  const expensesTyped = (expensesRaw ?? []) as ExpenseQueryRow[]
 
   /* ── Settlements ─────────────────────────────────────────── */
   const { data: settlementsRaw } = await supabase
@@ -99,8 +106,8 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     ...(rsvpsRaw ?? []).map(r => r.user_id),
     ...attendanceRaw.map(a => a.user_id),
     ...(contributionsRaw ?? []).map(c => c.user_id),
-    ...(expensesRaw ?? []).map(e => e.paid_by),
-    ...(expensesRaw ?? []).flatMap(e => ((e as any).expense_splits ?? []).map((s: any) => s.user_id)),
+    ...expensesTyped.map(e => e.paid_by),
+    ...expensesTyped.flatMap(e => e.expense_splits.map(s => s.user_id)),
   ])
   const { data: profilesData } = allUserIds.size > 0
     ? await supabase.from('profiles').select('id, name').in('id', [...allUserIds])
@@ -110,14 +117,12 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   )
 
   /* ── Enriquecer datos con nombres ────────────────────────── */
-  const rsvps = (rsvpsRaw ?? []).map(r => ({
-    ...r,
+  type RsvpEnriched = { response: RsvpStatus; user_id: string; profiles: { name: string } }
+  const rsvps: RsvpEnriched[] = (rsvpsRaw ?? []).map(r => ({
+    response: r.response as RsvpStatus,
+    user_id: r.user_id,
     profiles: { name: profileMap[r.user_id] ?? 'Usuario' },
-  })) as unknown as {
-    response: RsvpStatus
-    user_id: string
-    profiles: { name: string } | null
-  }[]
+  }))
 
   const myRsvp   = rsvps.find((r) => r.user_id === user.id)?.response ?? null
   const going    = rsvps.filter((r) => r.response === 'going')
@@ -142,39 +147,34 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     myAttendance = attendanceList.some((a) => a.user_id === user.id)
   }
 
-  const contributions = (contributionsRaw ?? []).map(c => ({
-    ...c,
+  type ContributionCategory = 'bebida' | 'comida' | 'postre' | 'hielo' | 'snacks' | 'juegos' | 'utensilios' | 'otros'
+  type ContributionEnriched = {
+    id: string; category: ContributionCategory; description: string | null
+    quantity: number; user_id: string; profiles: { name: string }
+  }
+  const contributions: ContributionEnriched[] = (contributionsRaw ?? []).map(c => ({
+    id: c.id,
+    category: c.category as ContributionCategory,
+    description: c.description,
+    quantity: c.quantity,
+    user_id: c.user_id,
     profiles: { name: profileMap[c.user_id] ?? 'Usuario' },
-  })) as unknown as {
-    id: string
-    category: 'bebida' | 'comida' | 'postre' | 'hielo' | 'snacks' | 'juegos' | 'utensilios' | 'otros'
-    description: string | null
-    quantity: number
-    user_id: string
-    profiles: { name: string } | null
-  }[]
+  }))
 
-  const expenses = (expensesRaw ?? []).map(e => ({
+  type ExpenseEnriched = {
+    id: string; description: string | null; amount: number
+    paid_by: string; split_type: string | null
+    profiles: { name: string }
+    expense_splits: { user_id: string; amount: number; is_settled: boolean; profiles: { name: string } }[]
+  }
+  const expenses: ExpenseEnriched[] = expensesTyped.map(e => ({
     ...e,
-    profiles: { name: profileMap[(e as any).paid_by] ?? 'Usuario' },
-    expense_splits: ((e as any).expense_splits ?? []).map((s: any) => ({
+    profiles: { name: profileMap[e.paid_by] ?? 'Usuario' },
+    expense_splits: e.expense_splits.map(s => ({
       ...s,
       profiles: { name: profileMap[s.user_id] ?? 'Usuario' },
     })),
-  })) as unknown as {
-    id: string
-    description: string | null
-    amount: number
-    paid_by: string
-    split_type: string | null
-    profiles: { name: string } | null
-    expense_splits: {
-      user_id: string
-      amount: number
-      is_settled: boolean
-      profiles: { name: string } | null
-    }[]
-  }[]
+  }))
 
   const settlements = (settlementsRaw ?? []) as {
     from_user: string; to_user: string; amount: number

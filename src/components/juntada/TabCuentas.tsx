@@ -6,21 +6,9 @@ import { Button } from "@/components/ui/Button";
 import { fmtARSExact } from "@/lib/utils";
 import { ConfirmPagoModal } from "@/components/juntada/ConfirmPagoModal";
 import { createClient } from "@/lib/supabase/clients";
+import type { UIMember, UIDebt } from "@/types";
 
-interface Member {
-  id: string;
-  name: string;
-  colorIndex: number;
-  isGuest?: boolean;
-}
-
-interface Deuda {
-  fromId: string;
-  toId: string;
-  amount: number;
-}
-
-function simplifyDebts(splits: Array<{ user_id: string; amount: number; paid_by: string }>): Deuda[] {
+function simplifyDebts(splits: Array<{ user_id: string; amount: number; paid_by: string }>): UIDebt[] {
   const balance: Record<string, number> = {};
   for (const s of splits) {
     balance[s.paid_by] = (balance[s.paid_by] ?? 0) + s.amount;
@@ -35,7 +23,7 @@ function simplifyDebts(splits: Array<{ user_id: string; amount: number; paid_by:
   creditors.sort((a, b) => b.amount - a.amount);
   debtors.sort((a, b) => b.amount - a.amount);
 
-  const result: Deuda[] = [];
+  const result: UIDebt[] = [];
   let ci = 0, di = 0;
   while (ci < creditors.length && di < debtors.length) {
     const credit = creditors[ci];
@@ -66,10 +54,10 @@ interface Props {
 }
 
 export function TabCuentas({ closed = false, juntadaId, juntadaName, groupId }: Props) {
-  const [members, setMembers] = useState<Member[]>([]);
-  const [deudas, setDeudas] = useState<Deuda[]>([]);
+  const [members, setMembers] = useState<UIMember[]>([]);
+  const [deudas, setDeudas] = useState<UIDebt[]>([]);
   const [expensesByPayer, setExpensesByPayer] = useState<Record<string, string[]>>({});
-  const [confirmDeuda, setConfirmDeuda] = useState<Deuda | null>(null);
+  const [confirmDeuda, setConfirmDeuda] = useState<UIDebt | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [hasExpenses, setHasExpenses] = useState(false);
 
@@ -87,12 +75,12 @@ export function TabCuentas({ closed = false, juntadaId, juntadaName, groupId }: 
     const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
     const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
 
-    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => ({
+    const memberList: UIMember[] = (membersResult.data ?? []).map((m, i) => ({
       id: m.user_id,
       name: profileMap[m.user_id] ?? "Usuario",
       colorIndex: i,
     }));
-    const guestList: Member[] = (guestsResult.data ?? []).map((g, i) => ({
+    const guestList: UIMember[] = (guestsResult.data ?? []).map((g, i) => ({
       id: g.id, name: g.name, colorIndex: (memberList.length + i) % 8, isGuest: true,
     }));
     setMembers([...memberList, ...guestList]);

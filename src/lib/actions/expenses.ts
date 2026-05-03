@@ -84,15 +84,17 @@ export async function deleteExpense(
   if (!user) return { error: 'No autenticado.' }
 
   /* Resolver el group_id a través de expenses → events */
-  const { data: expenseData } = await supabase
+  type ExpenseWithEvent = { event_id: string; events: { group_id: string } | null }
+  const result = await supabase
     .from('expenses')
     .select('event_id, events ( group_id )')
     .eq('id', expenseId)
     .maybeSingle()
+  const expenseData = result.data as ExpenseWithEvent | null
 
   if (!expenseData) return { error: 'Gasto no encontrado.' }
 
-  const groupId = (expenseData.events as unknown as { group_id: string } | null)?.group_id
+  const groupId = expenseData.events?.group_id
   if (!groupId) return { error: 'No se pudo verificar el grupo.' }
 
   const memberError = await assertGroupMember(supabase, groupId, user.id)

@@ -22,15 +22,18 @@ export default async function GroupsPage() {
 
   if (error) console.error('Error fetching groups:', error.message)
 
-  const groups: GroupWithMeta[] = (memberships ?? [])
+  type GroupQueryRow = {
+    id: string; name: string; description: string | null; emoji: string | null
+    created_by: string; created_at: string
+    group_members: { count: number }[]
+  }
+  type MembershipWithGroup = { role: string; groups: GroupQueryRow | null }
+
+  const groups: GroupWithMeta[] = ((memberships ?? []) as unknown as MembershipWithGroup[])
     .filter((m) => m.groups !== null)
     .map((m) => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const g = m.groups as any
-      const memberCount = Array.isArray(g.group_members)
-        ? (g.group_members[0] as { count: number })?.count ?? 0
-        : 0
-
+      const g = m.groups!
+      const memberCount = g.group_members[0]?.count ?? 0
       return {
         id:           g.id,
         name:         g.name,

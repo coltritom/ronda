@@ -64,3 +64,18 @@ export interface Expense {
   split_type: 'equal_all' | 'equal_some'
   created_at: string
 }
+
+/* UI display types shared across juntada components */
+export interface UIMember {
+  id: string
+  name: string
+  colorIndex: number
+  isGuest?: boolean
+}
+
+export interface UIDebt {
+  fromId: string
+  toId: string
+  amount: number
+  paid?: boolean
+}

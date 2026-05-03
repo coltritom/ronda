@@ -39,9 +39,10 @@ export default async function TeDebenPage() {
     .select('group_id, groups(name)')
     .eq('user_id', user.id)
 
+  type MembershipRow = { group_id: string; groups: { name: string } | null }
   const groupMap: Record<string, string> = {}
-  for (const m of memberships ?? []) {
-    groupMap[(m as any).group_id] = (m as any).groups?.name ?? 'Grupo'
+  for (const m of (memberships ?? []) as unknown as MembershipRow[]) {
+    groupMap[m.group_id] = m.groups?.name ?? 'Grupo'
   }
   const groupIds = Object.keys(groupMap)
 

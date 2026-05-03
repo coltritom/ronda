@@ -5,14 +5,9 @@ import { Check, X, Minus } from "lucide-react";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { createClient } from "@/lib/supabase/clients";
+import type { UIMember } from "@/types";
 
 type RSVPStatus = "going" | "not_going" | "maybe" | "none";
-
-interface Member {
-  id: string;
-  name: string;
-  colorIndex: number;
-}
 
 interface GuestMember {
   id: string;
@@ -54,7 +49,7 @@ const RSVP_CHIPS: {
 
 export function TabAsistencia({ closed = false, upcoming = false, juntadaId, groupId }: TabAsistenciaProps) {
   const [rsvpStatus, setRsvpStatus] = useState<RSVPStatus>("none");
-  const [members, setMembers] = useState<Member[]>([]);
+  const [members, setMembers] = useState<UIMember[]>([]);
   const [checks, setChecks] = useState<boolean[]>([]);
   const [editing, setEditing] = useState(false);
   const [guests, setGuests] = useState<GuestMember[]>([]);
@@ -75,7 +70,7 @@ export function TabAsistencia({ closed = false, upcoming = false, juntadaId, gro
     const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
     const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
 
-    const memberList: Member[] = (membersResult.data ?? []).map((m, i) => ({
+    const memberList: UIMember[] = (membersResult.data ?? []).map((m, i) => ({
       id: m.user_id,
       name: profileMap[m.user_id] ?? "Usuario",
       colorIndex: i,

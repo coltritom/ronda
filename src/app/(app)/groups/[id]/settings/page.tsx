@@ -246,9 +246,11 @@ export default function GroupSettingsPage({
         (profilesData ?? []).map(p => [p.id, { name: p.name, avatar_url: p.avatar_url }])
       );
       setMembers(membersData.map(m => ({
-        ...m,
+        user_id: m.user_id,
+        role: m.role as Role,
+        joined_at: m.joined_at,
         profiles: profileMap[m.user_id] ?? null,
-      })) as unknown as Member[]);
+      })));
     }
 
     // Active invite link

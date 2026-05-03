@@ -41,15 +41,17 @@ export async function deleteContribution(
   if (!user) return { error: 'No autenticado.' }
 
   /* Resolver el group_id a través de contributions → events */
-  const { data: contribData } = await supabase
+  type ContributionWithEvent = { event_id: string; events: { group_id: string } | null }
+  const result = await supabase
     .from('contributions')
     .select('event_id, events ( group_id )')
     .eq('id', contributionId)
     .maybeSingle()
+  const contribData = result.data as ContributionWithEvent | null
 
   if (!contribData) return { error: 'Aporte no encontrado.' }
 
-  const groupId = (contribData.events as unknown as { group_id: string } | null)?.group_id
+  const groupId = contribData.events?.group_id
   if (!groupId) return { error: 'No se pudo verificar el grupo.' }
 
   const memberError = await assertGroupMember(supabase, groupId, user.id)

@@ -8,23 +8,11 @@ import { Button } from "@/components/ui/Button";
 import { fmtARS } from "@/lib/utils";
 import { ConfirmPagoModal } from "@/components/juntada/ConfirmPagoModal";
 import { createClient } from "@/lib/supabase/clients";
-
-interface Member {
-  id: string;
-  name: string;
-  colorIndex: number;
-}
-
-interface Deuda {
-  fromId: string;
-  toId: string;
-  amount: number;
-  paid: boolean;
-}
+import type { UIMember, UIDebt } from "@/types";
 
 function simplifyDebts(
   splits: Array<{ user_id: string; amount: number; paid_by: string }>
-): Deuda[] {
+): UIDebt[] {
   const balance: Record<string, number> = {};
   for (const s of splits) {
     balance[s.paid_by] = (balance[s.paid_by] ?? 0) + s.amount;
@@ -40,7 +28,7 @@ function simplifyDebts(
   creditors.sort((a, b) => b.amount - a.amount);
   debtors.sort((a, b) => b.amount - a.amount);
 
-  const result: Deuda[] = [];
+  const result: UIDebt[] = [];
   let ci = 0, di = 0;
   while (ci < creditors.length && di < debtors.length) {
     const credit = creditors[ci];
@@ -66,9 +54,9 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
 
   const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState("");
-  const [members, setMembers] = useState<Member[]>([]);
-  const [deudas, setDeudas] = useState<Deuda[]>([]);
-  const [confirmDeuda, setConfirmDeuda] = useState<Deuda | null>(null);
+  const [members, setMembers] = useState<UIMember[]>([]);
+  const [deudas, setDeudas] = useState<UIDebt[]>([]);
+  const [confirmDeuda, setConfirmDeuda] = useState<UIDebt | null>(null);
   const [myUserId, setMyUserId] = useState("");
 
   const [expensesByPayer, setExpensesByPayer] = useState<Record<string, string[]>>({});
@@ -93,7 +81,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
     const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
     const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
 
-    const memberList: Member[] = (membersRaw ?? []).map((m, i) => ({
+    const memberList: UIMember[] = (membersRaw ?? []).map((m, i) => ({
       id: m.user_id,
       name: profileMap[m.user_id] ?? "Usuario",
       colorIndex: i,
@@ -287,7 +275,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
   );
 }
 
-function PersonalSummary({ deudas, myId }: { deudas: Deuda[]; myId: string }) {
+function PersonalSummary({ deudas, myId }: { deudas: UIDebt[]; myId: string }) {
   const myDebts = deudas.filter((d) => d.fromId === myId && !d.paid);
   const myCredits = deudas.filter((d) => d.toId === myId && !d.paid);
   const totalDebt = myDebts.reduce((s, d) => s + d.amount, 0);
@@ -321,9 +309,9 @@ function PersonalSummary({ deudas, myId }: { deudas: Deuda[]; myId: string }) {
 function DeudaCard({
   deuda, from, to, onMarkPaid,
 }: {
-  deuda: Deuda;
-  from: Member;
-  to: Member;
+  deuda: UIDebt;
+  from: UIMember;
+  to: UIMember;
   onMarkPaid?: () => void;
 }) {
   return (

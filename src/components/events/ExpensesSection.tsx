@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
-import { createExpense, deleteExpense, settleDebt } from '@/lib/actions/expenses'
+import { deleteExpense, settleDebt } from '@/lib/actions/expenses'
+import { AddExpenseSheet } from './AddExpenseSheet'
 
 interface Attendee {
   user_id: string
@@ -106,17 +107,10 @@ export function ExpensesSection({
   settlements,
 }: ExpensesSectionProps) {
   const router = useRouter()
-  const [showForm, setShowForm]           = useState(false)
-  const [description, setDescription]     = useState('')
-  const [amount, setAmount]               = useState('')
-  const [paidBy, setPaidBy]               = useState(currentUserId)
-  const [splitType, setSplitType]         = useState<'equal_all' | 'equal_some'>('equal_all')
-  const [selectedSplit, setSelectedSplit] = useState<string[]>([])
-  const [loading, setLoading]             = useState(false)
-  const [deleting, setDeleting]           = useState<string | null>(null)
-  const [error, setError]                 = useState<string | null>(null)
-  const [settleError, setSettleError]     = useState<string | null>(null)
-  const [settling, startSettling]         = useTransition()
+  const [sheetOpen, setSheetOpen]   = useState(false)
+  const [deleting, setDeleting]     = useState<string | null>(null)
+  const [settleError, setSettleError] = useState<string | null>(null)
+  const [settling, startSettling]   = useTransition()
 
   const allAttendees: Attendee[] = attendees.some((a) => a.user_id === currentUserId)
     ? attendees
@@ -125,42 +119,6 @@ export function ExpensesSection({
   const nameMap     = Object.fromEntries(allAttendees.map((a) => [a.user_id, a.name]))
   const displayName = (uid: string, fallback = 'Alguien') =>
     uid === currentUserId ? currentUserName : (nameMap[uid] ?? fallback)
-
-  function toggleSplit(uid: string) {
-    setSelectedSplit((prev) =>
-      prev.includes(uid) ? prev.filter((u) => u !== uid) : [...prev, uid]
-    )
-  }
-
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    const amt = parseFloat(amount)
-    if (!amt || amt <= 0) return
-
-    const splitIds =
-      splitType === 'equal_all'
-        ? allAttendees.map((a) => a.user_id)
-        : selectedSplit.length > 0
-          ? selectedSplit
-          : [paidBy]
-
-    setLoading(true)
-    setError(null)
-    const result = await createExpense(eventId, description.trim() || null, amt, paidBy, splitType, splitIds)
-    setLoading(false)
-
-    if (!result) {
-      setShowForm(false)
-      setDescription('')
-      setAmount('')
-      setPaidBy(currentUserId)
-      setSplitType('equal_all')
-      setSelectedSplit([])
-      router.refresh()
-    } else {
-      setError(result.error)
-    }
-  }
 
   async function handleDelete(id: string) {
     setDeleting(id)
@@ -187,137 +145,13 @@ export function ExpensesSection({
       {/* Header */}
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-wider text-niebla">Gastos</p>
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="text-[13px] font-semibold text-fuego bg-transparent border-none cursor-pointer"
-          >
-            + Agregar
-          </button>
-        )}
+        <button
+          onClick={() => setSheetOpen(true)}
+          className="text-[13px] font-semibold text-fuego bg-transparent border-none cursor-pointer"
+        >
+          + Agregar
+        </button>
       </div>
-
-      {/* Formulario */}
-      {showForm && (
-        <form onSubmit={handleAdd} className="flex flex-col gap-3 rounded-2xl bg-noche-media p-4">
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Descripción (opcional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={80}
-              className="min-w-0 flex-1 rounded-xl bg-noche px-3 py-2 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-fuego/30"
-            />
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-niebla">$</span>
-              <input
-                type="number"
-                min="0.01"
-                step="0.01"
-                placeholder="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                required
-                className="w-24 rounded-xl bg-noche pl-6 pr-3 py-2 text-sm text-humo focus:outline-none focus:ring-2 focus:ring-fuego/30"
-              />
-            </div>
-          </div>
-
-          {allAttendees.length > 1 && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-xs font-semibold text-niebla">¿Quién pagó?</span>
-              <div className="flex flex-wrap gap-2">
-                {allAttendees.map((a) => (
-                  <button
-                    key={a.user_id}
-                    type="button"
-                    onClick={() => setPaidBy(a.user_id)}
-                    className={`
-                      flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all
-                      ${paidBy === a.user_id
-                        ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
-                        : 'bg-white/5 text-niebla'
-                      }
-                    `}
-                  >
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-fuego/20 text-fuego font-bold" style={{ fontSize: 9 }}>
-                      {(a.name ?? '?').charAt(0).toUpperCase()}
-                    </span>
-                    <span>{a.user_id === currentUserId ? 'Yo' : a.name}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="flex flex-col gap-1.5">
-            <span className="text-xs font-semibold text-niebla">Dividir entre</span>
-            <div className="flex gap-2">
-              {(['equal_all', 'equal_some'] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setSplitType(type)}
-                  className={`
-                    flex-1 rounded-full px-3 py-1.5 text-xs font-semibold transition-all
-                    ${splitType === type
-                      ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
-                      : 'bg-white/5 text-niebla'
-                    }
-                  `}
-                >
-                  {type === 'equal_all' ? 'Todos por igual' : 'Algunos'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {splitType === 'equal_some' && (
-            <div className="flex flex-wrap gap-2">
-              {allAttendees.map((a) => (
-                <button
-                  key={a.user_id}
-                  type="button"
-                  onClick={() => toggleSplit(a.user_id)}
-                  className={`
-                    flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all
-                    ${selectedSplit.includes(a.user_id)
-                      ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
-                      : 'bg-white/5 text-niebla'
-                    }
-                  `}
-                >
-                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-fuego/20 text-fuego font-bold" style={{ fontSize: 9 }}>
-                    {(a.name ?? '?').charAt(0).toUpperCase()}
-                  </span>
-                  <span>{a.user_id === currentUserId ? 'Yo' : a.name}</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {error && <p className="text-xs text-error">{error}</p>}
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="flex-1 rounded-full py-2 text-sm font-semibold text-niebla bg-white/5 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !amount}
-              className="flex-1 rounded-full bg-fuego py-2 text-sm font-semibold text-white hover:bg-fuego/90 transition-colors disabled:opacity-60"
-            >
-              {loading ? 'Guardando…' : 'Agregar'}
-            </button>
-          </div>
-        </form>
-      )}
 
       {/* Lista de gastos */}
       {expenses.length > 0 ? (
@@ -405,6 +239,17 @@ export function ExpensesSection({
       ) : (
         <p className="text-sm text-niebla">Nadie agregó gastos todavía.</p>
       )}
+
+      <AddExpenseSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onCreated={() => router.refresh()}
+        eventId={eventId}
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
+        attendees={allAttendees}
+      />
+
     </div>
   )
 }

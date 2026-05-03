@@ -76,13 +76,21 @@ export function GroupHeader({ groupId, name, emoji, members, showBack = false, b
                 <X size={18} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto px-5 pb-8">
+            <div className="flex-1 overflow-y-auto px-5">
               {members.map((m, i) => (
                 <div key={i} className={`flex items-center gap-3 py-3 ${i > 0 ? "border-t border-white/[0.05]" : ""}`}>
                   <Avatar emoji={m.emoji} name={m.name} colorIndex={m.colorIndex} size="sm" />
                   <span className="font-body text-sm text-humo font-medium">{m.name}</span>
                 </div>
               ))}
+            </div>
+            <div className="px-5 pt-3 pb-8 border-t border-white/[0.05] shrink-0">
+              <button
+                onClick={() => { setMembersOpen(false); router.push(`/groups/${groupId}/miembros`); }}
+                className="w-full text-center text-sm font-semibold text-fuego bg-transparent border-none cursor-pointer py-1"
+              >
+                Ver página de miembros →
+              </button>
             </div>
           </div>
         </>

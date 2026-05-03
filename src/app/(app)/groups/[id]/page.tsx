@@ -240,6 +240,21 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
 
         {ranking.length > 0 && <MiniRanking entries={ranking} groupId={id} />}
 
+        <div className="bg-noche-media rounded-2xl p-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <span className="font-display font-semibold text-base text-humo">Etiquetas del grupo</span>
+              <p className="text-xs text-niebla mt-0.5">Auto-generadas según cómo se porta cada uno.</p>
+            </div>
+            <button
+              onClick={() => router.push(`/groups/${id}/etiquetas`)}
+              className="bg-transparent border-none text-fuego font-semibold text-xs cursor-pointer p-0 shrink-0 ml-3"
+            >
+              Ver →
+            </button>
+          </div>
+        </div>
+
         {pastJuntadas.length > 0 && (
           <div className="flex justify-between items-center mt-1">
             <span className="font-display font-semibold text-base text-humo">

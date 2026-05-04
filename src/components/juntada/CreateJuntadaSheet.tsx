@@ -32,11 +32,13 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
   const [hostId, setHostId] = useState<string | null>(null);
   const [customLocation, setCustomLocation] = useState("");
   const [members, setMembers] = useState<Member[]>([]);
+  const [membersLoading, setMembersLoading] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     if (!open || !groupId) return;
+    setMembersLoading(true);
     async function loadMembers() {
       const supabase = createClient();
       const { data } = await supabase
@@ -54,6 +56,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
           colorIndex: i,
         }))
       );
+      setMembersLoading(false);
     }
     loadMembers();
   }, [open, groupId]);
@@ -145,7 +148,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
           <h3 className="font-display font-bold text-xl text-humo">Nueva juntada</h3>
           <button
             onClick={handleClose}
-            className="w-8 h-8 rounded-lg flex items-center justify-center bg-transparent border-none cursor-pointer text-niebla hover:bg-white/5 transition-colors"
+            className="w-11 h-11 rounded-xl flex items-center justify-center bg-transparent border-none cursor-pointer text-niebla hover:bg-white/5 transition-colors"
           >
             <X size={18} />
           </button>
@@ -179,6 +182,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
               hostId={hostId}
               onHostSelect={setHostId}
               members={members}
+              membersLoading={membersLoading}
               customName={customLocation}
               onCustomNameChange={setCustomLocation}
             />

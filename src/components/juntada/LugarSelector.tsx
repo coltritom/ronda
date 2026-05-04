@@ -18,12 +18,13 @@ interface LugarSelectorProps {
   hostId: string | null;
   onHostSelect: (memberId: string | null) => void;
   members: Member[];
+  membersLoading?: boolean;
   customName: string;
   onCustomNameChange: (name: string) => void;
 }
 
 export function LugarSelector({
-  selected, onSelect, hostId, onHostSelect, members, customName, onCustomNameChange,
+  selected, onSelect, hostId, onHostSelect, members, membersLoading, customName, onCustomNameChange,
 }: LugarSelectorProps) {
   const [expanded, setExpanded] = useState(false);
   const selectedOption = LUGAR_OPTIONS.find((l) => l.id === selected);
@@ -94,6 +95,13 @@ export function LugarSelector({
           <label className="text-xs font-medium text-niebla mb-1.5 block">
             ¿En lo de quién?
           </label>
+          {membersLoading ? (
+            <div className="flex gap-2 flex-wrap animate-pulse">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-7 w-16 rounded-full bg-white/[0.06]" />
+              ))}
+            </div>
+          ) : (
           <div className="flex gap-2 flex-wrap">
             {members.map((m) => (
               <button
@@ -137,6 +145,7 @@ export function LugarSelector({
               </span>
             </button>
           </div>
+          )}
 
           {hostId === "otro" && (
             <input

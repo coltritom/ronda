@@ -88,7 +88,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
           <button
             onClick={() => handleToggle(true)}
             disabled={pending}
-            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+            className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
               attended
                 ? 'bg-menta/[0.15] text-menta ring-1 ring-menta/30'
                 : 'bg-white/5 text-niebla'
@@ -99,7 +99,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
           <button
             onClick={() => handleToggle(false)}
             disabled={pending}
-            className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+            className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
               !attended
                 ? 'bg-error/[0.12] text-error ring-1 ring-error/20'
                 : 'bg-white/5 text-niebla'

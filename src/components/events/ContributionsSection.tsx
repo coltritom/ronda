@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Trash2, Plus, ChevronDown } from 'lucide-react'
 import { createContribution, deleteContribution } from '@/lib/actions/contributions'
 import { APORTE_CATEGORIES, getMemberColor, type AporteId } from '@/lib/constants'
+import { toast } from 'sonner'
 
 interface Contribution {
   id: string
@@ -58,6 +59,7 @@ export function ContributionsSection({
     const error = await createContribution(eventId, category, description.trim() || null, 1)
     setLoading(false)
     if (!error) {
+      toast.success('Aporte agregado')
       setAdding(false)
       setDescription('')
       setCategory(APORTE_CATEGORIES[0].id)

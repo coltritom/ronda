@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { createExpense } from '@/lib/actions/expenses'
+import { toast } from 'sonner'
 
 interface Attendee { user_id: string; name: string }
 
@@ -85,6 +86,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
     const result = await createExpense(eventId, description.trim() || null, amt, paidBy, splitType, ids)
     setLoading(false)
     if (!result) {
+      toast.success('Gasto agregado')
       onCreated()
       onClose()
     } else {
@@ -203,6 +205,9 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
                 )
               })}
             </div>
+            {splitIds.length === 0 && (
+              <p className="text-xs text-alerta">Seleccioná al menos una persona para dividir el gasto.</p>
+            )}
           </div>
 
           {/* Partes iguales */}
@@ -220,7 +225,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             maxLength={80}
-            className="w-full rounded-2xl bg-noche px-4 py-3.5 text-sm text-humo placeholder:text-niebla focus:outline-none"
+            className="w-full rounded-2xl bg-noche px-4 py-3.5 text-sm text-humo placeholder:text-niebla border border-white/[0.08] focus:outline-none focus:border-fuego/40 transition-colors"
           />
 
           {error && <p className="text-xs text-error">{error}</p>}
@@ -234,7 +239,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
         >
           <button
             onClick={handleSubmit}
-            disabled={loading || !amount || parseInt(amount, 10) <= 0}
+            disabled={loading || !amount || parseInt(amount, 10) <= 0 || splitIds.length === 0}
             className="w-full rounded-2xl bg-fuego py-4 text-base font-bold text-white transition-colors hover:bg-fuego/90 disabled:opacity-50"
           >
             {loading ? 'Guardando…' : 'Agregar gasto'}

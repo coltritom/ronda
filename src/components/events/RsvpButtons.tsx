@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, X, Minus } from 'lucide-react'
+import { Check, X, Minus, Loader2 } from 'lucide-react'
 import { upsertRsvp } from '@/lib/actions/events'
 
 type RsvpStatus = 'going' | 'maybe' | 'not_going'
@@ -45,14 +45,18 @@ export function RsvpButtons({ eventId, currentStatus }: RsvpButtonsProps) {
   const router  = useRouter()
   const [status, setStatus]   = useState<RsvpStatus | null>(currentStatus)
   const [loading, setLoading] = useState(false)
+  const [error, setError]     = useState<string | null>(null)
 
   async function handleRsvp(newStatus: RsvpStatus) {
     if (loading || newStatus === status) return
+    setError(null)
     setLoading(true)
-    const error = await upsertRsvp(eventId, newStatus)
-    if (!error) {
+    const err = await upsertRsvp(eventId, newStatus)
+    if (!err) {
       setStatus(newStatus)
       router.refresh()
+    } else {
+      setError('No se pudo guardar tu respuesta. Intentá de nuevo.')
     }
     setLoading(false)
   }
@@ -93,12 +97,16 @@ export function RsvpButtons({ eventId, currentStatus }: RsvpButtonsProps) {
               disabled={loading}
               className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full text-sm font-semibold border-none cursor-pointer transition-all bg-white/5 text-niebla hover:bg-white/10 active:scale-[0.97] disabled:opacity-50"
             >
-              <Icon size={15} strokeWidth={2.5} />
+              {loading
+                ? <Loader2 size={15} className="animate-spin" />
+                : <Icon size={15} strokeWidth={2.5} />
+              }
               {chip.label}
             </button>
           )
         })}
       </div>
+      {error && <p className="mt-2 text-xs text-error">{error}</p>}
     </div>
   )
 }

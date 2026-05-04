@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { settleDebt } from '@/lib/actions/expenses'
 import { CheckCircle2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 interface Attendee   { user_id: string; name: string }
 interface Settlement { from_user: string; to_user: string; amount: number }
@@ -87,8 +88,9 @@ export function CuentasSection({
   settlements,
 }: CuentasSectionProps) {
   const router = useRouter()
-  const [settleError, setSettleError] = useState<string | null>(null)
-  const [settling, startSettling]     = useTransition()
+  const [settleError, setSettleError]   = useState<string | null>(null)
+  const [settling, startSettling]       = useTransition()
+  const [confirmIdx, setConfirmIdx]     = useState<number | null>(null)
 
   const allAttendees: Attendee[] = attendees.some((a) => a.user_id === currentUserId)
     ? attendees
@@ -103,10 +105,14 @@ export function CuentasSection({
 
   function handleSettle(toUserId: string, amount: number) {
     setSettleError(null)
+    setConfirmIdx(null)
     startSettling(async () => {
       const result = await settleDebt(groupId, eventId, toUserId, amount)
       if (result?.error) setSettleError(result.error)
-      else router.refresh()
+      else {
+        toast.success('¡Deuda marcada como pagada!')
+        router.refresh()
+      }
     })
   }
 
@@ -193,13 +199,32 @@ export function CuentasSection({
                   </p>
 
                   {isMyDebt && (
-                    <button
-                      onClick={() => handleSettle(t.toUserId, t.amount)}
-                      disabled={settling}
-                      className="shrink-0 rounded-full border border-menta/30 px-3 py-1.5 text-xs font-semibold text-menta hover:bg-menta/10 transition-colors disabled:opacity-50"
-                    >
-                      {settling ? '…' : 'Pagué'}
-                    </button>
+                    confirmIdx === i ? (
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleSettle(t.toUserId, t.amount)}
+                          disabled={settling}
+                          className="rounded-full bg-menta/20 px-3 py-1.5 text-xs font-semibold text-menta disabled:opacity-50 transition-colors"
+                        >
+                          {settling ? '…' : 'Confirmar'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmIdx(null)}
+                          disabled={settling}
+                          className="rounded-full bg-white/5 px-2.5 py-1.5 text-xs text-niebla disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmIdx(i)}
+                        disabled={settling}
+                        className="shrink-0 rounded-full border border-menta/30 px-3 py-1.5 text-xs font-semibold text-menta hover:bg-menta/10 transition-colors disabled:opacity-50"
+                      >
+                        Pagué
+                      </button>
+                    )
                   )}
                 </div>
               )

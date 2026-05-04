@@ -3,12 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { assertGroupMember } from '@/lib/supabase/auth-utils'
-
-type Category = 'bebida' | 'comida' | 'postre' | 'hielo' | 'snacks' | 'juegos' | 'utensilios' | 'otros'
+import type { AporteId } from '@/lib/constants'
 
 export async function createContribution(
   eventId: string,
-  category: Category,
+  category: AporteId,
   description: string | null,
   quantity: number,
 ): Promise<{ error: string } | null> {

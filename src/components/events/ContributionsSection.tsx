@@ -2,25 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, Plus } from 'lucide-react'
+import { Trash2, Plus, ChevronDown } from 'lucide-react'
 import { createContribution, deleteContribution } from '@/lib/actions/contributions'
-
-type Category = 'bebida' | 'comida' | 'postre' | 'hielo' | 'snacks' | 'juegos' | 'utensilios' | 'otros'
-
-const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
-  { value: 'bebida',     label: 'Bebida',     emoji: '🍺' },
-  { value: 'comida',     label: 'Comida',     emoji: '🍖' },
-  { value: 'postre',     label: 'Postre',     emoji: '🍰' },
-  { value: 'hielo',      label: 'Hielo',      emoji: '🧊' },
-  { value: 'snacks',     label: 'Snacks',     emoji: '🍿' },
-  { value: 'juegos',     label: 'Juegos',     emoji: '🎮' },
-  { value: 'utensilios', label: 'Utensilios', emoji: '🍽️' },
-  { value: 'otros',      label: 'Otros',      emoji: '📦' },
-]
+import { APORTE_CATEGORIES, getMemberColor, type AporteId } from '@/lib/constants'
 
 interface Contribution {
   id: string
-  category: Category
+  category: AporteId
   description: string | null
   quantity: number
   user_id: string
@@ -28,10 +16,27 @@ interface Contribution {
 }
 
 interface ContributionsSectionProps {
-  eventId:       string
+  eventId: string
   currentUserId: string
   contributions: Contribution[]
-  isUpcoming:    boolean
+  isUpcoming: boolean
+}
+
+function groupByMember(contributions: Contribution[]) {
+  const order: string[] = []
+  const map: Record<string, { name: string; items: Contribution[]; score: number }> = {}
+  for (const c of contributions) {
+    if (!map[c.user_id]) {
+      order.push(c.user_id)
+      map[c.user_id] = { name: c.profiles?.name ?? 'Alguien', items: [], score: 0 }
+    }
+    const cat = APORTE_CATEGORIES.find((a) => a.id === c.category)
+    map[c.user_id].items.push(c)
+    map[c.user_id].score += (cat?.weight ?? 1) * (c.quantity ?? 1)
+  }
+  return order
+    .map((uid, i) => ({ userId: uid, colorIndex: i, ...map[uid] }))
+    .sort((a, b) => b.score - a.score)
 }
 
 export function ContributionsSection({
@@ -41,22 +46,21 @@ export function ContributionsSection({
   isUpcoming,
 }: ContributionsSectionProps) {
   const router = useRouter()
-  const [showForm, setShowForm]       = useState(false)
-  const [category, setCategory]       = useState<Category>('bebida')
+  const [adding, setAdding] = useState(false)
+  const [catOpen, setCatOpen] = useState(false)
+  const [category, setCategory] = useState<AporteId>(APORTE_CATEGORIES[0].id)
   const [description, setDescription] = useState('')
-  const [quantity, setQuantity]       = useState(1)
-  const [loading, setLoading]         = useState(false)
-  const [deleting, setDeleting]       = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleAdd() {
     setLoading(true)
-    const error = await createContribution(eventId, category, description.trim() || null, quantity)
+    const error = await createContribution(eventId, category, description.trim() || null, 1)
     setLoading(false)
     if (!error) {
-      setShowForm(false)
+      setAdding(false)
       setDescription('')
-      setQuantity(1)
+      setCategory(APORTE_CATEGORIES[0].id)
       router.refresh()
     }
   }
@@ -68,128 +72,190 @@ export function ContributionsSection({
     router.refresh()
   }
 
-  const byCat = CATEGORIES
-    .map((cat) => ({ ...cat, items: contributions.filter((c) => c.category === cat.value) }))
-    .filter((cat) => cat.items.length > 0)
+  const grouped = groupByMember(contributions)
+  const selectedCat = APORTE_CATEGORIES.find((c) => c.id === category)
+
+  if (contributions.length === 0 && !adding) {
+    return (
+      <div className="text-center py-10">
+        <p className="text-sm text-niebla mb-1">Nadie aportó nada todavía.</p>
+        <p className="text-xs text-niebla/60 mb-4">Es opcional — no todas las juntadas necesitan aportes.</p>
+        {isUpcoming && (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center gap-2 mx-auto rounded-full border border-dashed border-fuego/40 px-4 py-2 text-[13px] font-semibold text-fuego hover:bg-fuego/5 transition-colors"
+          >
+            <Plus size={14} />
+            Agregar aporte
+          </button>
+        )}
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-4">
 
-      {isUpcoming && !showForm && (
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 self-start rounded-full border border-dashed border-fuego/40 px-3.5 py-1.5 text-[13px] font-semibold text-fuego hover:bg-fuego/5 transition-colors"
-        >
-          <Plus size={14} />
-          Agregar aporte
-        </button>
-      )}
-
-      {showForm && (
-        <form onSubmit={handleAdd} className="flex flex-col gap-3 rounded-2xl bg-noche-media p-4">
-
-          <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.value}
-                type="button"
-                onClick={() => setCategory(cat.value)}
-                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-all ${
-                  category === cat.value
-                    ? 'bg-fuego/[0.12] text-fuego ring-1 ring-fuego/30'
-                    : 'bg-white/5 text-niebla'
-                }`}
+      {/* Lista agrupada por miembro */}
+      {grouped.map((g, gi) => {
+        const color = getMemberColor(g.colorIndex)
+        return (
+          <div key={g.userId} className={gi > 0 ? 'border-t border-white/[0.06] pt-3' : undefined}>
+            <div className="flex items-center gap-2.5 mb-2">
+              <div
+                className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0 bg-${color}/20 text-${color}`}
               >
-                <span>{cat.emoji}</span>
-                {cat.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Descripción (opcional)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              maxLength={80}
-              className="min-w-0 flex-1 rounded-xl bg-noche px-3 py-2 text-sm text-humo placeholder:text-niebla focus:outline-none focus:ring-2 focus:ring-fuego/30"
-            />
-            <input
-              type="number"
-              min={1}
-              max={99}
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value))}
-              className="w-16 rounded-xl bg-noche px-3 py-2 text-center text-sm text-humo focus:outline-none focus:ring-2 focus:ring-fuego/30"
-            />
-          </div>
-
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="flex-1 rounded-full py-2 text-sm font-semibold text-niebla bg-white/5 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 rounded-full bg-fuego py-2 text-sm font-semibold text-white hover:bg-fuego/90 transition-colors disabled:opacity-60"
-            >
-              {loading ? 'Guardando…' : 'Agregar'}
-            </button>
-          </div>
-        </form>
-      )}
-
-      {byCat.length > 0 ? (
-        <div className="flex flex-col gap-4">
-          {byCat.map((cat) => (
-            <div key={cat.value}>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-niebla">
-                {cat.emoji} {cat.label}
-              </p>
-              <div className="flex flex-col gap-2">
-                {cat.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between gap-3 rounded-2xl bg-noche-media px-4 py-2.5"
-                  >
-                    <div className="min-w-0">
-                      <span className="text-sm font-semibold text-humo">
-                        {item.user_id === currentUserId ? 'Yo' : (item.profiles?.name ?? 'Alguien')}
-                      </span>
-                      {item.description && (
-                        <span className="ml-2 text-sm text-niebla">— {item.description}</span>
-                      )}
-                    </div>
-                    <div className="flex shrink-0 items-center gap-3">
-                      {item.quantity > 1 && (
-                        <span className="text-xs font-semibold text-niebla">×{item.quantity}</span>
-                      )}
-                      {item.user_id === currentUserId && (
-                        <button
-                          onClick={() => handleDelete(item.id)}
-                          disabled={deleting === item.id}
-                          className="text-niebla hover:text-error transition-colors disabled:opacity-40"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                {g.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm text-humo">
+                  {g.userId === currentUserId ? 'Yo' : g.name}
+                </p>
+                <p className="text-[11px] text-niebla">
+                  {g.items.length} aporte{g.items.length !== 1 ? 's' : ''} · {g.score} pts
+                </p>
               </div>
             </div>
-          ))}
+            <div className="flex flex-col gap-1.5 ml-[46px]">
+              {g.items.map((item) => {
+                const cat = APORTE_CATEGORIES.find((c) => c.id === item.category)
+                return (
+                  <div key={item.id} className="flex items-center gap-2 group">
+                    <span className="text-sm">{cat?.emoji ?? '📦'}</span>
+                    <span className="text-sm text-humo">{cat?.label ?? item.category}</span>
+                    {item.description && (
+                      <span className="text-xs text-niebla">— {item.description}</span>
+                    )}
+                    <span className="text-[10px] text-niebla/50 ml-auto">
+                      +{(cat?.weight ?? 1) * (item.quantity ?? 1)}
+                    </span>
+                    {item.user_id === currentUserId && (
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deleting === item.id}
+                        className="opacity-0 group-hover:opacity-100 text-niebla hover:text-error transition-all disabled:opacity-40"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+
+      {/* Puntaje ponderado — mini tabla */}
+      {grouped.length > 1 && (
+        <div className="bg-noche rounded-xl p-3">
+          <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mb-1.5">
+            Puntaje de aportes
+          </p>
+          <p className="text-[10px] text-niebla/60 mb-2">
+            No es lo mismo llevar la carne que llevar hielo. Cada aporte tiene un peso distinto.
+          </p>
+          {grouped.map((g, i) => {
+            const color = getMemberColor(g.colorIndex)
+            return (
+              <div key={g.userId} className={`flex items-center gap-2 py-1.5 ${i > 0 ? 'border-t border-white/[0.04]' : ''}`}>
+                <span className="w-4 text-center text-xs font-bold text-niebla">{i + 1}</span>
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold bg-${color}/20 text-${color}`}>
+                  {g.name.charAt(0).toUpperCase()}
+                </div>
+                <span className="flex-1 text-sm text-humo">
+                  {g.userId === currentUserId ? 'Yo' : g.name}
+                </span>
+                <span className="text-sm font-semibold text-humo">{g.score} pts</span>
+              </div>
+            )
+          })}
         </div>
-      ) : (
-        <p className="text-sm text-niebla">
-          {isUpcoming ? 'Nadie agregó aportes todavía.' : 'No hubo aportes registrados.'}
-        </p>
       )}
+
+      {/* Agregar aporte */}
+      {isUpcoming && (
+        adding ? (
+          <div className="bg-noche-media rounded-2xl p-4 flex flex-col gap-3">
+            <p className="font-semibold text-sm text-humo">¿Qué vas a llevar?</p>
+
+            {/* Categoría dropdown */}
+            <div className="relative">
+              <p className="text-xs text-niebla mb-1.5">Categoría</p>
+              <button
+                type="button"
+                onClick={() => setCatOpen(!catOpen)}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-[10px] border-[1.5px] border-white/[0.08] bg-noche cursor-pointer"
+              >
+                <span className="flex items-center gap-2 text-sm text-humo">
+                  <span>{selectedCat?.emoji}</span>
+                  {selectedCat?.label}
+                  <span className="text-[10px] text-niebla">+{selectedCat?.weight}</span>
+                </span>
+                <ChevronDown size={16} className={`text-niebla transition-transform ${catOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {catOpen && (
+                <div className="absolute left-0 right-0 top-full mt-1 bg-noche-media rounded-xl border border-white/[0.08] overflow-hidden z-10 shadow-lg max-h-[220px] overflow-y-auto">
+                  {APORTE_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => { setCategory(cat.id); setCatOpen(false) }}
+                      className={`w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left border-none cursor-pointer text-sm transition-colors ${
+                        category === cat.id
+                          ? 'bg-fuego/10 text-fuego font-medium'
+                          : 'bg-transparent text-humo hover:bg-white/5'
+                      }`}
+                    >
+                      <span>{cat.emoji}</span>
+                      <span className="flex-1">{cat.label}</span>
+                      <span className="text-[10px] text-niebla">+{cat.weight}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Detalle */}
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Detalle (opcional). Ej: Vacío y chorizo"
+              className="w-full px-3.5 py-2.5 rounded-[10px] border-[1.5px] border-white/[0.08] bg-noche text-sm text-humo placeholder:text-niebla/50 outline-none focus:border-fuego/50 transition-colors"
+            />
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleAdd}
+                disabled={loading}
+                className="flex-1 rounded-full bg-fuego py-2.5 text-sm font-semibold text-white hover:bg-fuego/90 transition-colors disabled:opacity-60"
+              >
+                {loading ? 'Guardando…' : 'Agregar'}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAdding(false); setDescription('') }}
+                className="px-4 py-2.5 rounded-xl text-sm text-niebla bg-transparent border border-white/[0.08] cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setAdding(true)}
+            className="flex items-center justify-center gap-2 w-full rounded-full border border-dashed border-fuego/40 px-4 py-2.5 text-[13px] font-semibold text-fuego hover:bg-fuego/5 transition-colors"
+          >
+            <Plus size={14} />
+            Agregar aporte
+          </button>
+        )
+      )}
+
+      <p className="text-xs text-niebla/60 text-center">
+        Los aportes son opcionales. Si nadie llevó nada, no pasa nada.
+      </p>
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { ContributionsSection } from '@/components/events/ContributionsSection'
 import { ExpensesSection }      from '@/components/events/ExpensesSection'
 import { CuentasSection }       from '@/components/events/CuentasSection'
 import { EventTabs }            from '@/components/events/EventTabs'
+import type { AporteId } from '@/lib/constants'
 
 interface PageProps {
   params:       Promise<{ id: string; eventId: string }>
@@ -146,14 +147,13 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     myAttendance = attendanceList.some((a) => a.user_id === user.id)
   }
 
-  type ContributionCategory = 'bebida' | 'comida' | 'postre' | 'hielo' | 'snacks' | 'juegos' | 'utensilios' | 'otros'
   type ContributionEnriched = {
-    id: string; category: ContributionCategory; description: string | null
+    id: string; category: AporteId; description: string | null
     quantity: number; user_id: string; profiles: { name: string }
   }
   const contributions: ContributionEnriched[] = (contributionsRaw ?? []).map(c => ({
     id: c.id,
-    category: c.category as ContributionCategory,
+    category: c.category as AporteId,
     description: c.description,
     quantity: c.quantity,
     user_id: c.user_id,

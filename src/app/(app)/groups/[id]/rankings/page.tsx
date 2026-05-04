@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import RankingsContent from "./RankingsContent";
 import { createClient } from "@/lib/supabase/clients";
 import { fmtARS } from "@/lib/utils";
+import { APORTE_CATEGORIES } from "@/lib/constants";
 import type { RankedMember, BadgeEntry } from "./RankingsContent";
 
 export default function GroupRankingsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -62,10 +63,11 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
       return;
     }
 
-    const [attendanceResult, expensesResult, rsvpResult] = await Promise.all([
+    const [attendanceResult, expensesResult, rsvpResult, contributionsResult] = await Promise.all([
       supabase.from("event_attendance").select("event_id, user_id").in("event_id", eventIds),
       supabase.from("expenses").select("id, paid_by, amount").in("event_id", eventIds),
       supabase.from("event_rsvps").select("event_id, user_id, response").in("event_id", eventIds),
+      supabase.from("contributions").select("user_id, category, quantity").in("event_id", eventIds),
     ]);
 
     const attendanceCounts: Record<string, number> = {};
@@ -78,6 +80,14 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
       paidAmounts[e.paid_by] = (paidAmounts[e.paid_by] ?? 0) + (e.amount ?? 0);
     }
     const totalPaid = Object.values(paidAmounts).reduce((s, v) => s + v, 0);
+
+    const contributionScores: Record<string, number> = {};
+    for (const c of contributionsResult.data ?? []) {
+      const cat = APORTE_CATEGORIES.find((a) => a.id === c.category);
+      const pts = (cat?.weight ?? 1) * (c.quantity ?? 1);
+      contributionScores[c.user_id] = (contributionScores[c.user_id] ?? 0) + pts;
+    }
+    const totalContribScore = Object.values(contributionScores).reduce((s, v) => s + v, 0);
 
     const attendedSet = new Set(
       (attendanceResult.data ?? []).map((a) => `${a.event_id}:${a.user_id}`)
@@ -99,12 +109,12 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
       }));
 
     const aportesRanked = [...members]
-      .map((m) => ({ ...m, amount: paidAmounts[m.userId] ?? 0 }))
-      .sort((a, b) => b.amount - a.amount)
+      .map((m) => ({ ...m, pts: contributionScores[m.userId] ?? 0 }))
+      .sort((a, b) => b.pts - a.pts)
       .map((m) => ({
         name: m.name,
         colorIndex: m.colorIndex,
-        score: `$${fmtARS(m.amount)}`,
+        score: `${m.pts} pts`,
       }));
 
     const anfitrionRanked = [...members].map((m) => ({
@@ -134,6 +144,21 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
       });
     }
 
+    const topContributor = [...members]
+      .map((m) => ({ ...m, pts: contributionScores[m.userId] ?? 0 }))
+      .sort((a, b) => b.pts - a.pts)[0];
+
+    if (topContributor?.pts > 0) {
+      newDestacados.push({
+        emoji: "🎒",
+        label: "El Proveedor",
+        name: topContributor.name,
+        detail: `${topContributor.pts} puntos de aportes`,
+        colorIndex: topContributor.colorIndex,
+        variant: "uva",
+      });
+    }
+
     const topPayer = [...members]
       .map((m) => ({ ...m, amount: paidAmounts[m.userId] ?? 0 }))
       .sort((a, b) => b.amount - a.amount)[0];
@@ -152,8 +177,9 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
     const mvpTop = [...members]
       .map((m) => {
         const att = (attendanceCounts[m.userId] ?? 0) / Math.max(1, totalEvents);
-        const aporte = (paidAmounts[m.userId] ?? 0) / Math.max(1, totalPaid);
-        return { ...m, score: att + aporte };
+        const contrib = (contributionScores[m.userId] ?? 0) / Math.max(1, totalContribScore);
+        const payer = (paidAmounts[m.userId] ?? 0) / Math.max(1, totalPaid);
+        return { ...m, score: att + contrib + payer };
       })
       .sort((a, b) => b.score - a.score)[0];
 

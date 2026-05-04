@@ -48,7 +48,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const { data: eventsRaw } = await supabase
       .from("events")
-      .select("id")
+      .select("id, created_by")
       .eq("group_id", id)
       .neq("status", "cancelled");
 
@@ -89,6 +89,13 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
     }
     const totalContribScore = Object.values(contributionScores).reduce((s, v) => s + v, 0);
 
+    const hostCounts: Record<string, number> = {};
+    for (const e of eventsRaw ?? []) {
+      if (e.created_by) {
+        hostCounts[e.created_by] = (hostCounts[e.created_by] ?? 0) + 1;
+      }
+    }
+
     const attendedSet = new Set(
       (attendanceResult.data ?? []).map((a) => `${a.event_id}:${a.user_id}`)
     );
@@ -117,11 +124,14 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
         score: `${m.pts} pts`,
       }));
 
-    const anfitrionRanked = [...members].map((m) => ({
-      name: m.name,
-      colorIndex: m.colorIndex,
-      score: "0 veces",
-    }));
+    const anfitrionRanked = [...members]
+      .map((m) => ({ ...m, count: hostCounts[m.userId] ?? 0 }))
+      .sort((a, b) => b.count - a.count)
+      .map((m) => ({
+        name: m.name,
+        colorIndex: m.colorIndex,
+        score: `${m.count} vez${m.count !== 1 ? "es" : ""}`,
+      }));
 
     setAsistencias(asistenciasRanked);
     setAportes(aportesRanked);
@@ -171,6 +181,21 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
         detail: `Puso $${fmtARS(topPayer.amount)} en total`,
         colorIndex: topPayer.colorIndex,
         variant: "ambar",
+      });
+    }
+
+    const topHost = [...members]
+      .map((m) => ({ ...m, count: hostCounts[m.userId] ?? 0 }))
+      .sort((a, b) => b.count - a.count)[0];
+
+    if (topHost?.count > 0) {
+      newDestacados.push({
+        emoji: "🏠",
+        label: "El Anfitrión",
+        name: topHost.name,
+        detail: `Organizó ${topHost.count} juntada${topHost.count !== 1 ? "s" : ""}`,
+        colorIndex: topHost.colorIndex,
+        variant: "rosa",
       });
     }
 

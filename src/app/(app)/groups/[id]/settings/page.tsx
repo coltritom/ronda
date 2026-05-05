@@ -123,6 +123,7 @@ export default function GroupSettingsPage({
       supabase.from("group_members").select("role").eq("group_id", id).eq("user_id", user.id).single(),
     ]);
 
+    if (!membershipData) { router.push("/groups"); return; }
     if (groupData) {
       setGroup(groupData as GroupData);
       setEditName(groupData.name);
@@ -130,7 +131,7 @@ export default function GroupSettingsPage({
       setEditEmoji((groupData as GroupData).emoji ?? "🔥");
       setIsCreator(groupData.created_by === user.id);
     }
-    if (membershipData) setMyRole(membershipData.role as Role);
+    setMyRole(membershipData.role as Role);
 
     const { data: settingsData } = await supabase
       .from("group_settings")

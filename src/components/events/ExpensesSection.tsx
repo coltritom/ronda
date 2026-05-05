@@ -109,6 +109,7 @@ export function ExpensesSection({
   const router = useRouter()
   const [sheetOpen, setSheetOpen]   = useState(false)
   const [deleting, setDeleting]     = useState<string | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [settleError, setSettleError] = useState<string | null>(null)
   const [settling, startSettling]   = useTransition()
 
@@ -122,9 +123,14 @@ export function ExpensesSection({
 
   async function handleDelete(id: string) {
     setDeleting(id)
-    await deleteExpense(id)
+    setDeleteError(null)
+    const result = await deleteExpense(id)
     setDeleting(null)
-    router.refresh()
+    if (result?.error) {
+      setDeleteError(result.error)
+    } else {
+      router.refresh()
+    }
   }
 
   function handleSettle(toUserId: string, amount: number) {
@@ -152,6 +158,8 @@ export function ExpensesSection({
           + Agregar
         </button>
       </div>
+
+      {deleteError && <p className="text-xs text-error">{deleteError}</p>}
 
       {/* Lista de gastos */}
       {expenses.length > 0 ? (

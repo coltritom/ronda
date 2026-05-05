@@ -121,7 +121,7 @@ export default function InvitePage({ params }: { params: Promise<{ token: string
       )}
 
       <div className="w-full flex flex-col gap-3">
-        <Button full big onClick={handleJoin} disabled={joining}>
+        <Button full big onClick={handleJoin} disabled={joining || isLoggedIn === null}>
           {joining ? "Entrando..." : "Entrar al grupo"}
         </Button>
 

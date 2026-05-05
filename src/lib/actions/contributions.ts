@@ -16,6 +16,12 @@ export async function createContribution(
 
   if (!user) return { error: 'No autenticado.' }
 
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
+  if (memberError) return memberError
+
   const { error } = await supabase
     .from('contributions')
     .insert({ event_id: eventId, user_id: user.id, category, description, quantity })
@@ -25,9 +31,7 @@ export async function createContribution(
     return { error: 'No se pudo agregar el aporte.' }
   }
 
-  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
-  if (ev) revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
-
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
   return null
 }
 

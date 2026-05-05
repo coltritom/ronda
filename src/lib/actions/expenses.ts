@@ -18,6 +18,7 @@ export async function createExpense(
   if (!user) return { error: 'No autenticado.' }
 
   if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
+  if (amount > 100_000_000) return { error: 'El monto no puede superar $100.000.000.' }
   if (splitUserIds.length === 0) return { error: 'Debe haber al menos un participante.' }
 
   const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
@@ -57,6 +58,7 @@ export async function settleDebt(
 
   if (!user) return { error: 'No autenticado.' }
   if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
+  if (amount > 100_000_000) return { error: 'El monto no puede superar $100.000.000.' }
   if (user.id === toUserId) return { error: 'No podés saldar una deuda con vos mismo.' }
 
   const memberError = await assertGroupMember(supabase, groupId, user.id)

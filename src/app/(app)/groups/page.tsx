@@ -7,6 +7,7 @@ import { GroupsEmptyState } from '@/components/groups/GroupsEmptyState'
 export default async function GroupsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
 
   const { data: memberships, error } = await supabase
     .from('group_members')
@@ -17,7 +18,7 @@ export default async function GroupsPage() {
         group_members ( count )
       )
     `)
-    .eq('user_id', user!.id)
+    .eq('user_id', user.id)
     .order('created_at', { referencedTable: 'groups', ascending: false })
 
   if (error) console.error('Error fetching groups:', error.message)

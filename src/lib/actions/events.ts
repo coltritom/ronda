@@ -15,6 +15,9 @@ export async function createEvent(
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return { error: 'No autenticado.' }
+  if (name.length > 100) return { error: 'El nombre no puede superar 100 caracteres.' }
+  if (location && location.length > 200) return { error: 'La ubicación no puede superar 200 caracteres.' }
+  if (description && description.length > 500) return { error: 'La descripción no puede superar 500 caracteres.' }
 
   const memberError = await assertGroupMember(supabase, groupId, user.id)
   if (memberError) return memberError
@@ -51,6 +54,12 @@ export async function markAttendance(
 
   if (!user) return { error: 'No autenticado.' }
 
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
+  if (memberError) return memberError
+
   if (attended) {
     const { error } = await supabase
       .from('event_attendance')
@@ -74,9 +83,7 @@ export async function markAttendance(
     }
   }
 
-  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
-  if (ev) revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
-
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
   return null
 }
 
@@ -88,6 +95,10 @@ export async function addEventGuest(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'No autenticado.' }
 
+  const trimmedName = name.trim()
+  if (!trimmedName) return { error: 'El nombre del invitado no puede estar vacío.' }
+  if (trimmedName.length > 80) return { error: 'El nombre del invitado no puede superar 80 caracteres.' }
+
   const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
   if (!ev) return { error: 'Juntada no encontrada.' }
 
@@ -96,7 +107,7 @@ export async function addEventGuest(
 
   const { data: guest, error } = await supabase
     .from('event_guests')
-    .insert({ event_id: eventId, name: name.trim() })
+    .insert({ event_id: eventId, name: trimmedName })
     .select('id, name')
     .single()
 
@@ -141,6 +152,12 @@ export async function upsertRsvp(
 
   if (!user) return { error: 'No autenticado.' }
 
+  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
+  if (memberError) return memberError
+
   const { error } = await supabase
     .from('event_rsvps')
     .upsert(
@@ -153,8 +170,6 @@ export async function upsertRsvp(
     return { error: 'No se pudo guardar tu respuesta.' }
   }
 
-  const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
-  if (ev) revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
-
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
   return null
 }

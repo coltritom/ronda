@@ -78,6 +78,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
       .eq("group_id", id);
 
     const memberUserIds = (membersRaw ?? []).map(m => m.user_id);
+    if (!memberUserIds.includes(user.id)) { router.push("/groups"); return; }
     const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
     const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
 

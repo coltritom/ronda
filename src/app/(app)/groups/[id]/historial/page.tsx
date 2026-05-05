@@ -41,6 +41,14 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
     if (!groupData) { router.push("/groups"); return; }
     setGroupName(groupData.name);
 
+    const { data: memberCheck } = await supabase
+      .from("group_members")
+      .select("user_id")
+      .eq("group_id", id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+    if (!memberCheck) { router.push("/groups"); return; }
+
     const { data: eventsRaw } = await supabase
       .from("events")
       .select("id, name, date, status")

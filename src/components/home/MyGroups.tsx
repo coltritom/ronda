@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { CreateGroupSheet } from "@/components/grupo/CreateGroupSheet";
 
 interface Group {
@@ -13,14 +14,14 @@ interface Group {
 
 export function MyGroups() {
   const router = useRouter();
+  const user = useAuth();
   const [groups, setGroups] = useState<Group[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const supabase = createClient();
 
       const { data } = await supabase
         .from("group_members")
@@ -56,7 +57,7 @@ export function MyGroups() {
       }
     }
     load();
-  }, []);
+  }, [user]);
 
   return (
     <div className="px-4 md:px-6 mb-3">

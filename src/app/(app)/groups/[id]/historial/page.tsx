@@ -6,6 +6,7 @@ import { ChevronLeft } from "lucide-react";
 import { JuntadaCard } from "@/components/juntada/JuntadaCard";
 import { fmtARS } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 type Filtro = "todas" | "abiertas" | "cerradas";
 
@@ -22,15 +23,15 @@ interface JuntadaRow {
 export default function HistorialPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const user = useAuth();
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState("");
   const [juntadas, setJuntadas] = useState<JuntadaRow[]>([]);
 
   const load = useCallback(async () => {
+    if (!user) return;
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
 
     const { data: groupData } = await supabase
       .from("groups")
@@ -92,7 +93,7 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
 
     setJuntadas(mapped);
     setLoading(false);
-  }, [id, router]);
+  }, [id, router, user]);
 
   useEffect(() => { load(); }, [load]);
 

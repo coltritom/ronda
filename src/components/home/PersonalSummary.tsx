@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Avatar } from "@/components/ui/Avatar";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { fmtARS } from "@/lib/utils";
 
 interface Stats {
@@ -16,6 +17,7 @@ interface Stats {
 }
 
 export function PersonalSummary() {
+  const user = useAuth();
   const [avatarEmoji, setAvatarEmoji] = useState("🙋‍♂️");
   const [stats, setStats] = useState<Stats | null>(null);
 
@@ -26,11 +28,8 @@ export function PersonalSummary() {
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
       if (!user) return;
+      const supabase = createClient();
 
       const [{ data: profile }, { data: mySplitsRaw }, { data: memberData }] =
         await Promise.all([
@@ -157,7 +156,7 @@ export function PersonalSummary() {
     }
 
     load();
-  }, []);
+  }, [user]);
 
   const statCards = [
     {

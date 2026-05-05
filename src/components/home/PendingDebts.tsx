@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { fmtARS } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 interface DebtItem {
   groupId: string;
@@ -16,13 +17,13 @@ interface DebtItem {
 
 export function PendingDebts() {
   const router = useRouter();
+  const user = useAuth();
   const [debts, setDebts] = useState<DebtItem[]>([]);
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const supabase = createClient();
 
       const { data: splits } = await supabase
         .from("expense_splits")
@@ -126,7 +127,7 @@ export function PendingDebts() {
     }
 
     load();
-  }, []);
+  }, [user]);
 
   if (debts.length === 0) return null;
 

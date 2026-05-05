@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Minus } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 type RSVPStatus = "going" | "maybe" | "not_going" | "none";
 
@@ -27,14 +28,14 @@ interface UpcomingEvent {
 
 export function UpcomingJuntadas() {
   const router = useRouter();
+  const user = useAuth();
   const [events, setEvents] = useState<UpcomingEvent[]>([]);
   const [rsvpMap, setRsvpMap] = useState<Record<string, RSVPStatus>>({});
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const supabase = createClient();
 
       const { data: memberships } = await supabase
         .from("group_members")
@@ -113,13 +114,12 @@ export function UpcomingJuntadas() {
       setRsvpMap(map);
     }
     load();
-  }, []);
+  }, [user]);
 
   const handleRSVP = async (eventId: string, status: RSVPStatus) => {
+    if (!user) return;
     setRsvpMap((prev) => ({ ...prev, [eventId]: status }));
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
 
     if (status === "none") {
       await supabase

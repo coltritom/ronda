@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Pill } from "@/components/ui/Pill";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 const TAG_DEFS = {
   veterano:    { label: "El Veterano",        emoji: "🏆", color: "ambar" },
@@ -67,14 +68,14 @@ interface Badge {
 }
 
 export function MyBadges() {
+  const user = useAuth();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     async function load() {
+      if (!user) return;
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoaded(true); return; }
 
       const { data: myMemberships } = await supabase
         .from("group_members")
@@ -191,7 +192,7 @@ export function MyBadges() {
       setLoaded(true);
     }
     load();
-  }, []);
+  }, [user]);
 
   if (!loaded || badges.length === 0) return null;
 

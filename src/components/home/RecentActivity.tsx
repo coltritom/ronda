@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 type ActivityType = "event_created" | "member_joined";
 
@@ -32,13 +33,13 @@ function timeAgo(iso: string): string {
 }
 
 export function RecentActivity() {
+  const user = useAuth();
   const [items, setItems] = useState<ActivityItem[]>([]);
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const supabase = createClient();
 
       const { data: memberships } = await supabase
         .from("group_members")
@@ -122,7 +123,7 @@ export function RecentActivity() {
       setItems(activities.slice(0, 8));
     }
     load();
-  }, []);
+  }, [user]);
 
   if (items.length === 0) return null;
 

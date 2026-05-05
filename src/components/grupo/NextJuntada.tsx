@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Minus, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 type RSVPStatus = "going" | "not_going" | "maybe" | "none";
 
@@ -50,28 +51,27 @@ export function NextJuntada({
   wrapCard = true, showLabel = true,
 }: NextJuntadaProps) {
   const router = useRouter();
+  const user = useAuth();
   const [status, setStatus] = useState<RSVPStatus>("none");
 
   useEffect(() => {
-    if (!juntadaId) return;
+    if (!juntadaId || !user) return;
     const supabase = createClient();
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      const { data } = await supabase
-        .from("event_rsvps")
-        .select("response")
-        .eq("event_id", juntadaId)
-        .eq("user_id", user.id)
-        .single();
-      if (data?.response) setStatus(data.response as RSVPStatus);
-    });
-  }, [juntadaId]);
+    supabase
+      .from("event_rsvps")
+      .select("response")
+      .eq("event_id", juntadaId)
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.response) setStatus(data.response as RSVPStatus);
+      });
+  }, [juntadaId, user]);
 
   const handleRSVP = async (newStatus: RSVPStatus) => {
+    if (!user || !juntadaId) return;
     setStatus(newStatus);
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user || !juntadaId) return;
 
     if (newStatus === "none") {
       await supabase

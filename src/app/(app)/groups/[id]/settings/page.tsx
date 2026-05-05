@@ -7,6 +7,7 @@ import {
   LogOut, Trash2, Loader2, Shield, X,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { getOrCreateInvite } from "@/lib/actions/invites";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
@@ -64,6 +65,7 @@ export default function GroupSettingsPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
+  const user = useAuth();
 
   // ── Meta
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -113,9 +115,8 @@ export default function GroupSettingsPage({
   // ─── Load data ────────────────────────────────────────────────────────────
 
   const loadData = useCallback(async () => {
+    if (!user) return;
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
     setCurrentUserId(user.id);
 
     const [{ data: groupData }, { data: membershipData }] = await Promise.all([
@@ -169,7 +170,7 @@ export default function GroupSettingsPage({
     }
 
     setLoading(false);
-  }, [id, router]);
+  }, [id, router, user]);
 
   useEffect(() => { loadData(); }, [loadData]);
 

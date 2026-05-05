@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { LogOut, ChevronRight, MessageSquare, HelpCircle, Eye, EyeOff, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 const AVATAR_EMOJIS = [
   "🙋‍♂️","🙋‍♀️","🧑","👦","👧","🧔","👱","🧓","🧑‍🦰","🧑‍🦱","🧑‍🦳","🧑‍🦲",
@@ -41,6 +42,7 @@ const INPUT_CLASS = `
 export default function PerfilPage() {
   const router = useRouter();
   const { theme, toggle } = useTheme();
+  const authUser = useAuth();
 
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -49,9 +51,9 @@ export default function PerfilPage() {
 
   useEffect(() => {
     async function load() {
+      if (!authUser) return;
+      const user = authUser;
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
       if (user.user_metadata?.full_name) setDisplayName(user.user_metadata.full_name);
       if (user.email) setEmail(user.email);
       const saved = user.user_metadata?.avatar_emoji || localStorage.getItem("ronda_avatar");
@@ -88,7 +90,7 @@ export default function PerfilPage() {
       }
     }
     load();
-  }, []);
+  }, [authUser]);
 
   // Modales
   const [editModal, setEditModal] = useState<"nombre" | "email" | "password" | "avatar" | null>(null);
@@ -154,10 +156,9 @@ export default function PerfilPage() {
     if (newPass !== confirmPass) { setFieldError("Las contraseñas nuevas no coinciden."); return; }
     setSaving(true);
     // Primero reautenticamos con la contraseña actual
+    if (!authUser?.email) { setFieldError("No se pudo verificar tu sesión."); setSaving(false); return; }
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user?.email) { setFieldError("No se pudo verificar tu sesión."); setSaving(false); return; }
-    const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password: currentPass });
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email: authUser.email, password: currentPass });
     if (signInError) { setFieldError("La contraseña actual es incorrecta."); setSaving(false); return; }
     const { error } = await supabase.auth.updateUser({ password: newPass });
     setSaving(false);

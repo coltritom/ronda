@@ -7,6 +7,7 @@ import { LugarSelector } from "@/components/juntada/LugarSelector";
 import { X } from "lucide-react";
 import { LUGAR_OPTIONS, type LugarId } from "@/lib/constants";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 interface Member {
   id: string;
@@ -25,6 +26,7 @@ interface CreateJuntadaSheetProps {
 
 export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreated }: CreateJuntadaSheetProps) {
   const router = useRouter();
+  const user = useAuth();
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -94,9 +96,8 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setError("No autenticado."); setLoading(false); return; }
+    const supabase = createClient();
 
     // Build ISO datetime: combine date + time, or use noon as default
     const isoDate = time ? `${date}T${time}:00` : `${date}T12:00:00`;

@@ -4,6 +4,7 @@ import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Check, Link } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { getOrCreateInvite } from "@/lib/actions/invites";
 import { GroupHeader } from "@/components/grupo/GroupHeader";
 import { PendingAlert } from "@/components/grupo/PendingAlert";
@@ -64,6 +65,7 @@ const PAST_PREVIEW = 3;
 export default function GrupoPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const user = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
@@ -80,9 +82,8 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
   const [inviteError, setInviteError] = useState("");
 
   const load = useCallback(async () => {
+    if (!user) return;
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
 
     const { data, error } = await supabase.rpc("get_group_page_data", {
       p_group_id: id,
@@ -161,7 +162,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     );
 
     setLoading(false);
-  }, [id, router]);
+  }, [id, router, user]);
 
   useEffect(() => { load(); }, [load]);
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { fmtARS } from "@/lib/utils";
 import { ConfirmPagoModal } from "@/components/juntada/ConfirmPagoModal";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 import type { UIMember, UIDebt } from "@/types";
 
 function simplifyDebts(
@@ -57,14 +58,14 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
   const [members, setMembers] = useState<UIMember[]>([]);
   const [deudas, setDeudas] = useState<UIDebt[]>([]);
   const [confirmDeuda, setConfirmDeuda] = useState<UIDebt | null>(null);
+  const user = useAuth();
   const [myUserId, setMyUserId] = useState("");
 
   const [expensesByPayer, setExpensesByPayer] = useState<Record<string, string[]>>({});
 
   const load = useCallback(async () => {
+    if (!user) return;
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
     setMyUserId(user.id);
 
     const { data: groupData } = await supabase
@@ -127,7 +128,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
 
     setDeudas(simplifyDebts(debtData));
     setLoading(false);
-  }, [id, router]);
+  }, [id, router, user]);
 
   useEffect(() => { load(); }, [load]);
 

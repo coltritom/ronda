@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Plus, Moon, Sun, HelpCircle, MessageSquare, Home } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { useTheme } from "@/lib/theme-context";
 
 interface SidebarGroup {
@@ -17,14 +18,14 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const { theme, toggle } = useTheme();
+  const user = useAuth();
   const [groups, setGroups] = useState<SidebarGroup[]>([]);
   const [userName, setUserName] = useState("Vos");
 
   useEffect(() => {
     async function load() {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      const supabase = createClient();
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -76,7 +77,7 @@ export function Sidebar() {
       );
     }
     load();
-  }, []);
+  }, [user]);
 
   return (
     <aside className="hidden md:flex flex-col w-60 h-screen fixed left-0 top-0 bg-noche-media border-r border-white/[0.06] z-40">

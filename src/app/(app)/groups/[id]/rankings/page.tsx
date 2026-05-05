@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import RankingsContent from "./RankingsContent";
 import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 import { fmtARS } from "@/lib/utils";
 import { APORTE_CATEGORIES } from "@/lib/constants";
 import type { RankedMember, BadgeEntry } from "./RankingsContent";
@@ -21,10 +22,11 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
   const [destacados, setDestacados] = useState<BadgeEntry[]>([]);
   const [datos, setDatos] = useState<BadgeEntry[]>([]);
 
+  const user = useAuth();
+
   const load = useCallback(async () => {
+    if (!user) return;
     const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) { router.push("/login"); return; }
 
     const { data: groupData } = await supabase
       .from("groups").select("id, name").eq("id", id).single();
@@ -242,7 +244,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     setDatos(newDatos);
     setLoading(false);
-  }, [id, router]);
+  }, [id, router, user]);
 
   useEffect(() => { load(); }, [load]);
 

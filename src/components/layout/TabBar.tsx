@@ -3,22 +3,21 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Home, Users, User } from "lucide-react";
-import { createClient } from "@/lib/supabase/clients";
+import { useAuth } from "@/lib/supabase/auth-context";
 
 export function TabBar() {
   const pathname = usePathname();
   const router = useRouter();
+  const user = useAuth();
   const [avatarEmoji, setAvatarEmoji] = useState<string | null>(null);
 
   useEffect(() => {
     const cached = localStorage.getItem("ronda_avatar");
     if (cached) { setAvatarEmoji(cached); return; }
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      const emoji = user?.user_metadata?.avatar_emoji;
-      if (emoji) setAvatarEmoji(emoji);
-    });
-  }, []);
+    if (!user) return;
+    const emoji = user.user_metadata?.avatar_emoji;
+    if (emoji) setAvatarEmoji(emoji);
+  }, [user]);
 
   const getActiveTab = () => {
     if (pathname === "/perfil") return "perfil";

@@ -25,35 +25,20 @@ export function MyGroups() {
 
       const { data } = await supabase
         .from("group_members")
-        .select("groups ( id, name )")
+        .select("groups ( id, name, emoji )")
         .eq("user_id", user.id);
 
       if (data) {
         const mapped = data
           .map((d) => {
-            const g = d.groups;
-            if (!g) return null;
-            const single = Array.isArray(g) ? g[0] : g;
-            const s = single as { id: string; name: string } | null;
+            const g = Array.isArray(d.groups) ? d.groups[0] : d.groups;
+            const s = g as { id: string; name: string; emoji: string | null } | null;
             if (!s) return null;
-            return { id: s.id, name: s.name, emoji: s.name.charAt(0).toUpperCase() };
+            return { id: s.id, name: s.name, emoji: s.emoji ?? s.name.charAt(0).toUpperCase() };
           })
           .filter((g): g is Group => g !== null);
 
-        const groupIds = mapped.map((g) => g.id);
-        const emojiMap: Record<string, string> = {};
-        if (groupIds.length > 0) {
-          const { data: emojiRows } = await supabase
-            .from("groups")
-            .select("id, emoji")
-            .in("id", groupIds);
-          for (const row of emojiRows ?? []) {
-            if ((row as { id: string; emoji?: string }).emoji)
-              emojiMap[row.id] = (row as { id: string; emoji: string }).emoji;
-          }
-        }
-
-        setGroups(mapped.map((g) => ({ ...g, emoji: emojiMap[g.id] ?? g.emoji })));
+        setGroups(mapped);
       }
     }
     load();

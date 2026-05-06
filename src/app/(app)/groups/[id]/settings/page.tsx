@@ -12,6 +12,7 @@ import { getOrCreateInvite } from "@/lib/actions/invites";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { GROUP_EMOJIS } from "@/lib/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -42,7 +43,6 @@ interface Member {
 
 // ─── Static data ──────────────────────────────────────────────────────────────
 
-const EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠", "🚗", "🎂", "🌴", "🎉", "🐾"];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -280,7 +280,7 @@ export default function GroupSettingsPage({
           <p className="text-xs font-semibold uppercase tracking-wider text-niebla">Datos del grupo</p>
 
           <div className="flex flex-wrap gap-2">
-            {EMOJIS.map((e) => (
+            {GROUP_EMOJIS.map((e) => (
               <button
                 key={e}
                 type="button"

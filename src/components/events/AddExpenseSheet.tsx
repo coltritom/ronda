@@ -147,73 +147,21 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
             </div>
           </div>
 
-          {/* ¿Quién pagó? */}
-          <div className="flex flex-col gap-3">
-            <span className="text-sm font-semibold text-humo">¿Quién pagó?</span>
-            <div className="flex gap-4 overflow-x-auto py-1 -mx-4 px-4">
-              {allAttendees.map((a, i) => {
-                const c     = COLORS[i % COLORS.length]
-                const sel   = paidBy === a.user_id
-                const label = a.user_id === currentUserId ? 'Yo' : a.name.split(' ')[0]
-                return (
-                  <button
-                    key={a.user_id}
-                    type="button"
-                    onClick={() => setPaidBy(a.user_id)}
-                    className="flex flex-col items-center gap-1.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
-                  >
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${c.bg} ${c.text} ${sel ? 'ring-2 ring-fuego ring-offset-2 ring-offset-noche-media' : ''}`}>
-                      {a.name.charAt(0).toUpperCase()}
-                    </div>
-                    <span className={`text-xs font-semibold ${sel ? 'text-fuego' : 'text-niebla'}`}>
-                      {label}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+          <PayerSelector
+            allAttendees={allAttendees}
+            currentUserId={currentUserId}
+            paidBy={paidBy}
+            onSelect={setPaidBy}
+          />
 
-          {/* ¿Entre quiénes se divide? */}
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-semibold text-humo">¿Entre quiénes se divide?</span>
-              <button
-                type="button"
-                onClick={toggleAll}
-                className="text-xs font-semibold text-fuego bg-transparent border-none cursor-pointer p-0"
-              >
-                {allSelected ? 'Todos ✓' : 'Todos'}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {allAttendees.map((a, i) => {
-                const c     = COLORS[i % COLORS.length]
-                const sel   = splitIds.includes(a.user_id)
-                const label = a.user_id === currentUserId ? 'Yo' : a.name.split(' ')[0]
-                return (
-                  <button
-                    key={a.user_id}
-                    type="button"
-                    onClick={() => toggleMember(a.user_id)}
-                    className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
-                      sel ? `${c.bg} ${c.text}` : 'bg-white/5 text-niebla'
-                    }`}
-                  >
-                    <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                      sel ? 'bg-white/20' : 'bg-white/10 text-niebla'
-                    }`}>
-                      {a.name.charAt(0).toUpperCase()}
-                    </span>
-                    {label}
-                  </button>
-                )
-              })}
-            </div>
-            {splitIds.length === 0 && (
-              <p className="text-xs text-alerta">Seleccioná al menos una persona para dividir el gasto.</p>
-            )}
-          </div>
+          <SplitSelector
+            allAttendees={allAttendees}
+            currentUserId={currentUserId}
+            splitIds={splitIds}
+            onToggle={toggleMember}
+            onToggleAll={toggleAll}
+            allSelected={allSelected}
+          />
 
           {/* Partes iguales */}
           <div className="flex items-center justify-between rounded-2xl bg-noche px-4 py-3.5">
@@ -252,6 +200,92 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
         </div>
 
       </div>
+    </div>
+  )
+}
+
+function PayerSelector({ allAttendees, currentUserId, paidBy, onSelect }: {
+  allAttendees: Attendee[]
+  currentUserId: string
+  paidBy: string
+  onSelect: (uid: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <span className="text-sm font-semibold text-humo">¿Quién pagó?</span>
+      <div className="flex gap-4 overflow-x-auto py-1 -mx-4 px-4">
+        {allAttendees.map((a, i) => {
+          const c     = COLORS[i % COLORS.length]
+          const sel   = paidBy === a.user_id
+          const label = a.user_id === currentUserId ? 'Yo' : a.name.split(' ')[0]
+          return (
+            <button
+              key={a.user_id}
+              type="button"
+              onClick={() => onSelect(a.user_id)}
+              className="flex flex-col items-center gap-1.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base transition-all ${c.bg} ${c.text} ${sel ? 'ring-2 ring-fuego ring-offset-2 ring-offset-noche-media' : ''}`}>
+                {a.name.charAt(0).toUpperCase()}
+              </div>
+              <span className={`text-xs font-semibold ${sel ? 'text-fuego' : 'text-niebla'}`}>
+                {label}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onToggleAll, allSelected }: {
+  allAttendees: Attendee[]
+  currentUserId: string
+  splitIds: string[]
+  onToggle: (uid: string) => void
+  onToggleAll: () => void
+  allSelected: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <span className="text-sm font-semibold text-humo">¿Entre quiénes se divide?</span>
+        <button
+          type="button"
+          onClick={onToggleAll}
+          className="text-xs font-semibold text-fuego bg-transparent border-none cursor-pointer p-0"
+        >
+          {allSelected ? 'Todos ✓' : 'Todos'}
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {allAttendees.map((a, i) => {
+          const c     = COLORS[i % COLORS.length]
+          const sel   = splitIds.includes(a.user_id)
+          const label = a.user_id === currentUserId ? 'Yo' : a.name.split(' ')[0]
+          return (
+            <button
+              key={a.user_id}
+              type="button"
+              onClick={() => onToggle(a.user_id)}
+              className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
+                sel ? `${c.bg} ${c.text}` : 'bg-white/5 text-niebla'
+              }`}
+            >
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                sel ? 'bg-white/20' : 'bg-white/10 text-niebla'
+              }`}>
+                {a.name.charAt(0).toUpperCase()}
+              </span>
+              {label}
+            </button>
+          )
+        })}
+      </div>
+      {splitIds.length === 0 && (
+        <p className="text-xs text-alerta">Seleccioná al menos una persona para dividir el gasto.</p>
+      )}
     </div>
   )
 }

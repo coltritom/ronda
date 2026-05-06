@@ -1,9 +1,8 @@
 "use client";
 
-import { use, useState, useEffect, useCallback, useRef } from "react";
+import { use, useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Check, Link } from "lucide-react";
-import { createClient } from "@/lib/supabase/clients";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { getOrCreateInvite } from "@/lib/actions/invites";
 import { GroupHeader } from "@/components/grupo/GroupHeader";
@@ -14,52 +13,8 @@ import { JuntadaCard } from "@/components/juntada/JuntadaCard";
 import { Button } from "@/components/ui/Button";
 import { FAB } from "@/components/ui/FAB";
 import { CreateJuntadaSheet } from "@/components/juntada/CreateJuntadaSheet";
-import type { JuntadaItem } from "@/lib/constants";
+import { useGroupPageData } from "@/hooks/useGroupPageData";
 
-type RankingEntry = {
-  emoji: string;
-  label: string;
-  name: string;
-  detail: string;
-  memberEmoji: string;
-  memberColorIndex: number;
-  variant: "ambar" | "uva" | "rosa";
-};
-
-type MemberData = {
-  emoji?: string;
-  name: string;
-  colorIndex?: number;
-};
-
-type MemberRpcItem = { user_id: string; name: string };
-
-type EventRpcItem = {
-  id: string;
-  name: string;
-  date: string;
-  location: string | null;
-  status: string;
-  going: number;
-  maybe: number;
-  not_going: number;
-  attendance_count: number;
-  total_spent: number;
-};
-
-type GroupPageRpcResult = {
-  error?: string;
-  group?: { id: string; name: string; emoji: string };
-  members?: MemberRpcItem[];
-  events?: EventRpcItem[];
-  pending_count?: number;
-  pending_amount?: number;
-  attendance_by_member?: Record<string, number>;
-};
-
-const RANK_EMOJIS = ["🏆", "🥈", "🥉"];
-const RANK_LABELS = ["El Presente", "El Constante", "El Fiel"];
-const RANK_VARIANTS = ["ambar", "uva", "rosa"] as const;
 const PAST_PREVIEW = 3;
 
 export default function GrupoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -67,117 +22,19 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
   const router = useRouter();
   const user = useAuth();
 
-  const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [groupName, setGroupName] = useState("");
-  const [groupEmoji, setGroupEmoji] = useState("🔥");
-  const [members, setMembers] = useState<MemberData[]>([]);
-  const [juntadas, setJuntadas] = useState<JuntadaItem[]>([]);
-  const [pending, setPending] = useState<{ count: number; amount: number } | null>(null);
-  const [ranking, setRanking] = useState<RankingEntry[]>([]);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [showAllPast, setShowAllPast] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [inviteToken, setInviteToken] = useState<string | null>(null);
-  const [inviteError, setInviteError] = useState("");
+  const { loading, notFound, groupName, groupEmoji, members, juntadas, pending, ranking, reload } =
+    useGroupPageData(id, user);
 
-  const isMountedRef = useRef(true);
+  const [sheetOpen,    setSheetOpen]    = useState(false);
+  const [showAllPast,  setShowAllPast]  = useState(false);
+  const [copied,       setCopied]       = useState(false);
+  const [inviteToken,  setInviteToken]  = useState<string | null>(null);
+  const [inviteError,  setInviteError]  = useState("");
   const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    isMountedRef.current = true;
-    return () => {
-      isMountedRef.current = false;
-      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
-    };
+  useEffect(() => () => {
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
   }, []);
-
-  const load = useCallback(async () => {
-    if (!user) return;
-    const supabase = createClient();
-
-    const { data, error } = await supabase.rpc("get_group_page_data", {
-      p_group_id: id,
-      p_user_id: user.id,
-    });
-
-    const result = data as GroupPageRpcResult | null;
-
-    if (!isMountedRef.current) return;
-
-    if (error || !result || result.error) {
-      setNotFound(true);
-      setLoading(false);
-      return;
-    }
-
-    setGroupName(result.group!.name);
-    setGroupEmoji(result.group!.emoji);
-
-    const rpcMembers = result.members ?? [];
-    const memberList: MemberData[] = rpcMembers.map((m, i) => ({
-      name: m.name,
-      colorIndex: i,
-    }));
-    setMembers(memberList);
-
-    const memberCount = memberList.length;
-    const mappedJuntadas: JuntadaItem[] = (result.events ?? []).map((e) => {
-      const noResponse = Math.max(0, memberCount - e.going - e.maybe - e.not_going);
-      const formattedDate = new Intl.DateTimeFormat("es-AR", {
-        weekday: "short",
-        day: "numeric",
-        month: "short",
-        timeZone: "America/Argentina/Buenos_Aires",
-      }).format(new Date(e.date));
-
-      return {
-        id: e.id,
-        isoDate: e.date.slice(0, 10),
-        date: formattedDate,
-        name: e.name,
-        attendees: e.attendance_count,
-        totalSpent: e.total_spent,
-        closed: e.status === "completed",
-        confirmed: e.going,
-        unsure: e.maybe,
-        noResponse,
-      };
-    });
-    setJuntadas(mappedJuntadas);
-
-    const pendingCount = result.pending_count ?? 0;
-    const pendingAmount = result.pending_amount ?? 0;
-    setPending(pendingCount > 0 ? { count: pendingCount, amount: pendingAmount } : null);
-
-    const attendanceByMember = result.attendance_by_member ?? {};
-    const topMembers = rpcMembers
-      .map((m, i) => ({
-        user_id: m.user_id,
-        name: m.name,
-        count: attendanceByMember[m.user_id] ?? 0,
-        colorIndex: i,
-      }))
-      .filter((m) => m.count > 0)
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 3);
-
-    setRanking(
-      topMembers.map((m, i) => ({
-        emoji: RANK_EMOJIS[i],
-        label: RANK_LABELS[i],
-        name: m.name,
-        detail: `${m.count} juntada${m.count !== 1 ? "s" : ""}`,
-        memberEmoji: "",
-        memberColorIndex: m.colorIndex,
-        variant: RANK_VARIANTS[i % 3],
-      }))
-    );
-
-    setLoading(false);
-  }, [id, user]);
-
-  useEffect(() => { load(); }, [load]);
 
   const handleCopyInvite = async () => {
     setInviteError("");
@@ -224,14 +81,12 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     .filter((j) => j.isoDate < TODAY)
     .sort((a, b) => b.isoDate.localeCompare(a.isoDate));
 
-  const emoji = groupEmoji;
-
   return (
     <div className="max-w-2xl mx-auto pb-8">
       <GroupHeader
         groupId={id}
         name={groupName}
-        emoji={emoji}
+        emoji={groupEmoji}
         members={members}
       />
 
@@ -361,7 +216,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
 
       <CreateJuntadaSheet
         open={sheetOpen}
-        onClose={() => { setSheetOpen(false); load(); }}
+        onClose={() => { setSheetOpen(false); reload(); }}
         groupId={id}
         groupName={groupName}
         onCreated={() => {}}

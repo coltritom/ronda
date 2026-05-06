@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Copy, Check, ChevronLeft } from "lucide-react";
 import { createGroup } from "@/lib/actions/groups";
-
-const EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠", "🚗", "🎂"];
+import { GROUP_EMOJIS } from "@/lib/constants";
 
 type Step = "create" | "invite";
 
@@ -130,7 +129,7 @@ export default function CrearGrupoPage() {
             {emoji}
           </div>
           <div className="flex flex-wrap gap-2 justify-center max-w-[280px]">
-            {EMOJIS.map((e) => (
+            {GROUP_EMOJIS.map((e) => (
               <button
                 key={e}
                 onClick={() => setEmoji(e)}

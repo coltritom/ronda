@@ -49,7 +49,7 @@ export function UpcomingJuntadas() {
 
       const { data: eventsRaw } = await supabase
         .from("events")
-        .select("id, name, date, group_id, groups(name), event_rsvps(user_id, response)")
+        .select("id, name, date, group_id, groups(name, emoji), event_rsvps(user_id, response)")
         .in("group_id", groupIds)
         .neq("status", "cancelled")
         .gte("date", NOW)
@@ -58,27 +58,21 @@ export function UpcomingJuntadas() {
 
       if (!eventsRaw?.length) return;
 
-      const [membersResult, emojiResult] = await Promise.all([
-        supabase.from("group_members").select("group_id").in("group_id", groupIds),
-        supabase.from("groups").select("id, emoji").in("id", groupIds),
-      ]);
+      const { data: membersData } = await supabase
+        .from("group_members")
+        .select("group_id")
+        .in("group_id", groupIds);
 
       const memberCountByGroup: Record<string, number> = {};
-      for (const m of membersResult.data ?? []) {
+      for (const m of membersData ?? []) {
         memberCountByGroup[m.group_id] = (memberCountByGroup[m.group_id] ?? 0) + 1;
-      }
-
-      const emojiMap: Record<string, string> = {};
-      for (const row of emojiResult.data ?? []) {
-        if ((row as { id: string; emoji?: string }).emoji)
-          emojiMap[row.id] = (row as { id: string; emoji: string }).emoji;
       }
 
       const mapped: UpcomingEvent[] = eventsRaw.map((e) => {
         const g = Array.isArray(e.groups) ? e.groups[0] : e.groups;
-        const gTyped = g as { name: string } | null;
+        const gTyped = g as { name: string; emoji: string | null } | null;
         const groupName = gTyped?.name ?? "Grupo";
-        const groupEmoji = emojiMap[e.group_id] ?? groupName.charAt(0).toUpperCase();
+        const groupEmoji = gTyped?.emoji ?? groupName.charAt(0).toUpperCase();
         const rsvps = (e.event_rsvps as { user_id: string; response: string }[]) ?? [];
         const going = rsvps.filter((r) => r.response === "going").length;
         const maybe = rsvps.filter((r) => r.response === "maybe").length;

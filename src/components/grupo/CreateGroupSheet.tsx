@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { X } from "lucide-react";
 import { createGroup } from "@/lib/actions/groups";
-
-const EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠"];
+import { GROUP_EMOJIS } from "@/lib/constants";
 
 interface CreateGroupSheetProps {
   open: boolean;
@@ -68,7 +67,7 @@ export function CreateGroupSheet({ open, onClose }: CreateGroupSheetProps) {
           </div>
 
           <div className="flex flex-wrap gap-2 justify-center mb-6">
-            {EMOJIS.map((e) => (
+            {GROUP_EMOJIS.map((e) => (
               <button
                 key={e}
                 onClick={() => setEmoji(e)}

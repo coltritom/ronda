@@ -1,5 +1,7 @@
 export const MEMBER_COLORS = ["fuego", "uva", "menta", "ambar", "rosa"] as const;
 
+export const GROUP_EMOJIS = ["🔥", "⚽", "🏖️", "🎮", "🍕", "🍺", "🎯", "🏀", "🎸", "🏠", "🚗", "🎂", "🌴", "🎉", "🐾"] as const;
+
 export function getMemberColor(index: number): string {
   return MEMBER_COLORS[index % MEMBER_COLORS.length];
 }

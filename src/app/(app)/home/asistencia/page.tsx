@@ -27,10 +27,10 @@ export default async function AsistenciaPage() {
     .select('group_id, groups(name)')
     .eq('user_id', user.id)
 
-  type MembershipRow = { group_id: string; groups: { name: string } | null }
   const groupMap: Record<string, string> = {}
-  for (const m of (memberships ?? []) as unknown as MembershipRow[]) {
-    groupMap[m.group_id] = m.groups?.name ?? 'Grupo'
+  for (const m of memberships ?? []) {
+    const g = Array.isArray(m.groups) ? m.groups[0] : m.groups
+    groupMap[m.group_id] = g?.name ?? 'Grupo'
   }
   const groupIds = Object.keys(groupMap)
 

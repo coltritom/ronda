@@ -97,7 +97,14 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     `)
     .eq('event_id', eventId)
     .order('created_at', { ascending: true })
-  const expensesTyped = (expensesRaw ?? []) as ExpenseQueryRow[]
+  const expensesTyped: ExpenseQueryRow[] = (expensesRaw ?? []).map((e) => ({
+    id: e.id,
+    description: e.description,
+    amount: e.amount,
+    paid_by: e.paid_by,
+    split_type: e.split_type,
+    expense_splits: Array.isArray(e.expense_splits) ? e.expense_splits : [],
+  }))
 
   const { data: settlementsRaw } = await supabase
     .from('settlements')

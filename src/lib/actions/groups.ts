@@ -4,6 +4,22 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
+
+async function assertAdmin(
+  supabase: SupabaseServerClient,
+  groupId: string,
+  userId: string
+): Promise<{ error: string } | null> {
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', userId)
+    .single()
+  return membership?.role === 'admin' ? null : { error: 'Sin permisos.' }
+}
+
 export async function createGroup(
   name: string,
   description: string | null,
@@ -75,14 +91,8 @@ export async function updateGroup(
 
   if (!user) return { error: 'No autenticado.' }
 
-  const { data: membership } = await supabase
-    .from('group_members')
-    .select('role')
-    .eq('group_id', groupId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (membership?.role !== 'admin') return { error: 'Sin permisos.' }
+  const permError = await assertAdmin(supabase, groupId, user.id)
+  if (permError) return permError
 
   const { error } = await supabase
     .from('groups')
@@ -104,14 +114,8 @@ export async function deleteGroup(groupId: string): Promise<{ error: string } | 
 
   if (!user) return { error: 'No autenticado.' }
 
-  const { data: membership } = await supabase
-    .from('group_members')
-    .select('role')
-    .eq('group_id', groupId)
-    .eq('user_id', user.id)
-    .single()
-
-  if (membership?.role !== 'admin') return { error: 'Sin permisos.' }
+  const permError = await assertAdmin(supabase, groupId, user.id)
+  if (permError) return permError
 
   const { error } = await supabase
     .from('groups')

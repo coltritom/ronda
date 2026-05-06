@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { ChevronLeft } from 'lucide-react'
 import { createExpense } from '@/lib/actions/expenses'
 import { toast } from 'sonner'
@@ -26,9 +26,12 @@ const COLORS = [
 ]
 
 export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUserId, currentUserName, attendees }: Props) {
-  const allAttendees: Attendee[] = attendees.some((a) => a.user_id === currentUserId)
-    ? attendees
-    : [{ user_id: currentUserId, name: currentUserName }, ...attendees]
+  const allAttendees = useMemo<Attendee[]>(
+    () => attendees.some((a) => a.user_id === currentUserId)
+      ? attendees
+      : [{ user_id: currentUserId, name: currentUserName }, ...attendees],
+    [attendees, currentUserId, currentUserName]
+  )
 
   const [amount, setAmount]           = useState('') // raw digits only
   const [paidBy, setPaidBy]           = useState(currentUserId)
@@ -37,15 +40,17 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
   const [loading, setLoading]         = useState(false)
   const [error, setError]             = useState<string | null>(null)
 
+  const prevOpenRef = useRef(false)
   useEffect(() => {
-    if (open) {
+    if (open && !prevOpenRef.current) {
       setAmount('')
       setPaidBy(currentUserId)
       setSplitIds(allAttendees.map((a) => a.user_id))
       setDescription('')
       setError(null)
     }
-  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+    prevOpenRef.current = open
+  }, [open, currentUserId, allAttendees])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''

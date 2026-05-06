@@ -118,13 +118,11 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
       .in("expense_id", allExpenseIds)
       .eq("is_settled", false);
 
-    const debtData = (splitsRaw ?? [])
-      .map((s) => ({
-        user_id: s.user_id,
-        amount: s.amount ?? 0,
-        paid_by: expenseMap[s.expense_id],
-      }))
-      .filter((s) => s.paid_by && s.user_id !== s.paid_by);
+    const debtData = (splitsRaw ?? []).flatMap((s) => {
+      const paidBy = expenseMap[s.expense_id];
+      if (!paidBy || s.user_id === paidBy) return [];
+      return [{ user_id: s.user_id, amount: s.amount ?? 0, paid_by: paidBy }];
+    });
 
     setDeudas(simplifyDebts(debtData));
     setLoading(false);

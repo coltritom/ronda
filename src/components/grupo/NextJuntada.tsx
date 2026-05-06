@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Minus, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
-import { useAuth } from "@/lib/supabase/auth-context";
 
-type RSVPStatus = "going" | "not_going" | "maybe" | "none";
+export type RSVPStatus = "going" | "not_going" | "maybe" | "none";
 
 interface NextJuntadaProps {
   date: string;
@@ -16,6 +15,8 @@ interface NextJuntadaProps {
   juntadaId?: string;
   juntadaName?: string;
   groupId?: string;
+  userId?: string;
+  initialRsvp?: RSVPStatus;
   wrapCard?: boolean;
   showLabel?: boolean;
 }
@@ -47,29 +48,15 @@ const CHIPS: {
 
 export function NextJuntada({
   date, confirmed, unsure, noResponse,
-  juntadaId, juntadaName, groupId,
+  juntadaId, juntadaName, groupId, userId,
+  initialRsvp = "none",
   wrapCard = true, showLabel = true,
 }: NextJuntadaProps) {
   const router = useRouter();
-  const user = useAuth();
-  const [status, setStatus] = useState<RSVPStatus>("none");
-
-  useEffect(() => {
-    if (!juntadaId || !user) return;
-    const supabase = createClient();
-    supabase
-      .from("event_rsvps")
-      .select("response")
-      .eq("event_id", juntadaId)
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => {
-        if (data?.response) setStatus(data.response as RSVPStatus);
-      });
-  }, [juntadaId, user]);
+  const [status, setStatus] = useState<RSVPStatus>(initialRsvp);
 
   const handleRSVP = async (newStatus: RSVPStatus) => {
-    if (!user || !juntadaId) return;
+    if (!userId || !juntadaId) return;
     setStatus(newStatus);
     const supabase = createClient();
 
@@ -78,10 +65,10 @@ export function NextJuntada({
         .from("event_rsvps")
         .delete()
         .eq("event_id", juntadaId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
     } else {
       await supabase.from("event_rsvps").upsert(
-        { event_id: juntadaId, user_id: user.id, response: newStatus },
+        { event_id: juntadaId, user_id: userId, response: newStatus },
         { onConflict: "event_id,user_id" }
       );
     }

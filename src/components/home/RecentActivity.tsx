@@ -1,12 +1,8 @@
-"use client";
+import { fmtARS as _fmtARS } from "@/lib/utils";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/clients";
-import { useAuth } from "@/lib/supabase/auth-context";
+export type ActivityType = "event_created" | "member_joined";
 
-type ActivityType = "event_created" | "member_joined";
-
-interface ActivityItem {
+export interface ActivityItem {
   id: string;
   type: ActivityType;
   actorName: string;
@@ -32,99 +28,7 @@ function timeAgo(iso: string): string {
   }).format(new Date(iso));
 }
 
-export function RecentActivity() {
-  const user = useAuth();
-  const [items, setItems] = useState<ActivityItem[]>([]);
-
-  useEffect(() => {
-    async function load() {
-      if (!user) return;
-      const supabase = createClient();
-
-      const { data: memberships } = await supabase
-        .from("group_members")
-        .select("group_id")
-        .eq("user_id", user.id);
-
-      const groupIds = (memberships ?? []).map((m) => m.group_id);
-      if (!groupIds.length) return;
-
-      const [eventsResult, joinsResult] = await Promise.all([
-        supabase
-          .from("events")
-          .select("id, name, date, group_id, created_by, created_at, groups(name)")
-          .in("group_id", groupIds)
-          .neq("status", "cancelled")
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("group_members")
-          .select("user_id, joined_at, group_id, groups(name)")
-          .in("group_id", groupIds)
-          .order("joined_at", { ascending: false })
-          .limit(10),
-      ]);
-
-      // Collect actor IDs for a single batch profiles fetch
-      const actorIds = new Set<string>();
-      for (const e of eventsResult.data ?? []) {
-        if (e.created_by) actorIds.add(e.created_by);
-      }
-      for (const j of joinsResult.data ?? []) {
-        if (j.user_id) actorIds.add(j.user_id);
-      }
-
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, name")
-        .in("id", [...actorIds]);
-
-      const nameById: Record<string, string> = {};
-      for (const p of profiles ?? []) nameById[p.id] = p.name ?? "Alguien";
-
-      const activities: ActivityItem[] = [];
-
-      for (const e of eventsResult.data ?? []) {
-        if (!e.created_by || !e.created_at) continue;
-        const g = Array.isArray(e.groups) ? e.groups[0] : e.groups;
-        const groupName = (g as { name: string } | null)?.name ?? "Grupo";
-        const formattedDate = new Intl.DateTimeFormat("es-AR", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          timeZone: "America/Argentina/Buenos_Aires",
-        }).format(new Date(e.date));
-
-        activities.push({
-          id: `event-${e.id}`,
-          type: "event_created",
-          actorName: nameById[e.created_by] ?? "Alguien",
-          groupName,
-          eventName: e.name,
-          eventDate: formattedDate,
-          createdAt: e.created_at,
-        });
-      }
-
-      for (const j of joinsResult.data ?? []) {
-        if (!j.user_id || !j.joined_at) continue;
-        const g = Array.isArray(j.groups) ? j.groups[0] : j.groups;
-        const groupName = (g as { name: string } | null)?.name ?? "Grupo";
-        activities.push({
-          id: `join-${j.user_id}-${j.group_id}`,
-          type: "member_joined",
-          actorName: nameById[j.user_id] ?? "Alguien",
-          groupName,
-          createdAt: j.joined_at,
-        });
-      }
-
-      activities.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      setItems(activities.slice(0, 8));
-    }
-    load();
-  }, [user]);
-
+export function RecentActivity({ items }: { items: ActivityItem[] }) {
   if (items.length === 0) return null;
 
   return (

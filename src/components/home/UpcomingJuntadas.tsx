@@ -1,20 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, X, Minus } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
-import { useAuth } from "@/lib/supabase/auth-context";
 
-type RSVPStatus = "going" | "maybe" | "not_going" | "none";
+export type RSVPStatus = "going" | "maybe" | "not_going" | "none";
 
-const CHIPS: { id: Exclude<RSVPStatus, "none">; label: string; icon: typeof Check; symbol: string }[] = [
-  { id: "going",     label: "Voy",    icon: Check, symbol: "✓" },
-  { id: "not_going", label: "No voy", icon: X,     symbol: "✗" },
-  { id: "maybe",     label: "No sé",  icon: Minus, symbol: "—" },
-];
-
-interface UpcomingEvent {
+export interface UpcomingEvent {
   id: string;
   name: string;
   date: string;
@@ -26,110 +19,44 @@ interface UpcomingEvent {
   myRsvp: RSVPStatus;
 }
 
-export function UpcomingJuntadas() {
+const CHIPS: { id: Exclude<RSVPStatus, "none">; label: string; icon: typeof Check; symbol: string }[] = [
+  { id: "going",     label: "Voy",    icon: Check, symbol: "✓" },
+  { id: "not_going", label: "No voy", icon: X,     symbol: "✗" },
+  { id: "maybe",     label: "No sé",  icon: Minus, symbol: "—" },
+];
+
+export function UpcomingJuntadas({
+  initialEvents,
+  userId,
+}: {
+  initialEvents: UpcomingEvent[];
+  userId: string;
+}) {
   const router = useRouter();
-  const user = useAuth();
-  const [events, setEvents] = useState<UpcomingEvent[]>([]);
-  const [rsvpMap, setRsvpMap] = useState<Record<string, RSVPStatus>>({});
-
-  useEffect(() => {
-    async function load() {
-      if (!user) return;
-      const supabase = createClient();
-
-      const { data: memberships } = await supabase
-        .from("group_members")
-        .select("group_id")
-        .eq("user_id", user.id);
-
-      const groupIds = (memberships ?? []).map((m) => m.group_id);
-      if (!groupIds.length) return;
-
-      const NOW = new Date().toISOString();
-
-      const { data: eventsRaw } = await supabase
-        .from("events")
-        .select("id, name, date, group_id, groups(name, emoji), event_rsvps(user_id, response)")
-        .in("group_id", groupIds)
-        .neq("status", "cancelled")
-        .gte("date", NOW)
-        .order("date", { ascending: true })
-        .limit(5);
-
-      if (!eventsRaw?.length) return;
-
-      const { data: membersData } = await supabase
-        .from("group_members")
-        .select("group_id")
-        .in("group_id", groupIds);
-
-      const memberCountByGroup: Record<string, number> = {};
-      for (const m of membersData ?? []) {
-        memberCountByGroup[m.group_id] = (memberCountByGroup[m.group_id] ?? 0) + 1;
-      }
-
-      const mapped: UpcomingEvent[] = eventsRaw.map((e) => {
-        const g = Array.isArray(e.groups) ? e.groups[0] : e.groups;
-        const gTyped = g as { name: string; emoji: string | null } | null;
-        const groupName = gTyped?.name ?? "Grupo";
-        const groupEmoji = gTyped?.emoji ?? groupName.charAt(0).toUpperCase();
-        const rsvps = (e.event_rsvps as { user_id: string; response: string }[]) ?? [];
-        const going = rsvps.filter((r) => r.response === "going").length;
-        const maybe = rsvps.filter((r) => r.response === "maybe").length;
-        const declined = rsvps.filter((r) => r.response === "not_going").length;
-        const memberCount = memberCountByGroup[e.group_id] ?? 0;
-        const noResponse = Math.max(0, memberCount - going - maybe - declined);
-        const myRsvpRow = rsvps.find((r) => r.user_id === user.id);
-        const myRsvp: RSVPStatus = (myRsvpRow?.response as RSVPStatus) ?? "none";
-
-        const formattedDate = new Intl.DateTimeFormat("es-AR", {
-          weekday: "short",
-          day: "numeric",
-          month: "short",
-          timeZone: "America/Argentina/Buenos_Aires",
-        }).format(new Date(e.date));
-
-        return {
-          id: e.id,
-          name: e.name,
-          date: formattedDate,
-          groupId: e.group_id,
-          groupName,
-          groupEmoji,
-          confirmed: going,
-          noResponse,
-          myRsvp,
-        };
-      });
-
-      setEvents(mapped);
-      const map: Record<string, RSVPStatus> = {};
-      for (const e of mapped) map[e.id] = e.myRsvp;
-      setRsvpMap(map);
-    }
-    load();
-  }, [user]);
+  const [rsvpMap, setRsvpMap] = useState<Record<string, RSVPStatus>>(() => {
+    const map: Record<string, RSVPStatus> = {};
+    for (const e of initialEvents) map[e.id] = e.myRsvp;
+    return map;
+  });
 
   const handleRSVP = async (eventId: string, status: RSVPStatus) => {
-    if (!user) return;
     setRsvpMap((prev) => ({ ...prev, [eventId]: status }));
     const supabase = createClient();
-
     if (status === "none") {
       await supabase
         .from("event_rsvps")
         .delete()
         .eq("event_id", eventId)
-        .eq("user_id", user.id);
+        .eq("user_id", userId);
     } else {
       await supabase.from("event_rsvps").upsert(
-        { event_id: eventId, user_id: user.id, response: status },
+        { event_id: eventId, user_id: userId, response: status },
         { onConflict: "event_id,user_id" }
       );
     }
   };
 
-  if (events.length === 0) {
+  if (initialEvents.length === 0) {
     return (
       <div className="px-4 md:px-6 mb-3">
         <p className="font-display font-semibold text-[15px] text-carbon dark:text-humo mb-2">
@@ -151,7 +78,7 @@ export function UpcomingJuntadas() {
       </p>
 
       <div className="flex flex-col gap-2">
-        {events.map((j) => {
+        {initialEvents.map((j) => {
           const status = rsvpMap[j.id] ?? "none";
           const chipData = CHIPS.find((c) => c.id === status);
 

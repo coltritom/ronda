@@ -1,48 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/clients";
-import { useAuth } from "@/lib/supabase/auth-context";
 import { CreateGroupSheet } from "@/components/grupo/CreateGroupSheet";
 
-interface Group {
+export interface GroupItem {
   id: string;
   name: string;
   emoji: string;
 }
 
-export function MyGroups() {
+export function MyGroups({ initialGroups }: { initialGroups: GroupItem[] }) {
   const router = useRouter();
-  const user = useAuth();
-  const [groups, setGroups] = useState<Group[]>([]);
   const [sheetOpen, setSheetOpen] = useState(false);
-
-  useEffect(() => {
-    async function load() {
-      if (!user) return;
-      const supabase = createClient();
-
-      const { data } = await supabase
-        .from("group_members")
-        .select("groups ( id, name, emoji )")
-        .eq("user_id", user.id);
-
-      if (data) {
-        const mapped = data
-          .map((d) => {
-            const g = Array.isArray(d.groups) ? d.groups[0] : d.groups;
-            const s = g as { id: string; name: string; emoji: string | null } | null;
-            if (!s) return null;
-            return { id: s.id, name: s.name, emoji: s.emoji ?? s.name.charAt(0).toUpperCase() };
-          })
-          .filter((g): g is Group => g !== null);
-
-        setGroups(mapped);
-      }
-    }
-    load();
-  }, [user]);
 
   return (
     <div className="px-4 md:px-6 mb-3">
@@ -55,7 +25,7 @@ export function MyGroups() {
         </button>
       </div>
 
-      {groups.length === 0 ? (
+      {initialGroups.length === 0 ? (
         <div className="bg-noche-media dark:bg-noche-media bg-crema rounded-[14px] py-5 px-4 text-center">
           <p className="text-xs text-niebla dark:text-niebla text-gris-cal">
             Todavía no tenés grupos.
@@ -63,7 +33,7 @@ export function MyGroups() {
         </div>
       ) : (
         <div className="flex gap-2">
-          {groups.map((g) => (
+          {initialGroups.map((g) => (
             <button
               key={g.id}
               onClick={() => router.push(`/groups/${g.id}`)}

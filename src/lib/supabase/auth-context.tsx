@@ -10,14 +10,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | undefined>(undefined);
 
   useEffect(() => {
+    let mounted = true;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user ?? undefined);
+      if (mounted) setUser(user ?? undefined);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? undefined);
+      if (mounted) setUser(session?.user ?? undefined);
     });
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return <AuthContext.Provider value={user}>{children}</AuthContext.Provider>;

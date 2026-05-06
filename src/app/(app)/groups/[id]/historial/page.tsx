@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { use, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { JuntadaCard } from "@/components/juntada/JuntadaCard";
@@ -29,6 +29,12 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
   const [groupName, setGroupName] = useState("");
   const [juntadas, setJuntadas] = useState<JuntadaRow[]>([]);
 
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
+
   const load = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
@@ -38,6 +44,8 @@ export default function HistorialPage({ params }: { params: Promise<{ id: string
       .select("id, name")
       .eq("id", id)
       .single();
+
+    if (!isMountedRef.current) return;
 
     if (!groupData) { router.push("/groups"); return; }
     setGroupName(groupData.name);

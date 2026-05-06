@@ -40,6 +40,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
 
   useEffect(() => {
     if (!open || !groupId) return;
+    let mounted = true;
     setMembersLoading(true);
     async function loadMembers() {
       const supabase = createClient();
@@ -50,6 +51,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
       const userIds = (data ?? []).map(m => m.user_id);
       const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", userIds);
       const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+      if (!mounted) return;
       setMembers(
         (data ?? []).map((m, i) => ({
           id: m.user_id,
@@ -61,6 +63,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
       setMembersLoading(false);
     }
     loadMembers();
+    return () => { mounted = false; };
   }, [open, groupId]);
 
   if (!open) return null;
@@ -84,10 +87,10 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
         const host = members.find((m) => m.id === hostId);
         return host ? `${lugarOption.emoji} En lo de ${host.name}` : lugarOption.label;
       }
-      if (hostId === "otro" && customLocation) return customLocation;
+      if (hostId === "otro" && customLocation.trim()) return customLocation.trim();
       return lugarOption.label;
     }
-    if (lugar === "otro") return customLocation || lugarOption.label;
+    if (lugar === "otro") return customLocation.trim() || lugarOption.label;
     return lugarOption.label;
   };
 

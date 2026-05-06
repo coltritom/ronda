@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect, useCallback } from "react";
+import { use, useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Check, Link } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
@@ -81,6 +81,17 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
   const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [inviteError, setInviteError] = useState("");
 
+  const isMountedRef = useRef(true);
+  const copyTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
+
   const load = useCallback(async () => {
     if (!user) return;
     const supabase = createClient();
@@ -91,6 +102,8 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     });
 
     const result = data as GroupPageRpcResult | null;
+
+    if (!isMountedRef.current) return;
 
     if (error || !result || result.error) {
       setNotFound(true);
@@ -162,7 +175,7 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     );
 
     setLoading(false);
-  }, [id, router, user]);
+  }, [id, user]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -181,7 +194,8 @@ export default function GrupoPage({ params }: { params: Promise<{ id: string }> 
     const link = `${window.location.origin}/invite/${token}`;
     navigator.clipboard.writeText(link).catch(() => {});
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
   if (loading) return (

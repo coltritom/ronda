@@ -20,7 +20,7 @@ interface ContributionsSectionProps {
   eventId: string
   currentUserId: string
   contributions: Contribution[]
-  isUpcoming: boolean
+  canAdd: boolean
 }
 
 function groupByMember(contributions: Contribution[]) {
@@ -44,7 +44,7 @@ export function ContributionsSection({
   eventId,
   currentUserId,
   contributions,
-  isUpcoming,
+  canAdd,
 }: ContributionsSectionProps) {
   const router = useRouter()
   const [adding, setAdding] = useState(false)
@@ -82,7 +82,7 @@ export function ContributionsSection({
       <div className="text-center py-10">
         <p className="text-sm text-niebla mb-1">Nadie aportó nada todavía.</p>
         <p className="text-xs text-niebla/60 mb-4">Es opcional — no todas las juntadas necesitan aportes.</p>
-        {isUpcoming && (
+        {canAdd && (
           <button
             onClick={() => setAdding(true)}
             className="flex items-center gap-2 mx-auto rounded-full border border-dashed border-fuego/40 px-4 py-2 text-[13px] font-semibold text-fuego hover:bg-fuego/5 transition-colors"
@@ -176,10 +176,10 @@ export function ContributionsSection({
       )}
 
       {/* Agregar aporte */}
-      {isUpcoming && (
+      {canAdd && (
         adding ? (
           <div className="bg-noche-media rounded-2xl p-4 flex flex-col gap-3">
-            <p className="font-semibold text-sm text-humo">¿Qué vas a llevar?</p>
+            <p className="font-semibold text-sm text-humo">Agregar aporte</p>
 
             {/* Categoría dropdown */}
             <div className="relative">

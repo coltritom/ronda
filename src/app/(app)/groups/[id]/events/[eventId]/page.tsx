@@ -312,7 +312,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
             eventId={eventId}
             currentUserId={user.id}
             contributions={contributions}
-            isUpcoming={!isPast && event.status !== 'cancelled'}
+            canAdd={event.status !== 'cancelled'}
           />
         )}
 

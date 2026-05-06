@@ -19,7 +19,7 @@ interface Props {
 export function AttendanceSection({ eventId, currentUserId, myAttendance, attendees, guests: initialGuests }: Props) {
   const router = useRouter()
 
-  const [attended, setAttended]       = useState(myAttendance)
+  const [attended, setAttended]       = useState<boolean | null>(myAttendance ? true : null)
   const [pending, startTransition]    = useTransition()
   const [error, setError]             = useState<string | null>(null)
 
@@ -89,7 +89,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
             onClick={() => handleToggle(true)}
             disabled={pending}
             className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
-              attended
+              attended === true
                 ? 'bg-menta/[0.15] text-menta ring-1 ring-menta/30'
                 : 'bg-white/5 text-niebla'
             }`}
@@ -100,7 +100,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
             onClick={() => handleToggle(false)}
             disabled={pending}
             className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
-              !attended
+              attended === false
                 ? 'bg-error/[0.12] text-error ring-1 ring-error/20'
                 : 'bg-white/5 text-niebla'
             }`}
@@ -112,13 +112,13 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
 
       {error && <p className="text-xs text-error">{error}</p>}
 
-      {(attended || others.length > 0 || guests.length > 0) && (
+      {(attended === true || others.length > 0 || guests.length > 0) && (
         <div>
           <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-niebla">
             Fueron ({totalCount})
           </p>
           <div className="flex flex-wrap gap-2">
-            {attended && (
+            {attended === true && (
               <div className="flex items-center gap-2 rounded-full bg-menta/[0.12] px-3 py-1.5">
                 <div className="flex h-5 w-5 items-center justify-center rounded-full bg-menta/20 text-[10px] font-bold text-menta">
                   Yo
@@ -163,7 +163,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
         </div>
       )}
 
-      {!attended && others.length === 0 && guests.length === 0 && (
+      {attended !== true && others.length === 0 && guests.length === 0 && (
         <p className="text-sm text-niebla">Nadie confirmó asistencia todavía.</p>
       )}
 

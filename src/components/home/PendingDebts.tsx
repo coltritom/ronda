@@ -25,51 +25,30 @@ export function PendingDebts() {
       if (!user) return;
       const supabase = createClient();
 
-      const { data: splits } = await supabase
+      // Phase 1: expense_splits with nested expenses (2 tables, 1 round-trip)
+      const { data: splitsRaw } = await supabase
         .from("expense_splits")
-        .select("amount, expense_id")
+        .select("amount, expense_id, expenses(id, event_id, paid_by)")
         .eq("user_id", user.id)
         .eq("is_settled", false);
 
-      if (!splits?.length) return;
+      if (!splitsRaw?.length) return;
 
-      const expenseIds = splits.map((s) => s.expense_id).filter(Boolean);
+      const debtSplits = splitsRaw.flatMap((s) => {
+        const exp = Array.isArray(s.expenses) ? s.expenses[0] : s.expenses;
+        if (!exp?.event_id || !exp?.paid_by || exp.paid_by === user.id) return [];
+        return [{ amount: s.amount ?? 0, event_id: exp.event_id as string, paid_by: exp.paid_by as string }];
+      });
 
-      const { data: expenses } = await supabase
-        .from("expenses")
-        .select("id, event_id, paid_by")
-        .in("id", expenseIds);
-
-      if (!expenses?.length) return;
-
-      // Excluir splits donde el usuario pagó (no son deuda real)
-      const paidByMe = new Set(
-        expenses.filter((e) => e.paid_by === user.id).map((e) => e.id)
-      );
-      const debtSplits = splits.filter((s) => !paidByMe.has(s.expense_id));
       if (!debtSplits.length) return;
 
-      const expenseMap: Record<string, { event_id: string; paid_by: string }> = {};
-      for (const e of expenses) expenseMap[e.id] = { event_id: e.event_id, paid_by: e.paid_by };
+      const eventIds = [...new Set(debtSplits.map((s) => s.event_id))];
+      const payerIds = [...new Set(debtSplits.map((s) => s.paid_by))];
 
-      const eventIds = [
-        ...new Set(debtSplits.map((s) => expenseMap[s.expense_id]?.event_id).filter(Boolean)),
-      ];
-      if (!eventIds.length) return;
-
-      const payerIds = [
-        ...new Set(debtSplits.map((s) => expenseMap[s.expense_id]?.paid_by).filter(Boolean)),
-      ];
-
+      // Phase 2: events+groups and profiles in parallel
       const [eventsResult, profilesResult] = await Promise.all([
-        supabase
-          .from("events")
-          .select("id, group_id, groups(name, emoji)")
-          .in("id", eventIds),
-        supabase
-          .from("profiles")
-          .select("id, name")
-          .in("id", payerIds),
+        supabase.from("events").select("id, group_id, groups(name, emoji)").in("id", eventIds),
+        supabase.from("profiles").select("id, name").in("id", payerIds),
       ]);
 
       const eventInfo: Record<string, { groupId: string; groupName: string; groupEmoji: string }> = {};
@@ -89,21 +68,18 @@ export function PendingDebts() {
         payerNames[p.id] = p.name ?? "Alguien";
       }
 
-      // Aggregate by event
       const byEvent: Record<string, DebtItem> = {};
       for (const s of debtSplits) {
-        const exp = expenseMap[s.expense_id];
-        if (!exp) continue;
-        const info = eventInfo[exp.event_id];
+        const info = eventInfo[s.event_id];
         if (!info) continue;
-        const existing = byEvent[exp.event_id];
-        byEvent[exp.event_id] = {
+        const existing = byEvent[s.event_id];
+        byEvent[s.event_id] = {
           groupId: info.groupId,
           groupName: info.groupName,
           groupEmoji: info.groupEmoji,
-          eventId: exp.event_id,
-          payerName: payerNames[exp.paid_by] ?? "Alguien",
-          amount: (existing?.amount ?? 0) + (s.amount ?? 0),
+          eventId: s.event_id,
+          payerName: payerNames[s.paid_by] ?? "Alguien",
+          amount: (existing?.amount ?? 0) + s.amount,
         };
       }
 

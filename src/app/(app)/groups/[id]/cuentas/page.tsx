@@ -68,39 +68,37 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
     const supabase = createClient();
     setMyUserId(user.id);
 
-    const { data: groupData } = await supabase
-      .from("groups").select("id, name").eq("id", id).single();
+    // Phase 1: all queries that only need group id
+    const [{ data: groupData }, { data: membersRaw }, { data: eventsRaw }] = await Promise.all([
+      supabase.from("groups").select("id, name").eq("id", id).single(),
+      supabase.from("group_members").select("user_id").eq("group_id", id),
+      supabase.from("events").select("id").eq("group_id", id).neq("status", "cancelled"),
+    ]);
+
     if (!groupData) { router.push("/groups"); return; }
-    setGroupName(groupData.name);
-
-    const { data: membersRaw } = await supabase
-      .from("group_members")
-      .select("user_id")
-      .eq("group_id", id);
-
     const memberUserIds = (membersRaw ?? []).map(m => m.user_id);
     if (!memberUserIds.includes(user.id)) { router.push("/groups"); return; }
-    const { data: profilesData } = await supabase.from("profiles").select("id, name").in("id", memberUserIds);
-    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+    setGroupName(groupData.name);
 
-    const memberList: UIMember[] = (membersRaw ?? []).map((m, i) => ({
+    const eventIds = (eventsRaw ?? []).map((e) => e.id);
+
+    // Phase 2: profiles and expenses are independent of each other
+    const [{ data: profilesData }, { data: expensesRaw }] = await Promise.all([
+      supabase.from("profiles").select("id, name").in("id", memberUserIds),
+      eventIds.length > 0
+        ? supabase.from("expenses").select("id, paid_by").in("event_id", eventIds)
+        : Promise.resolve({ data: [] as { id: string; paid_by: string }[] }),
+    ]);
+
+    const profileMap = Object.fromEntries((profilesData ?? []).map(p => [p.id, p.name]));
+    setMembers((membersRaw ?? []).map((m, i) => ({
       id: m.user_id,
       name: profileMap[m.user_id] ?? "Usuario",
       colorIndex: i,
-    }));
-    setMembers(memberList);
-
-    const { data: eventsRaw } = await supabase
-      .from("events").select("id").eq("group_id", id).neq("status", "cancelled");
-
-    const eventIds = (eventsRaw ?? []).map((e) => e.id);
-    if (!eventIds.length) { setLoading(false); return; }
-
-    const { data: expensesRaw } = await supabase
-      .from("expenses").select("id, paid_by").in("event_id", eventIds);
+    })));
 
     const allExpenseIds = (expensesRaw ?? []).map((e) => e.id);
-    if (!allExpenseIds.length) { setLoading(false); return; }
+    if (!eventIds.length || !allExpenseIds.length) { setLoading(false); return; }
 
     const byPayer: Record<string, string[]> = {};
     for (const e of expensesRaw ?? []) {
@@ -112,6 +110,7 @@ export default function CuentasGlobalesPage({ params }: { params: Promise<{ id: 
     const expenseMap: Record<string, string> = {};
     for (const e of expensesRaw ?? []) expenseMap[e.id] = e.paid_by;
 
+    // Phase 3: expense_splits (depends on phase 2)
     const { data: splitsRaw } = await supabase
       .from("expense_splits")
       .select("expense_id, user_id, amount")

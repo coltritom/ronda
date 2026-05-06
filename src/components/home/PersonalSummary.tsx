@@ -31,18 +31,22 @@ export function PersonalSummary() {
       if (!user) return;
       const supabase = createClient();
 
-      const [{ data: profile }, { data: mySplitsRaw }, { data: memberData }] =
-        await Promise.all([
-          supabase.from("profiles").select("name").eq("id", user.id).single(),
-          supabase
-            .from("expense_splits")
-            .select("expense_id, amount")
-            .eq("user_id", user.id),
-          supabase
-            .from("group_members")
-            .select("group_id")
-            .eq("user_id", user.id),
-        ]);
+      const now = new Date().toISOString();
+
+      // Phase 1: all queries that only need user.id
+      const [
+        { data: profile },
+        { data: mySplitsRaw },
+        { data: memberData },
+        { data: settledOut },
+        { data: settledIn },
+      ] = await Promise.all([
+        supabase.from("profiles").select("name").eq("id", user.id).single(),
+        supabase.from("expense_splits").select("expense_id, amount").eq("user_id", user.id),
+        supabase.from("group_members").select("group_id").eq("user_id", user.id),
+        supabase.from("settlements").select("amount").eq("from_user", user.id),
+        supabase.from("settlements").select("amount").eq("to_user", user.id),
+      ]);
 
       // If the profile name looks like an email (trigger mis-wired), fall back
       // to auth metadata and silently repair the profile row.
@@ -60,91 +64,54 @@ export function PersonalSummary() {
 
       const mySplits = mySplitsRaw ?? [];
       const groupIds = (memberData ?? []).map((m) => m.group_id);
+      const myExpenseIds = mySplits.map((s) => s.expense_id);
 
-      let debes = 0;
-      let teDebon = 0;
+      // Phase 2: expenses and events are independent of each other
+      const [{ data: expData }, { data: lastTen }] = await Promise.all([
+        myExpenseIds.length > 0
+          ? supabase.from("expenses").select("id, paid_by").in("id", myExpenseIds)
+          : Promise.resolve({ data: [] as { id: string; paid_by: string }[] }),
+        groupIds.length > 0
+          ? supabase
+              .from("events").select("id")
+              .in("group_id", groupIds)
+              .neq("status", "cancelled")
+              .lte("date", now)
+              .order("date", { ascending: false })
+              .limit(10)
+          : Promise.resolve({ data: [] as { id: string }[] }),
+      ]);
 
-      if (mySplits.length > 0) {
-        const myExpenseIds = mySplits.map((s) => s.expense_id);
+      const paidByMeIds = new Set(
+        (expData ?? []).filter((e) => e.paid_by === user.id).map((e) => e.id)
+      );
+      const paidByOtherIds = new Set(
+        (expData ?? []).filter((e) => e.paid_by !== user.id).map((e) => e.id)
+      );
+      const grossDebes = mySplits
+        .filter((s) => paidByOtherIds.has(s.expense_id))
+        .reduce((sum, s) => sum + s.amount, 0);
+      const paidByMeArray = [...paidByMeIds];
+      const lastTenIds = (lastTen ?? []).map((e) => e.id);
 
-        const { data: expData } = await supabase
-          .from("expenses")
-          .select("id, paid_by")
-          .in("id", myExpenseIds);
+      // Phase 3: othersSplits and attendance are independent of each other
+      const [{ data: othersSplitsData }, { data: attendanceData }] = await Promise.all([
+        paidByMeArray.length > 0
+          ? supabase.from("expense_splits").select("amount").in("expense_id", paidByMeArray).neq("user_id", user.id)
+          : Promise.resolve({ data: [] as { amount: number }[] }),
+        lastTenIds.length > 0
+          ? supabase.from("event_attendance").select("event_id").eq("user_id", user.id).in("event_id", lastTenIds)
+          : Promise.resolve({ data: [] as { event_id: string }[] }),
+      ]);
 
-        const paidByMeIds = new Set(
-          (expData ?? []).filter((e) => e.paid_by === user.id).map((e) => e.id)
-        );
-        const paidByOtherIds = new Set(
-          (expData ?? []).filter((e) => e.paid_by !== user.id).map((e) => e.id)
-        );
+      const totalSettledOut = (settledOut ?? []).reduce((s, r) => s + r.amount, 0);
+      const totalSettledIn  = (settledIn  ?? []).reduce((s, r) => s + r.amount, 0);
+      const grossTeDebon    = (othersSplitsData ?? []).reduce((s, r) => s + r.amount, 0);
 
-        const grossDebes = mySplits
-          .filter((s) => paidByOtherIds.has(s.expense_id))
-          .reduce((sum, s) => sum + s.amount, 0);
-
-        const paidByMeArray = [...paidByMeIds];
-
-        const [{ data: settledOut }, { data: settledIn }, othersSplitsResult] =
-          await Promise.all([
-            supabase
-              .from("settlements")
-              .select("amount")
-              .eq("from_user", user.id),
-            supabase
-              .from("settlements")
-              .select("amount")
-              .eq("to_user", user.id),
-            paidByMeArray.length > 0
-              ? supabase
-                  .from("expense_splits")
-                  .select("amount")
-                  .in("expense_id", paidByMeArray)
-                  .neq("user_id", user.id)
-              : Promise.resolve({ data: [] }),
-          ]);
-
-        const totalSettledOut = (settledOut ?? []).reduce(
-          (s, r) => s + r.amount,
-          0
-        );
-        const totalSettledIn = (settledIn ?? []).reduce(
-          (s, r) => s + r.amount,
-          0
-        );
-        const grossTeDebon = (othersSplitsResult.data ?? []).reduce(
-          (s, r) => s + r.amount,
-          0
-        );
-
-        debes = Math.max(0, grossDebes - totalSettledOut);
-        teDebon = Math.max(0, grossTeDebon - totalSettledIn);
-      }
-
-      let attended = 0;
-      let totalEvents = 0;
-
-      if (groupIds.length > 0) {
-        const now = new Date().toISOString();
-        const { data: lastTen } = await supabase
-          .from("events")
-          .select("id")
-          .in("group_id", groupIds)
-          .neq("status", "cancelled")
-          .lte("date", now)
-          .order("date", { ascending: false })
-          .limit(10);
-        const lastTenIds = (lastTen ?? []).map((e) => e.id);
-        totalEvents = lastTenIds.length;
-        if (lastTenIds.length > 0) {
-          const { data: attendanceData } = await supabase
-            .from("event_attendance")
-            .select("event_id")
-            .eq("user_id", user.id)
-            .in("event_id", lastTenIds);
-          attended = (attendanceData ?? []).length;
-        }
-      }
+      const debes    = Math.max(0, grossDebes - totalSettledOut);
+      const teDebon  = Math.max(0, grossTeDebon - totalSettledIn);
+      const attended = (attendanceData ?? []).length;
+      const totalEvents = lastTenIds.length;
 
       setStats({
         name: resolvedName || "Vos",

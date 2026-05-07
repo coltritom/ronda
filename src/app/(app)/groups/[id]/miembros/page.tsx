@@ -46,11 +46,11 @@ export default async function MiembrosPage({ params }: PageProps) {
     <div className="max-w-2xl mx-auto pb-8">
       <div className="px-4 md:px-6 pt-4 pb-2">
         <Link
-          href={`/groups/${groupId}`}
+          href={`/groups/${groupId}/settings`}
           className="flex items-center gap-1 text-fuego text-[13px] font-semibold mb-3"
         >
           <ChevronLeft size={16} />
-          Grupo
+          Configuración
         </Link>
         <h1 className="font-display font-bold text-[22px] text-humo">Miembros</h1>
         <p className="text-sm text-niebla mt-1">

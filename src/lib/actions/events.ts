@@ -60,26 +60,20 @@ export async function markAttendance(
   const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
   if (memberError) return memberError
 
+  // Delete any existing record first (idempotent regardless of unique constraints)
+  await supabase
+    .from('event_attendance')
+    .delete()
+    .eq('event_id', eventId)
+    .eq('user_id', user.id)
+
   if (attended) {
     const { error } = await supabase
       .from('event_attendance')
-      .upsert(
-        { event_id: eventId, user_id: user.id },
-        { onConflict: 'event_id,user_id' }
-      )
+      .insert({ event_id: eventId, user_id: user.id })
     if (error) {
       console.error('Error marking attendance:', error.message)
       return { error: 'No se pudo registrar la asistencia.' }
-    }
-  } else {
-    const { error } = await supabase
-      .from('event_attendance')
-      .delete()
-      .eq('event_id', eventId)
-      .eq('user_id', user.id)
-    if (error) {
-      console.error('Error removing attendance:', error.message)
-      return { error: 'No se pudo actualizar la asistencia.' }
     }
   }
 

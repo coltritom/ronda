@@ -4,7 +4,7 @@ import { use, useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   ChevronLeft, Copy, Check,
-  LogOut, Trash2, Loader2, Shield, X,
+  LogOut, Trash2, Loader2, Shield, X, Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
 import { useAuth } from "@/lib/supabase/auth-context";
@@ -348,7 +348,26 @@ export default function GroupSettingsPage({
           )}
         </div>
 
-        {/* ── 3. Tu rol ──────────────────────────────────────────────── */}
+        {/* ── 3. Miembros ────────────────────────────────────────────── */}
+        <div className="bg-noche-media rounded-2xl p-5 flex items-center gap-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-fuego/10 shrink-0">
+            <Users size={18} className="text-fuego" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-humo">Miembros</p>
+            <p className="text-xs text-niebla mt-0.5">
+              {members.length} {members.length === 1 ? "persona" : "personas"} en el grupo
+            </p>
+          </div>
+          <button
+            onClick={() => router.push(`/groups/${id}/miembros`)}
+            className="shrink-0 text-fuego font-semibold text-xs bg-transparent border-none cursor-pointer p-0"
+          >
+            Ver →
+          </button>
+        </div>
+
+        {/* ── 4. Tu rol ──────────────────────────────────────────────── */}
         <div className="bg-noche-media rounded-2xl p-5 flex flex-col gap-4">
           <p className="text-xs font-semibold uppercase tracking-wider text-niebla">Tu rol</p>
 
@@ -389,7 +408,7 @@ export default function GroupSettingsPage({
           )}
         </div>
 
-        {/* ── 4. Zona peligrosa ──────────────────────────────────────── */}
+        {/* ── 5. Zona peligrosa ──────────────────────────────────────── */}
         <div className="rounded-2xl border border-error/30 bg-error/[0.04] p-5 flex flex-col gap-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-error">Zona peligrosa</p>
 

@@ -73,7 +73,7 @@ export async function markAttendance(
       .insert({ event_id: eventId, user_id: user.id, attended: true })
     if (error) {
       console.error('Error marking attendance:', error.message, error.code, error.details)
-      return { error: 'No se pudo registrar la asistencia.' }
+      return { error: `No se pudo registrar la asistencia. (${error.code}: ${error.message})` }
     }
   }
 

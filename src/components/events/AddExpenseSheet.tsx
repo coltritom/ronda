@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { ChevronLeft } from 'lucide-react'
-import { createExpense } from '@/lib/actions/expenses'
+import { createExpense, updateExpense } from '@/lib/actions/expenses'
 import { toast } from 'sonner'
 
 interface Attendee { user_id: string; name: string }
@@ -15,6 +15,12 @@ interface Props {
   currentUserId: string
   currentUserName: string
   attendees: Attendee[]
+  // Edit mode
+  expenseId?: string
+  initialAmount?: number
+  initialPaidBy?: string
+  initialSplitIds?: string[]
+  initialDescription?: string
 }
 
 const COLORS = [
@@ -25,7 +31,7 @@ const COLORS = [
   { bg: 'bg-rosa/20',  text: 'text-rosa' },
 ]
 
-export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUserId, currentUserName, attendees }: Props) {
+export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUserId, currentUserName, attendees, expenseId, initialAmount, initialPaidBy, initialSplitIds, initialDescription }: Props) {
   const allAttendees = useMemo<Attendee[]>(
     () => attendees.some((a) => a.user_id === currentUserId)
       ? attendees
@@ -43,14 +49,14 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
   const prevOpenRef = useRef(false)
   useEffect(() => {
     if (open && !prevOpenRef.current) {
-      setAmount('')
-      setPaidBy(currentUserId)
-      setSplitIds(allAttendees.map((a) => a.user_id))
-      setDescription('')
+      setAmount(initialAmount ? String(Math.round(initialAmount)) : '')
+      setPaidBy(initialPaidBy ?? currentUserId)
+      setSplitIds(initialSplitIds ?? allAttendees.map((a) => a.user_id))
+      setDescription(initialDescription ?? '')
       setError(null)
     }
     prevOpenRef.current = open
-  }, [open, currentUserId, allAttendees])
+  }, [open, currentUserId, allAttendees, initialAmount, initialPaidBy, initialSplitIds, initialDescription])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -88,10 +94,12 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
     const splitType = ids.length === allAttendees.length ? 'equal_all' : 'equal_some'
     setLoading(true)
     setError(null)
-    const result = await createExpense(eventId, description.trim() || null, amt, paidBy, splitType, ids)
+    const result = expenseId
+      ? await updateExpense(expenseId, description.trim() || null, amt, paidBy, splitType, ids)
+      : await createExpense(eventId, description.trim() || null, amt, paidBy, splitType, ids)
     setLoading(false)
     if (!result) {
-      toast.success('Gasto agregado')
+      toast.success(expenseId ? 'Gasto actualizado' : 'Gasto agregado')
       onCreated()
       onClose()
     } else {
@@ -121,7 +129,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
             <ChevronLeft size={16} />
             Volver
           </button>
-          <h2 className="font-display font-bold text-lg text-humo">Nuevo gasto</h2>
+          <h2 className="font-display font-bold text-lg text-humo">{expenseId ? 'Editar gasto' : 'Nuevo gasto'}</h2>
         </div>
 
         {/* Scrollable content */}
@@ -195,7 +203,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
             disabled={loading || !amount || parseInt(amount, 10) <= 0 || splitIds.length === 0}
             className="w-full rounded-2xl bg-fuego py-4 text-base font-bold text-white transition-colors hover:bg-fuego/90 disabled:opacity-50"
           >
-            {loading ? 'Guardando…' : 'Agregar gasto'}
+            {loading ? 'Guardando…' : expenseId ? 'Guardar cambios' : 'Agregar gasto'}
           </button>
         </div>
 

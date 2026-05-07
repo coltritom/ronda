@@ -77,6 +77,74 @@ export async function settleDebt(
   return null
 }
 
+export async function updateExpense(
+  expenseId: string,
+  description: string | null,
+  amount: number,
+  paidBy: string,
+  splitType: 'equal_all' | 'equal_some',
+  splitUserIds: string[]
+): Promise<{ error: string } | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) return { error: 'No autenticado.' }
+  if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
+  if (amount > 100_000_000) return { error: 'El monto no puede superar $100.000.000.' }
+  if (splitUserIds.length === 0) return { error: 'Debe haber al menos un participante.' }
+
+  type ExpenseWithEvent = { event_id: string; paid_by: string; events: { group_id: string } | null }
+  const expResult = await supabase
+    .from('expenses')
+    .select('event_id, paid_by, events ( group_id )')
+    .eq('id', expenseId)
+    .maybeSingle()
+  const expenseData = expResult.data as ExpenseWithEvent | null
+
+  if (!expenseData) return { error: 'Gasto no encontrado.' }
+
+  const groupId = expenseData.events?.group_id
+  if (!groupId) return { error: 'No se pudo verificar el grupo.' }
+
+  const memberError = await assertGroupMember(supabase, groupId, user.id)
+  if (memberError) return memberError
+
+  if (expenseData.paid_by !== user.id) return { error: 'Solo quien pagó puede editar este gasto.' }
+
+  const n = splitUserIds.length
+  const perPerson = Math.round((amount / n) * 100) / 100
+  const newSplits = splitUserIds.map((uid, i) => ({
+    expense_id: expenseId,
+    user_id: uid,
+    amount: i === n - 1
+      ? Math.round((amount - perPerson * (n - 1)) * 100) / 100
+      : perPerson,
+    is_settled: false,
+  }))
+
+  await supabase.from('expense_splits').delete().eq('expense_id', expenseId)
+
+  const { error: updateError } = await supabase
+    .from('expenses')
+    .update({ description, amount, paid_by: paidBy, split_type: splitType })
+    .eq('id', expenseId)
+  if (updateError) {
+    console.error('Error updating expense:', updateError.message)
+    return { error: 'No se pudo actualizar el gasto.' }
+  }
+
+  const { error: splitsError } = await supabase
+    .from('expense_splits')
+    .insert(newSplits)
+  if (splitsError) {
+    console.error('Error inserting splits:', splitsError.message)
+    return { error: 'No se pudo actualizar el gasto.' }
+  }
+
+  revalidatePath(`/groups/${groupId}/events/${expenseData.event_id}`)
+  return null
+}
+
 export async function deleteExpense(
   expenseId: string
 ): Promise<{ error: string } | null> {
@@ -101,6 +169,8 @@ export async function deleteExpense(
 
   const memberError = await assertGroupMember(supabase, groupId, user.id)
   if (memberError) return memberError
+
+  await supabase.from('expense_splits').delete().eq('expense_id', expenseId)
 
   const { error } = await supabase
     .from('expenses')

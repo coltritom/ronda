@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { MoreVertical } from 'lucide-react'
-import { updateEvent, deleteEvent } from '@/lib/actions/events'
+import { updateEvent, deleteEvent, setEventStatus } from '@/lib/actions/events'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
@@ -25,6 +25,7 @@ interface EventOptionsMenuProps {
   initialDate: string
   initialLocation: string | null
   initialDescription: string | null
+  initialStatus: string
 }
 
 function utcToArgDateTimeLocal(isoString: string): string {
@@ -60,13 +61,15 @@ export function EventOptionsMenu({
   initialDate,
   initialLocation,
   initialDescription,
+  initialStatus,
 }: EventOptionsMenuProps) {
   const router = useRouter()
-  const [menuOpen, setMenuOpen]     = useState(false)
-  const [editOpen, setEditOpen]     = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [loading, setLoading]       = useState(false)
-  const [error, setError]           = useState<string | null>(null)
+  const [menuOpen, setMenuOpen]       = useState(false)
+  const [editOpen, setEditOpen]       = useState(false)
+  const [deleteOpen, setDeleteOpen]   = useState(false)
+  const [cancelOpen, setCancelOpen]   = useState(false)
+  const [loading, setLoading]         = useState(false)
+  const [error, setError]             = useState<string | null>(null)
 
   // Edit form
   const [name, setName]               = useState(initialName)
@@ -146,6 +149,26 @@ export function EventOptionsMenu({
     setDeleteOpen(true)
   }
 
+  function openCancel() {
+    setMenuOpen(false)
+    setError(null)
+    setCancelOpen(true)
+  }
+
+  async function handleSetStatus(status: 'upcoming' | 'cancelled') {
+    setLoading(true)
+    setError(null)
+    const result = await setEventStatus(eventId, status)
+    if (result && 'error' in result) {
+      setError(result.error)
+      setLoading(false)
+      return
+    }
+    setLoading(false)
+    setCancelOpen(false)
+    router.refresh()
+  }
+
   function buildLocation(): string | null {
     if (!lugar) return null
     const opt = LUGAR_OPTIONS.find((l) => l.id === lugar)
@@ -220,6 +243,21 @@ export function EventOptionsMenu({
             >
               Editar juntada
             </button>
+            {initialStatus !== 'cancelled' ? (
+              <button
+                onClick={openCancel}
+                className="w-full px-4 py-2.5 text-left text-sm text-ambar hover:bg-white/5 transition-colors"
+              >
+                Cancelar juntada
+              </button>
+            ) : (
+              <button
+                onClick={openCancel}
+                className="w-full px-4 py-2.5 text-left text-sm text-menta hover:bg-white/5 transition-colors"
+              >
+                Reactivar juntada
+              </button>
+            )}
             <button
               onClick={openDelete}
               className="w-full px-4 py-2.5 text-left text-sm text-error hover:bg-white/5 transition-colors"
@@ -298,6 +336,42 @@ export function EventOptionsMenu({
             </Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Cancel / restore confirm modal */}
+      <Modal
+        open={cancelOpen}
+        onClose={() => { if (!loading) setCancelOpen(false) }}
+        title={initialStatus !== 'cancelled' ? 'Cancelar juntada' : 'Reactivar juntada'}
+      >
+        <div className="flex flex-col gap-5">
+          <p className="text-sm text-niebla leading-relaxed">
+            {initialStatus !== 'cancelled'
+              ? 'La juntada quedará marcada como cancelada. Podés reactivarla después si cambia de planes.'
+              : '¿Querés volver a activar esta juntada?'}
+          </p>
+
+          {error && (
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3.5 py-2.5">
+              <p className="text-sm text-red-400">{error}</p>
+            </div>
+          )}
+
+          <div className="flex gap-3">
+            <Button type="button" variant="secondary" onClick={() => setCancelOpen(false)} className="flex-1" disabled={loading}>
+              Volver
+            </Button>
+            <Button
+              type="button"
+              variant={initialStatus !== 'cancelled' ? 'danger' : 'primary'}
+              onClick={() => handleSetStatus(initialStatus !== 'cancelled' ? 'cancelled' : 'upcoming')}
+              loading={loading}
+              className="flex-1"
+            >
+              {initialStatus !== 'cancelled' ? 'Cancelar juntada' : 'Reactivar'}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Delete confirm modal */}

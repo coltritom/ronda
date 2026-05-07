@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2 } from 'lucide-react'
+import { Trash2, Pencil } from 'lucide-react'
 import { deleteExpense, settleDebt } from '@/lib/actions/expenses'
 import { AddExpenseSheet } from './AddExpenseSheet'
 import { calcBalances, calcSettlement } from '@/lib/utils/debt'
@@ -55,11 +55,12 @@ export function ExpensesSection({
   settlements,
 }: ExpensesSectionProps) {
   const router = useRouter()
-  const [sheetOpen, setSheetOpen]   = useState(false)
-  const [deleting, setDeleting]     = useState<string | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [settleError, setSettleError] = useState<string | null>(null)
-  const [settling, startSettling]   = useTransition()
+  const [sheetOpen, setSheetOpen]       = useState(false)
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null)
+  const [deleting, setDeleting]         = useState<string | null>(null)
+  const [deleteError, setDeleteError]   = useState<string | null>(null)
+  const [settleError, setSettleError]   = useState<string | null>(null)
+  const [settling, startSettling]       = useTransition()
 
   const allAttendees: Attendee[] = attendees.some((a) => a.user_id === currentUserId)
     ? attendees
@@ -140,13 +141,21 @@ export function ExpensesSection({
                   </p>
                 </div>
                 {exp.paid_by === currentUserId && (
-                  <button
-                    onClick={() => handleDelete(exp.id)}
-                    disabled={deleting === exp.id}
-                    className="shrink-0 text-niebla hover:text-error transition-colors disabled:opacity-40"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={() => setEditingExpense(exp)}
+                      className="text-niebla hover:text-humo transition-colors"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(exp.id)}
+                      disabled={deleting === exp.id}
+                      className="text-niebla hover:text-error transition-colors disabled:opacity-40"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 )}
               </div>
             )
@@ -197,13 +206,18 @@ export function ExpensesSection({
       )}
 
       <AddExpenseSheet
-        open={sheetOpen}
-        onClose={() => setSheetOpen(false)}
+        open={sheetOpen || editingExpense !== null}
+        onClose={() => { setSheetOpen(false); setEditingExpense(null) }}
         onCreated={() => router.refresh()}
         eventId={eventId}
         currentUserId={currentUserId}
         currentUserName={currentUserName}
         attendees={allAttendees}
+        expenseId={editingExpense?.id}
+        initialAmount={editingExpense?.amount}
+        initialPaidBy={editingExpense?.paid_by}
+        initialSplitIds={editingExpense?.expense_splits.map((s) => s.user_id)}
+        initialDescription={editingExpense?.description ?? undefined}
       />
 
     </div>

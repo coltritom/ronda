@@ -274,3 +274,43 @@ export async function upsertRsvp(
   revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
   return null
 }
+
+export async function setEventStatus(
+  eventId: string,
+  status: 'upcoming' | 'cancelled'
+): Promise<{ error: string } | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado.' }
+
+  const { data: ev } = await supabase
+    .from('events')
+    .select('group_id, created_by')
+    .eq('id', eventId)
+    .single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', ev.group_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (membership?.role !== 'admin' && ev.created_by !== user.id)
+    return { error: 'No tenés permiso para modificar esta juntada.' }
+
+  const { error } = await supabase
+    .from('events')
+    .update({ status })
+    .eq('id', eventId)
+
+  if (error) {
+    console.error('Error updating event status:', error.message)
+    return { error: 'No se pudo actualizar el estado de la juntada.' }
+  }
+
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
+  revalidatePath(`/groups/${ev.group_id}`)
+  return null
+}

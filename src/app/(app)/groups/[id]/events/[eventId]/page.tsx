@@ -11,6 +11,7 @@ import { CuentasSection }       from '@/components/events/CuentasSection'
 import { EventTabs }            from '@/components/events/EventTabs'
 import { EventOptionsMenu }     from '@/components/events/EventOptionsMenu'
 import type { AporteId } from '@/lib/constants'
+import { calcBalances } from '@/lib/utils/debt'
 
 interface PageProps {
   params:       Promise<{ id: string; eventId: string }>
@@ -188,9 +189,8 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     from_user: string; to_user: string; amount: number
   }[]
 
-  const hasPendingDebt = expenses.some((e) =>
-    e.expense_splits.some((s) => s.user_id === user.id && !s.is_settled)
-  )
+  const balances = calcBalances(expenses, settlements, (uid, fallback) => profileMap[uid] ?? fallback)
+  const hasPendingDebt = (balances.find((b) => b.userId === user.id)?.net ?? 0) < -0.005
 
   const tabs = [
     {
@@ -234,6 +234,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
                 initialDate={event.date}
                 initialLocation={event.location}
                 initialDescription={event.description}
+                initialStatus={event.status}
               />
             )}
           </div>

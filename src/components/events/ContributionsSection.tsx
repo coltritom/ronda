@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, Plus, ChevronDown } from 'lucide-react'
-import { createContribution, deleteContribution } from '@/lib/actions/contributions'
+import { Trash2, Plus, ChevronDown, Pencil } from 'lucide-react'
+import { createContribution, updateContribution, deleteContribution } from '@/lib/actions/contributions'
 import { APORTE_CATEGORIES, getMemberColor, type AporteId } from '@/lib/constants'
 import { toast } from 'sonner'
 
@@ -48,21 +48,36 @@ export function ContributionsSection({
 }: ContributionsSectionProps) {
   const router = useRouter()
   const [adding, setAdding] = useState(false)
+  const [editingContribution, setEditingContribution] = useState<Contribution | null>(null)
   const [catOpen, setCatOpen] = useState(false)
   const [category, setCategory] = useState<AporteId>(APORTE_CATEGORIES[0].id)
   const [description, setDescription] = useState('')
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
+  function openEdit(item: Contribution) {
+    setEditingContribution(item)
+    setCategory(item.category)
+    setDescription(item.description ?? '')
+    setAdding(true)
+  }
+
+  function closeForm() {
+    setAdding(false)
+    setEditingContribution(null)
+    setDescription('')
+    setCategory(APORTE_CATEGORIES[0].id)
+  }
+
   async function handleAdd() {
     setLoading(true)
-    const error = await createContribution(eventId, category, description.trim() || null, 1)
+    const error = editingContribution
+      ? await updateContribution(editingContribution.id, category, description.trim() || null, editingContribution.quantity)
+      : await createContribution(eventId, category, description.trim() || null, 1)
     setLoading(false)
     if (!error) {
-      toast.success('Aporte agregado')
-      setAdding(false)
-      setDescription('')
-      setCategory(APORTE_CATEGORIES[0].id)
+      toast.success(editingContribution ? 'Aporte actualizado' : 'Aporte agregado')
+      closeForm()
       router.refresh()
     }
   }
@@ -132,13 +147,21 @@ export function ContributionsSection({
                       +{(cat?.weight ?? 1) * (item.quantity ?? 1)}
                     </span>
                     {item.user_id === currentUserId && (
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        disabled={deleting === item.id}
-                        className="opacity-0 group-hover:opacity-100 text-niebla hover:text-error transition-all disabled:opacity-40"
-                      >
-                        <Trash2 size={14} />
-                      </button>
+                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                        <button
+                          onClick={() => openEdit(item)}
+                          className="text-niebla hover:text-humo transition-colors"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          disabled={deleting === item.id}
+                          className="text-niebla hover:text-error transition-colors disabled:opacity-40"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     )}
                   </div>
                 )
@@ -179,7 +202,7 @@ export function ContributionsSection({
       {canAdd && (
         adding ? (
           <div className="bg-noche-media rounded-2xl p-4 flex flex-col gap-3">
-            <p className="font-semibold text-sm text-humo">Agregar aporte</p>
+            <p className="font-semibold text-sm text-humo">{editingContribution ? 'Editar aporte' : 'Agregar aporte'}</p>
 
             {/* Categoría dropdown */}
             <div className="relative">
@@ -233,11 +256,11 @@ export function ContributionsSection({
                 disabled={loading}
                 className="flex-1 rounded-full bg-fuego py-2.5 text-sm font-semibold text-white hover:bg-fuego/90 transition-colors disabled:opacity-60"
               >
-                {loading ? 'Guardando…' : 'Agregar'}
+                {loading ? 'Guardando…' : editingContribution ? 'Guardar cambios' : 'Agregar'}
               </button>
               <button
                 type="button"
-                onClick={() => { setAdding(false); setDescription('') }}
+                onClick={closeForm}
                 className="px-4 py-2.5 rounded-xl text-sm text-niebla bg-transparent border border-white/[0.08] cursor-pointer"
               >
                 Cancelar

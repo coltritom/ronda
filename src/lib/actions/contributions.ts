@@ -35,6 +35,47 @@ export async function createContribution(
   return null
 }
 
+export async function updateContribution(
+  contributionId: string,
+  category: AporteId,
+  description: string | null,
+  quantity: number,
+): Promise<{ error: string } | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado.' }
+
+  type ContributionWithEvent = { event_id: string; user_id: string; events: { group_id: string } | null }
+  const result = await supabase
+    .from('contributions')
+    .select('event_id, user_id, events ( group_id )')
+    .eq('id', contributionId)
+    .maybeSingle()
+  const contribData = result.data as ContributionWithEvent | null
+
+  if (!contribData) return { error: 'Aporte no encontrado.' }
+  if (contribData.user_id !== user.id) return { error: 'Solo podés editar tus propios aportes.' }
+
+  const groupId = contribData.events?.group_id
+  if (!groupId) return { error: 'No se pudo verificar el grupo.' }
+
+  const memberError = await assertGroupMember(supabase, groupId, user.id)
+  if (memberError) return memberError
+
+  const { error } = await supabase
+    .from('contributions')
+    .update({ category, description, quantity })
+    .eq('id', contributionId)
+
+  if (error) {
+    console.error('Error updating contribution:', error.message)
+    return { error: 'No se pudo actualizar el aporte.' }
+  }
+
+  revalidatePath(`/groups/${groupId}/events/${contribData.event_id}`)
+  return null
+}
+
 export async function deleteContribution(
   contributionId: string
 ): Promise<{ error: string } | null> {

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, UserPlus } from 'lucide-react'
 import { markAttendance, addEventGuest, removeEventGuest } from '@/lib/actions/events'
@@ -19,23 +19,24 @@ interface Props {
 export function AttendanceSection({ eventId, currentUserId, myAttendance, attendees, guests: initialGuests }: Props) {
   const router = useRouter()
 
-  const [attended, setAttended]       = useState<boolean | null>(myAttendance ? true : null)
-  const [pending, startTransition]    = useTransition()
-  const [error, setError]             = useState<string | null>(null)
+  const [attended, setAttended] = useState<boolean | null>(myAttendance ? true : null)
+  const [pending, setPending]   = useState(false)
+  const [error, setError]       = useState<string | null>(null)
 
   const [guests, setGuests]           = useState<Guest[]>(initialGuests)
   const [addingGuest, setAddingGuest] = useState(false)
   const [guestName, setGuestName]     = useState('')
-  const [guestPending, startGuestTransition] = useTransition()
+  const [guestPending, setGuestPending] = useState(false)
   const [guestError, setGuestError]   = useState<string | null>(null)
   const [removingId, setRemovingId]   = useState<string | null>(null)
 
-  function handleToggle(value: boolean) {
+  async function handleToggle(value: boolean) {
     if (pending || value === attended) return
     setError(null)
     const prev = attended
     setAttended(value)
-    startTransition(async () => {
+    setPending(true)
+    try {
       const result = await markAttendance(eventId, value)
       if (result?.error) {
         setAttended(prev)
@@ -43,14 +44,20 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
       } else {
         router.refresh()
       }
-    })
+    } catch {
+      setAttended(prev)
+      setError('No se pudo registrar la asistencia.')
+    } finally {
+      setPending(false)
+    }
   }
 
-  function handleAddGuest() {
+  async function handleAddGuest() {
     const name = guestName.trim()
     if (!name || guestPending) return
     setGuestError(null)
-    startGuestTransition(async () => {
+    setGuestPending(true)
+    try {
       const result = await addEventGuest(eventId, name)
       if ('error' in result) {
         setGuestError(result.error)
@@ -60,20 +67,27 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
         setAddingGuest(false)
         router.refresh()
       }
-    })
+    } catch {
+      setGuestError('No se pudo agregar el invitado.')
+    } finally {
+      setGuestPending(false)
+    }
   }
 
-  function handleRemoveGuest(guestId: string) {
+  async function handleRemoveGuest(guestId: string) {
     if (guestPending) return
     setRemovingId(guestId)
-    startGuestTransition(async () => {
+    setGuestPending(true)
+    try {
       const result = await removeEventGuest(guestId, eventId)
-      setRemovingId(null)
       if (!result?.error) {
         setGuests((prev) => prev.filter((g) => g.id !== guestId))
         router.refresh()
       }
-    })
+    } finally {
+      setRemovingId(null)
+      setGuestPending(false)
+    }
   }
 
   const others = attendees.filter((a) => a.user_id !== currentUserId)

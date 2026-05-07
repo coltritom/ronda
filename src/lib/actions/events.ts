@@ -137,6 +137,113 @@ export async function removeEventGuest(
   return null
 }
 
+export async function updateEvent(
+  eventId: string,
+  name: string,
+  date: string,
+  location: string | null,
+  description: string | null
+): Promise<{ error: string } | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado.' }
+
+  if (!name.trim()) return { error: 'El nombre es requerido.' }
+  if (name.length > 100) return { error: 'El nombre no puede superar 100 caracteres.' }
+  if (location && location.length > 200) return { error: 'La ubicación no puede superar 200 caracteres.' }
+  if (description && description.length > 500) return { error: 'La descripción no puede superar 500 caracteres.' }
+
+  const { data: ev } = await supabase
+    .from('events')
+    .select('group_id, created_by')
+    .eq('id', eventId)
+    .single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', ev.group_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (membership?.role !== 'admin' && ev.created_by !== user.id)
+    return { error: 'No tenés permiso para editar esta juntada.' }
+
+  const { error } = await supabase
+    .from('events')
+    .update({
+      name:        name.trim(),
+      date:        new Date(date).toISOString(),
+      location:    location?.trim() || null,
+      description: description?.trim() || null,
+    })
+    .eq('id', eventId)
+
+  if (error) {
+    console.error('Error updating event:', error.message)
+    return { error: 'No se pudo actualizar la juntada.' }
+  }
+
+  revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
+  revalidatePath(`/groups/${ev.group_id}`)
+  return null
+}
+
+export async function deleteEvent(
+  eventId: string
+): Promise<{ groupId: string } | { error: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado.' }
+
+  const { data: ev } = await supabase
+    .from('events')
+    .select('group_id, created_by')
+    .eq('id', eventId)
+    .single()
+  if (!ev) return { error: 'Juntada no encontrada.' }
+
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', ev.group_id)
+    .eq('user_id', user.id)
+    .single()
+
+  if (membership?.role !== 'admin' && ev.created_by !== user.id)
+    return { error: 'No tenés permiso para eliminar esta juntada.' }
+
+  // Delete expense_splits before expenses (FK constraint)
+  const { data: expensesData } = await supabase
+    .from('expenses')
+    .select('id')
+    .eq('event_id', eventId)
+
+  const expenseIds = (expensesData ?? []).map(e => e.id)
+  if (expenseIds.length > 0) {
+    await supabase.from('expense_splits').delete().in('expense_id', expenseIds)
+  }
+
+  await Promise.all([
+    supabase.from('settlements').delete().eq('event_id', eventId),
+    supabase.from('expenses').delete().eq('event_id', eventId),
+    supabase.from('event_attendance').delete().eq('event_id', eventId),
+    supabase.from('event_guests').delete().eq('event_id', eventId),
+    supabase.from('contributions').delete().eq('event_id', eventId),
+    supabase.from('event_rsvps').delete().eq('event_id', eventId),
+  ])
+
+  const { error } = await supabase.from('events').delete().eq('id', eventId)
+  if (error) {
+    console.error('Error deleting event:', error.message)
+    return { error: 'No se pudo eliminar la juntada.' }
+  }
+
+  revalidatePath(`/groups/${ev.group_id}`)
+  return { groupId: ev.group_id }
+}
+
 export async function upsertRsvp(
   eventId: string,
   status: 'going' | 'maybe' | 'not_going'

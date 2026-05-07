@@ -9,6 +9,7 @@ import { ContributionsSection } from '@/components/events/ContributionsSection'
 import { ExpensesSection }      from '@/components/events/ExpensesSection'
 import { CuentasSection }       from '@/components/events/CuentasSection'
 import { EventTabs }            from '@/components/events/EventTabs'
+import { EventOptionsMenu }     from '@/components/events/EventOptionsMenu'
 import type { AporteId } from '@/lib/constants'
 
 interface PageProps {
@@ -43,7 +44,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   const [{ data: event }, { data: groupData }] = await Promise.all([
     supabase
       .from('events')
-      .select('id, name, description, date, location, status')
+      .select('id, name, description, date, location, status, created_by')
       .eq('id', eventId)
       .eq('group_id', groupId)
       .single(),
@@ -57,6 +58,7 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
   if (!event) notFound()
 
   const groupName = groupData?.name ?? 'Grupo'
+  const canManage = membership.role === 'admin' || event.created_by === user.id
   const isPast = new Date(event.date) < new Date()
   const effectiveStatus = isPast && event.status === 'upcoming' ? 'completed' : event.status
   const badge = STATUS_BADGE[effectiveStatus] ?? STATUS_BADGE.upcoming
@@ -220,9 +222,21 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
           <h1 className="font-display font-bold text-[22px] text-humo">
             {event.name}
           </h1>
-          <span className={`shrink-0 mt-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${badge.className}`}>
-            {badge.label}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0 mt-1">
+            <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold border ${badge.className}`}>
+              {badge.label}
+            </span>
+            {canManage && (
+              <EventOptionsMenu
+                eventId={eventId}
+                groupId={groupId}
+                initialName={event.name}
+                initialDate={event.date}
+                initialLocation={event.location}
+                initialDescription={event.description}
+              />
+            )}
+          </div>
         </div>
 
         <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">

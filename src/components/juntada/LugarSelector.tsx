@@ -37,6 +37,7 @@ export function LugarSelector({
 
       {/* Selected / Trigger */}
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className={`
           w-full flex items-center justify-between px-3.5 py-3 rounded-[10px]
@@ -67,6 +68,7 @@ export function LugarSelector({
         <div className="mt-2 grid grid-cols-2 gap-1.5">
           {LUGAR_OPTIONS.map((lugar) => (
             <button
+              type="button"
               key={lugar.id}
               onClick={() => {
                 onSelect(lugar.id);
@@ -105,6 +107,7 @@ export function LugarSelector({
           <div className="flex gap-2 flex-wrap">
             {members.map((m) => (
               <button
+                type="button"
                 key={m.id}
                 onClick={() => onHostSelect(m.id)}
                 className={`
@@ -126,6 +129,7 @@ export function LugarSelector({
               </button>
             ))}
             <button
+              type="button"
               onClick={() => onHostSelect("otro")}
               className={`
                 flex items-center gap-1.5 px-3 py-1 rounded-full

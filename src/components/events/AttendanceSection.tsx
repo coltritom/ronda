@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { X, UserPlus } from 'lucide-react'
+import { toast } from 'sonner'
 import { markAttendance, addEventGuest, removeEventGuest } from '@/lib/actions/events'
 
 interface Attendee { user_id: string; name: string }
@@ -41,12 +42,17 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
       if (result?.error) {
         setAttended(prev)
         setError(result.error)
+        toast.error(result.error)
       } else {
+        toast.success(value ? 'Asistencia registrada' : 'Asistencia eliminada')
         router.refresh()
       }
-    } catch {
+    } catch (err) {
       setAttended(prev)
-      setError('No se pudo registrar la asistencia.')
+      const msg = 'No se pudo registrar la asistencia.'
+      setError(msg)
+      toast.error(msg)
+      console.error('[markAttendance]', err)
     } finally {
       setPending(false)
     }

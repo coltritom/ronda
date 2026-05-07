@@ -147,7 +147,7 @@ export function ContributionsSection({
                       +{(cat?.weight ?? 1) * (item.quantity ?? 1)}
                     </span>
                     {item.user_id === currentUserId && (
-                      <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => openEdit(item)}
                           className="text-niebla hover:text-humo transition-colors"

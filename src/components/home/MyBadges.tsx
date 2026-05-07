@@ -1,17 +1,15 @@
-import { Pill } from "@/components/ui/Pill";
-
 export const TAG_DEFS = {
-  veterano:    { label: "El Veterano",        emoji: "🏆", color: "ambar" },
-  nuevo:       { label: "El Nuevo",           emoji: "🌱", color: "menta" },
-  organizador: { label: "El Organizador",     emoji: "📋", color: "uva"   },
-  provisto:    { label: "El Provisto",        emoji: "🎒", color: "menta" },
-  mecenas:     { label: "El Mecenas",         emoji: "💸", color: "ambar" },
-  fijo:        { label: "El Fijo",            emoji: "📅", color: "menta" },
-  fantasma:    { label: "El Fantasma",        emoji: "👻", color: "uva"   },
-  indeciso:    { label: "El Indeciso",        emoji: "🤷", color: "fuego" },
-  caradura:    { label: "El Cara Dura",       emoji: "😏", color: "rosa"  },
-  ausente:     { label: "El Ausente Digital", emoji: "📵", color: "uva"   },
-  mvp:         { label: "El MVP",             emoji: "⭐", color: "ambar" },
+  veterano:    { label: "El Veterano",        emoji: "🏆", color: "ambar", desc: "El miembro con más antigüedad en el grupo." },
+  nuevo:       { label: "El Nuevo",           emoji: "🌱", color: "menta", desc: "El integrante que se sumó más recientemente." },
+  organizador: { label: "El Organizador",     emoji: "📋", color: "uva",   desc: "El que más juntadas creó." },
+  provisto:    { label: "El Provisto",        emoji: "🎒", color: "menta", desc: "El que más aportes llevó a las juntadas." },
+  mecenas:     { label: "El Mecenas",         emoji: "💸", color: "ambar", desc: "El que más gastos pagó del grupo." },
+  fijo:        { label: "El Fijo",            emoji: "📅", color: "menta", desc: "Fue al 80% o más de las juntadas." },
+  fantasma:    { label: "El Fantasma",        emoji: "👻", color: "uva",   desc: "Apareció en el 20% o menos de las juntadas." },
+  indeciso:    { label: "El Indeciso",        emoji: "🤷", color: "fuego", desc: "Respondió 'No sé' tres veces o más." },
+  caradura:    { label: "El Cara Dura",       emoji: "😏", color: "rosa",  desc: "Fue a varias juntadas sin aportar ni pagar nada." },
+  ausente:     { label: "El Ausente Digital", emoji: "📵", color: "uva",   desc: "Nunca confirmó ni rechazó una juntada." },
+  mvp:         { label: "El MVP",             emoji: "⭐", color: "ambar", desc: "El que más contribuyó al grupo en general." },
 } as const;
 
 export type TagKey = keyof typeof TAG_DEFS;
@@ -61,6 +59,14 @@ export function assignTags(member: MemberInput, group: GroupStats): TagKey[] {
   return tags;
 }
 
+const COLOR_CLASSES: Record<string, { bg: string; text: string }> = {
+  fuego: { bg: "bg-fuego/[0.12]", text: "text-fuego" },
+  ambar: { bg: "bg-ambar/[0.12]", text: "text-ambar" },
+  menta: { bg: "bg-menta/[0.12]", text: "text-menta" },
+  uva:   { bg: "bg-uva/[0.12]",   text: "text-uva"   },
+  rosa:  { bg: "bg-rosa/[0.12]",  text: "text-rosa"  },
+};
+
 export function MyBadges({ badges }: { badges: Badge[] }) {
   if (badges.length === 0) return null;
 
@@ -69,13 +75,23 @@ export function MyBadges({ badges }: { badges: Badge[] }) {
       <p className="font-display font-semibold text-[15px] text-carbon dark:text-humo mb-2">
         Tus etiquetas
       </p>
-      <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-4 px-4 md:-mx-6 md:px-6">
+      <div className="flex flex-col gap-2">
         {badges.map((b, i) => {
           const def = TAG_DEFS[b.tagKey];
+          const c = COLOR_CLASSES[def.color] ?? COLOR_CLASSES.fuego;
           return (
-            <Pill key={i} color={def.color}>
-              {def.emoji} {def.label} — {b.groupName}
-            </Pill>
+            <div key={i} className="flex items-center gap-3 bg-noche-media rounded-2xl px-4 py-3">
+              <span className={`w-9 h-9 shrink-0 rounded-full flex items-center justify-center text-lg ${c.bg}`}>
+                {def.emoji}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className={`text-[13px] font-semibold ${c.text}`}>{def.label}</span>
+                  <span className="text-[11px] text-niebla">· {b.groupName}</span>
+                </div>
+                <p className="text-[12px] text-niebla mt-0.5">{def.desc}</p>
+              </div>
+            </div>
           );
         })}
       </div>

@@ -205,7 +205,11 @@ export function GrupoPageClient({
           <p className="text-sm text-niebla mb-3">
             Sumá gente al grupo para que la próxima juntada sea mejor.
           </p>
-          <Button primary={false} onClick={handleCopyInvite}>
+          <Button
+            primary={false}
+            onClick={handleCopyInvite}
+            className={copied ? "!border-menta !text-menta hover:!bg-menta/5" : ""}
+          >
             {copied ? <Check size={15} /> : <Link size={15} />}
             {copied ? "Link copiado. Mandalo al grupo." : "Copiar link de invitación"}
           </Button>

@@ -1,12 +1,22 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { MoreVertical } from 'lucide-react'
 import { updateEvent, deleteEvent } from '@/lib/actions/events'
 import { Modal } from '@/components/ui/Modal'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
+import { LugarSelector } from '@/components/juntada/LugarSelector'
+import { LUGAR_OPTIONS, type LugarId } from '@/lib/constants'
+import { createClient } from '@/lib/supabase/clients'
+
+interface Member {
+  id: string
+  name: string
+  emoji: string
+  colorIndex: number
+}
 
 interface EventOptionsMenuProps {
   eventId: string
@@ -23,6 +33,26 @@ function utcToArgDateTimeLocal(isoString: string): string {
   return argTime.toISOString().slice(0, 16)
 }
 
+function parseLocation(
+  locationStr: string | null,
+  members: Member[]
+): { lugar: LugarId | null; hostId: string | null; customName: string } {
+  if (!locationStr) return { lugar: null, hostId: null, customName: '' }
+
+  const exactMatch = LUGAR_OPTIONS.find((l) => l.label === locationStr)
+  if (exactMatch) return { lugar: exactMatch.id, hostId: null, customName: '' }
+
+  const casaPrefix = '🏠 En lo de '
+  if (locationStr.startsWith(casaPrefix)) {
+    const hostName = locationStr.slice(casaPrefix.length)
+    const member = members.find((m) => m.name === hostName)
+    if (member) return { lugar: 'casa', hostId: member.id, customName: '' }
+    return { lugar: 'casa', hostId: 'otro', customName: locationStr }
+  }
+
+  return { lugar: 'otro', hostId: null, customName: locationStr }
+}
+
 export function EventOptionsMenu({
   eventId,
   groupId,
@@ -32,19 +62,60 @@ export function EventOptionsMenu({
   initialDescription,
 }: EventOptionsMenuProps) {
   const router = useRouter()
-  const [menuOpen, setMenuOpen]   = useState(false)
-  const [editOpen, setEditOpen]   = useState(false)
+  const [menuOpen, setMenuOpen]     = useState(false)
+  const [editOpen, setEditOpen]     = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
-  const [loading, setLoading]     = useState(false)
-  const [error, setError]         = useState<string | null>(null)
+  const [loading, setLoading]       = useState(false)
+  const [error, setError]           = useState<string | null>(null)
 
+  // Edit form
   const [name, setName]               = useState(initialName)
   const [dateTime, setDateTime]       = useState(() => utcToArgDateTimeLocal(initialDate))
-  const [location, setLocation]       = useState(initialLocation ?? '')
   const [description, setDescription] = useState(initialDescription ?? '')
+
+  // Location
+  const [lugar, setLugar]               = useState<LugarId | null>(null)
+  const [hostId, setHostId]             = useState<string | null>(null)
+  const [customLocation, setCustomLocation] = useState('')
+
+  // Group members for LugarSelector
+  const [members, setMembers]           = useState<Member[]>([])
+  const [membersLoading, setMembersLoading] = useState(false)
 
   const menuRef = useRef<HTMLDivElement>(null)
 
+  // Load group members once
+  useEffect(() => {
+    let mounted = true
+    setMembersLoading(true)
+    async function load() {
+      const supabase = createClient()
+      const { data: memberRows } = await supabase
+        .from('group_members')
+        .select('user_id')
+        .eq('group_id', groupId)
+      const userIds = (memberRows ?? []).map((m) => m.user_id)
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, name')
+        .in('id', userIds)
+      const profileMap = Object.fromEntries((profiles ?? []).map((p) => [p.id, p.name]))
+      if (!mounted) return
+      setMembers(
+        (memberRows ?? []).map((m, i) => ({
+          id: m.user_id,
+          name: profileMap[m.user_id] ?? 'Miembro',
+          emoji: '',
+          colorIndex: i,
+        }))
+      )
+      setMembersLoading(false)
+    }
+    load()
+    return () => { mounted = false }
+  }, [groupId])
+
+  // Close menu on outside click
   useEffect(() => {
     if (!menuOpen) return
     function handleClick(e: MouseEvent) {
@@ -60,8 +131,11 @@ export function EventOptionsMenu({
     setMenuOpen(false)
     setName(initialName)
     setDateTime(utcToArgDateTimeLocal(initialDate))
-    setLocation(initialLocation ?? '')
     setDescription(initialDescription ?? '')
+    const parsed = parseLocation(initialLocation, members)
+    setLugar(parsed.lugar)
+    setHostId(parsed.hostId)
+    setCustomLocation(parsed.customName)
     setError(null)
     setEditOpen(true)
   }
@@ -70,6 +144,22 @@ export function EventOptionsMenu({
     setMenuOpen(false)
     setError(null)
     setDeleteOpen(true)
+  }
+
+  function buildLocation(): string | null {
+    if (!lugar) return null
+    const opt = LUGAR_OPTIONS.find((l) => l.id === lugar)
+    if (!opt) return null
+    if (lugar === 'casa') {
+      if (hostId && hostId !== 'otro') {
+        const host = members.find((m) => m.id === hostId)
+        return host ? `${opt.emoji} En lo de ${host.name}` : opt.label
+      }
+      if (hostId === 'otro' && customLocation.trim()) return customLocation.trim()
+      return opt.label
+    }
+    if (lugar === 'otro') return customLocation.trim() || opt.label
+    return opt.label
   }
 
   async function handleUpdate(e: React.FormEvent<HTMLFormElement>) {
@@ -81,7 +171,7 @@ export function EventOptionsMenu({
       eventId,
       name.trim(),
       dateTime + ':00-03:00',
-      location.trim() || null,
+      buildLocation(),
       description.trim() || null
     )
 
@@ -115,7 +205,7 @@ export function EventOptionsMenu({
     <>
       <div ref={menuRef} className="relative">
         <button
-          onClick={() => setMenuOpen(v => !v)}
+          onClick={() => setMenuOpen((v) => !v)}
           className="flex h-8 w-8 items-center justify-center rounded-xl text-niebla hover:text-humo hover:bg-noche-media transition-colors"
           aria-label="Opciones de juntada"
         >
@@ -167,13 +257,15 @@ export function EventOptionsMenu({
             />
           </div>
 
-          <Input
-            label="Lugar"
-            type="text"
-            placeholder="Ej: Casa de Ramiro"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            maxLength={100}
+          <LugarSelector
+            selected={lugar}
+            onSelect={setLugar}
+            hostId={hostId}
+            onHostSelect={setHostId}
+            members={members}
+            membersLoading={membersLoading}
+            customName={customLocation}
+            onCustomNameChange={setCustomLocation}
           />
 
           <div className="flex flex-col gap-1.5">

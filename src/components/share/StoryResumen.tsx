@@ -134,7 +134,7 @@ export const StoryResumen = React.forwardRef<HTMLDivElement, StoryResumenData>(
         {/* Footer */}
         <div style={{ textAlign: "center", paddingTop: 14 }}>
           <span style={{ fontSize: 11, color: "rgba(142,138,154,0.3)", letterSpacing: "1px", fontWeight: 500 }}>
-            ronda.app
+            @ordenalaronda
           </span>
         </div>
       </div>

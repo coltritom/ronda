@@ -31,12 +31,13 @@ function RegistroForm() {
     }
     setLoading(true);
     const supabase = createClient();
+    const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
     const { error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { full_name: name },
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
+        emailRedirectTo: `${base}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
     setLoading(false);
@@ -51,9 +52,10 @@ function RegistroForm() {
 
   const handleGoogle = async () => {
     const supabase = createClient();
+    const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
     await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
+      options: { redirectTo: `${base}/auth/callback?next=${encodeURIComponent(next)}` },
     });
   };
 

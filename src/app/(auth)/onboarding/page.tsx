@@ -64,6 +64,9 @@ const STEPS: Step[] = [
 export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
+  const [showInviteInput, setShowInviteInput] = useState(false);
+  const [inviteLink, setInviteLink] = useState("");
+  const [inviteError, setInviteError] = useState("");
   const current = STEPS[step];
   const isLast = step === STEPS.length - 1;
 
@@ -76,6 +79,22 @@ export default function OnboardingPage() {
   };
 
   const skip = () => router.push("/home");
+
+  const handleInviteSubmit = () => {
+    setInviteError("");
+    const trimmed = inviteLink.trim();
+    if (!trimmed) { setInviteError("Pegá el link de invitación."); return; }
+    try {
+      const url = new URL(trimmed);
+      const parts = url.pathname.split("/").filter(Boolean);
+      const idx = parts.indexOf("invite");
+      const token = idx !== -1 ? parts[idx + 1] : null;
+      if (!token) { setInviteError("El link no parece válido."); return; }
+      router.push(`/invite/${token}`);
+    } catch {
+      setInviteError("El link no parece válido.");
+    }
+  };
 
   return (
     <div className="w-full max-w-sm flex flex-col items-center min-h-screen justify-between py-12 px-4">
@@ -134,17 +153,42 @@ export default function OnboardingPage() {
           ))}
         </div>
 
-        <Button full big onClick={next}>
-          {isLast ? "Crear grupo" : "Siguiente"}
-        </Button>
+        {showInviteInput ? (
+          <div className="w-full flex flex-col gap-2">
+            <input
+              type="url"
+              value={inviteLink}
+              onChange={(e) => setInviteLink(e.target.value)}
+              placeholder="https://ronda.app/invite/..."
+              autoFocus
+              className="w-full px-3.5 py-3 rounded-[10px] border-[1.5px] border-white/[0.08] bg-noche text-[15px] text-humo placeholder:text-niebla/50 outline-none font-body focus:border-fuego/50 transition-colors"
+            />
+            {inviteError && <p className="text-[13px] text-error">{inviteError}</p>}
+            <Button full big onClick={handleInviteSubmit}>
+              Ir al grupo
+            </Button>
+            <button
+              onClick={() => { setShowInviteInput(false); setInviteLink(""); setInviteError(""); }}
+              className="text-sm text-niebla bg-transparent border-none cursor-pointer py-1"
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <>
+            <Button full big onClick={next}>
+              {isLast ? "Crear grupo" : "Siguiente"}
+            </Button>
 
-        {isLast && (
-          <button
-            onClick={skip}
-            className="text-sm font-semibold text-fuego bg-transparent border-none cursor-pointer py-1"
-          >
-            Tengo un link de invitación
-          </button>
+            {isLast && (
+              <button
+                onClick={() => setShowInviteInput(true)}
+                className="text-sm font-semibold text-fuego bg-transparent border-none cursor-pointer py-1"
+              >
+                Tengo un link de invitación
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

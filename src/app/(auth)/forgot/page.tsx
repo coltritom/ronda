@@ -19,7 +19,7 @@ export default function ForgotPage() {
     setError("");
     const supabase = createClient();
     const { error: sbError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-      redirectTo: `${window.location.origin}/auth/callback?next=/perfil`,
+      redirectTo: `${window.location.origin}/auth/callback?next=/update-password`,
     });
     setLoading(false);
     if (sbError) {

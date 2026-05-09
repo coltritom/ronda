@@ -175,7 +175,13 @@ export function GrupoPageClient({
 
         {juntadas.length === 0 && (
           <p className="text-sm text-niebla text-center py-4">
-            Todavía no hay juntadas. ¡Creá la primera!
+            Todavía no hay juntadas.{" "}
+            <button
+              onClick={() => setSheetOpen(true)}
+              className="text-fuego font-semibold bg-transparent border-none cursor-pointer p-0"
+            >
+              ¡Creá la primera!
+            </button>
           </p>
         )}
 

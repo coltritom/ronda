@@ -3,19 +3,13 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatEventDate } from '@/lib/utils'
 import { CalendarDays, MapPin, ChevronLeft } from 'lucide-react'
-import { RsvpButtons }          from '@/components/events/RsvpButtons'
-import { AttendanceSection }    from '@/components/events/AttendanceSection'
-import { ContributionsSection } from '@/components/events/ContributionsSection'
-import { ExpensesSection }      from '@/components/events/ExpensesSection'
-import { CuentasSection }       from '@/components/events/CuentasSection'
-import { EventTabs }            from '@/components/events/EventTabs'
+import { EventDetailTabs }      from '@/components/events/EventDetailTabs'
 import { EventOptionsMenu }     from '@/components/events/EventOptionsMenu'
 import type { AporteId } from '@/lib/constants'
 import { calcBalances } from '@/lib/utils/debt'
 
 interface PageProps {
-  params:       Promise<{ id: string; eventId: string }>
-  searchParams: Promise<{ tab?: string }>
+  params: Promise<{ id: string; eventId: string }>
 }
 
 type RsvpStatus = 'going' | 'maybe' | 'not_going'
@@ -26,9 +20,8 @@ const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   cancelled: { label: 'Cancelada',    className: 'bg-error/[0.12] text-error border-error/30' },
 }
 
-export default async function EventDetailPage({ params, searchParams }: PageProps) {
+export default async function EventDetailPage({ params }: PageProps) {
   const { id: groupId, eventId } = await params
-  const { tab = 'asistencia' }   = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) notFound()
@@ -135,10 +128,9 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     profiles: { name: profileMap[r.user_id] ?? 'Usuario' },
   }))
 
-  const myRsvp   = rsvps.find((r) => r.user_id === user.id)?.response ?? null
-  const going    = rsvps.filter((r) => r.response === 'going')
-  const maybe    = rsvps.filter((r) => r.response === 'maybe')
-  const notGoing = rsvps.filter((r) => r.response === 'not_going')
+  const myRsvp = rsvps.find((r) => r.user_id === user.id)?.response ?? null
+  const going  = rsvps.filter((r) => r.response === 'going')
+  const maybe  = rsvps.filter((r) => r.response === 'maybe')
 
   const goingAttendees = going.map((r) => ({
     user_id: r.user_id,
@@ -203,8 +195,6 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
     { id: 'cuentas', label: 'Cuentas', alert: hasPendingDebt },
   ]
 
-  const activeTab = tabs.some((t) => t.id === tab) ? tab : 'asistencia'
-
   return (
     <div className="max-w-2xl mx-auto pb-8">
 
@@ -258,103 +248,27 @@ export default async function EventDetailPage({ params, searchParams }: PageProp
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="px-4 md:px-6 mt-3 mb-4">
-        <EventTabs tabs={tabs} activeTab={activeTab} groupId={groupId} eventId={eventId} />
-      </div>
-
-      {/* Contenido */}
-      <div className="px-4 md:px-6 flex flex-col gap-4">
-
-        {activeTab === 'asistencia' && (
-          <div className="flex flex-col gap-4">
-            {!isPast && (
-              <RsvpButtons eventId={eventId} currentStatus={myRsvp} />
-            )}
-            {isPast && (
-              <AttendanceSection
-                eventId={eventId}
-                currentUserId={user.id}
-                myAttendance={myAttendance}
-                attendees={attendanceList}
-                guests={guestsRaw}
-              />
-            )}
-            {!isPast && (
-              <div className="flex flex-col gap-4">
-                {[
-                  { label: 'Van',     list: going,    color: 'text-menta' },
-                  { label: 'Tal vez', list: maybe,    color: 'text-niebla' },
-                  { label: 'No van',  list: notGoing, color: 'text-error' },
-                ]
-                  .filter(({ list }) => list.length > 0)
-                  .map(({ label, list, color }) => (
-                    <div key={label}>
-                      <p className={`mb-2 text-xs font-semibold uppercase tracking-wider ${color}`}>
-                        {label} ({list.length})
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {list.map((rsvp) => (
-                          <div
-                            key={rsvp.user_id}
-                            className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
-                          >
-                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 text-[10px] font-bold text-fuego">
-                              {(rsvp.profiles?.name ?? '?').charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-sm text-humo">
-                              {rsvp.profiles?.name ?? 'Usuario'}
-                              {rsvp.user_id === user.id && (
-                                <span className="ml-1 text-xs text-niebla">(vos)</span>
-                              )}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                }
-                {rsvps.length === 0 && (
-                  <p className="text-sm text-niebla">Nadie confirmó todavía. ¡Sé el primero!</p>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'aportes' && (
-          <ContributionsSection
-            eventId={eventId}
-            currentUserId={user.id}
-            contributions={contributions}
-            canAdd={event.status !== 'cancelled'}
-          />
-        )}
-
-        {activeTab === 'gastos' && (
-          <ExpensesSection
-            groupId={groupId}
-            eventId={eventId}
-            currentUserId={user.id}
-            currentUserName={currentUserName}
-            expenses={expenses}
-            attendees={goingAttendees}
-            settlements={settlements}
-          />
-        )}
-
-        {activeTab === 'cuentas' && (
-          <CuentasSection
-            groupId={groupId}
-            eventId={eventId}
-            currentUserId={user.id}
-            currentUserName={currentUserName}
-            expenses={expenses}
-            attendees={goingAttendees}
-            settlements={settlements}
-          />
-        )}
-
+      {/* Tabs + contenido (client-side switching, sin re-fetch) */}
+      <div className="px-4 md:px-6 mt-3">
+        <EventDetailTabs
+          tabs={tabs}
+          defaultTab="asistencia"
+          isPast={isPast}
+          eventId={eventId}
+          groupId={groupId}
+          currentUserId={user.id}
+          currentUserName={currentUserName}
+          canAdd={event.status !== 'cancelled'}
+          myRsvp={myRsvp}
+          rsvps={rsvps}
+          myAttendance={myAttendance}
+          attendees={attendanceList}
+          guests={guestsRaw}
+          goingAttendees={goingAttendees}
+          contributions={contributions}
+          expenses={expenses}
+          settlements={settlements}
+        />
       </div>
     </div>
   )

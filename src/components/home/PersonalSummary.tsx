@@ -35,7 +35,8 @@ export function PersonalSummary({ name, debes, teDebon, attended, totalEvents }:
           src="/ronda-wordmark.png"
           alt="Ronda"
           width={80}
-          height={80}
+          height={0}
+          style={{ height: "auto" }}
           className="opacity-40"
         />
       </div>

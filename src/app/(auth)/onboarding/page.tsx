@@ -117,38 +117,6 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {isLast && (
-          <div className="w-full flex flex-col gap-3 mt-2">
-            <div className="bg-noche-media rounded-2xl p-5 text-center">
-              <p className="text-sm text-niebla mb-4">
-                Ya estás adentro. Ahora falta que vengan los demás.
-              </p>
-              <div className="flex justify-center gap-2 mb-4">
-                {["🔥", "⚽", "🏖️", "🎮", "🍕"].map((e) => (
-                  <div
-                    key={e}
-                    className="w-11 h-11 rounded-xl bg-white/5 flex items-center justify-center text-xl cursor-pointer hover:bg-white/10 transition-colors"
-                  >
-                    {e}
-                  </div>
-                ))}
-              </div>
-              <input
-                type="text"
-                placeholder="Ponele nombre al grupo"
-                className="
-                  w-full px-3.5 py-3 rounded-[10px]
-                  border-[1.5px] border-white/[0.08]
-                  bg-noche
-                  text-[15px] text-humo text-center
-                  placeholder:text-niebla/50
-                  outline-none font-body
-                  focus:border-fuego/50 transition-colors
-                "
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       {/* Bottom: Dots + CTAs */}

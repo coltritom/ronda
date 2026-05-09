@@ -91,8 +91,13 @@ export async function updateGroup(
 
   if (!user) return { error: 'No autenticado.' }
 
-  const permError = await assertAdmin(supabase, groupId, user.id)
-  if (permError) return permError
+  const { data: membership } = await supabase
+    .from('group_members')
+    .select('role')
+    .eq('group_id', groupId)
+    .eq('user_id', user.id)
+    .single()
+  if (!membership) return { error: 'Sin permisos.' }
 
   const { error } = await supabase
     .from('groups')
@@ -105,6 +110,34 @@ export async function updateGroup(
   }
 
   revalidatePath(`/groups/${groupId}`, 'layout')
+  return null
+}
+
+export async function promoteToAdmin(
+  groupId: string,
+  targetUserId: string
+): Promise<{ error: string } | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'No autenticado.' }
+
+  const permError = await assertAdmin(supabase, groupId, user.id)
+  if (permError) return permError
+
+  const { createAdminClient } = await import('@/lib/supabase/server')
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('group_members')
+    .update({ role: 'admin' })
+    .eq('group_id', groupId)
+    .eq('user_id', targetUserId)
+
+  if (error) {
+    console.error('Error promoting member:', error.message)
+    return { error: 'No se pudo promover al miembro.' }
+  }
+
+  revalidatePath(`/groups/${groupId}/settings`)
   return null
 }
 

@@ -167,7 +167,7 @@ export async function updateEvent(
     .eq('user_id', user.id)
     .single()
 
-  if (membership?.role !== 'admin' && ev.created_by !== user.id)
+  if (!membership)
     return { error: 'No tenés permiso para editar esta juntada.' }
 
   const { error } = await supabase
@@ -211,7 +211,7 @@ export async function deleteEvent(
     .eq('user_id', user.id)
     .single()
 
-  if (membership?.role !== 'admin' && ev.created_by !== user.id)
+  if (!membership)
     return { error: 'No tenés permiso para eliminar esta juntada.' }
 
   // Delete expense_splits before expenses (FK constraint)
@@ -297,7 +297,7 @@ export async function setEventStatus(
     .eq('user_id', user.id)
     .single()
 
-  if (membership?.role !== 'admin' && ev.created_by !== user.id)
+  if (!membership)
     return { error: 'No tenés permiso para modificar esta juntada.' }
 
   const { error } = await supabase

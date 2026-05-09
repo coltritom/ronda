@@ -9,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/clients";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { getOrCreateInvite } from "@/lib/actions/invites";
+import { promoteToAdmin } from "@/lib/actions/groups";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
@@ -211,11 +212,9 @@ export default function GroupSettingsPage({
 
   const handlePromote = async (userId: string) => {
     setPromoting(userId);
-    const supabase = createClient();
-    const { error } = await supabase.from("group_members")
-      .update({ role: "admin" }).eq("group_id", id).eq("user_id", userId);
+    const result = await promoteToAdmin(id, userId);
     setPromoting(null);
-    if (error) { toast.error("No se pudo promover."); return; }
+    if (result?.error) { toast.error("No se pudo promover."); return; }
     setMembers((prev) => prev.map((m) => (m.user_id === userId ? { ...m, role: "admin" } : m)));
     toast.success("Admin promovido ✓");
     setShowPromoteModal(false);
@@ -284,10 +283,9 @@ export default function GroupSettingsPage({
               <button
                 key={e}
                 type="button"
-                disabled={!isAdmin}
                 onClick={() => setEditEmoji(e)}
-                className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center border-none cursor-pointer transition-all disabled:cursor-default
-                  ${editEmoji === e ? "bg-fuego/15 ring-2 ring-fuego/40" : "bg-noche hover:bg-noche/60 disabled:opacity-60"}`}
+                className={`w-10 h-10 rounded-xl text-lg flex items-center justify-center border-none cursor-pointer transition-all
+                  ${editEmoji === e ? "bg-fuego/15 ring-2 ring-fuego/40" : "bg-noche hover:bg-noche/60"}`}
               >
                 {e}
               </button>
@@ -298,21 +296,19 @@ export default function GroupSettingsPage({
             type="text"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-            disabled={!isAdmin}
             placeholder="Nombre del grupo"
-            className="w-full px-4 py-3 rounded-xl bg-noche text-humo text-sm outline-none focus:ring-1 focus:ring-fuego/40 disabled:opacity-60 placeholder:text-niebla/50"
+            className="w-full px-4 py-3 rounded-xl bg-noche text-humo text-sm outline-none focus:ring-1 focus:ring-fuego/40 placeholder:text-niebla/50"
           />
 
           <textarea
             value={editDesc}
             onChange={(e) => setEditDesc(e.target.value)}
-            disabled={!isAdmin}
             rows={2}
             placeholder="De qué va el grupo… (opcional)"
-            className="w-full px-4 py-3 rounded-xl bg-noche text-humo text-sm outline-none focus:ring-1 focus:ring-fuego/40 disabled:opacity-60 placeholder:text-niebla/50 resize-none"
+            className="w-full px-4 py-3 rounded-xl bg-noche text-humo text-sm outline-none focus:ring-1 focus:ring-fuego/40 placeholder:text-niebla/50 resize-none"
           />
 
-          {isAdmin && isDirty && (
+          {isDirty && (
             <button
               onClick={handleSaveGroup}
               disabled={savingGroup}
@@ -321,31 +317,23 @@ export default function GroupSettingsPage({
               {savingGroup ? "Guardando…" : "Guardar cambios"}
             </button>
           )}
-
-          {!isAdmin && (
-            <p className="text-xs text-niebla">Solo los admins pueden editar los datos del grupo.</p>
-          )}
         </div>
 
         {/* ── 2. Invitación ──────────────────────────────────────────── */}
         <div className="bg-noche-media rounded-2xl p-5 flex flex-col gap-3">
           <p className="text-xs font-semibold uppercase tracking-wider text-niebla">Invitación</p>
 
-          {!isAdmin ? (
-            <p className="text-sm text-niebla">Solo los admins pueden gestionar el link de invitación.</p>
-          ) : (
-            <button
-              onClick={handleCopy}
-              className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-semibold border-none cursor-pointer transition-all
-                ${copied
-                  ? "bg-menta/[0.15] text-menta"
-                  : "bg-noche text-fuego hover:bg-noche/60"
-                }`}
-            >
-              {copied ? <Check size={15} /> : <Copy size={15} />}
-              {copied ? "¡Link copiado!" : "Copiar link de invitación"}
-            </button>
-          )}
+          <button
+            onClick={handleCopy}
+            className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-semibold border-none cursor-pointer transition-all
+              ${copied
+                ? "bg-menta/[0.15] text-menta"
+                : "bg-noche text-fuego hover:bg-noche/60"
+              }`}
+          >
+            {copied ? <Check size={15} /> : <Copy size={15} />}
+            {copied ? "¡Link copiado!" : "Copiar link de invitación"}
+          </button>
         </div>
 
         {/* ── 3. Miembros ────────────────────────────────────────────── */}

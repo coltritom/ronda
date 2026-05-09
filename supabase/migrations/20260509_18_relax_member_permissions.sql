@@ -8,16 +8,7 @@ CREATE POLICY "groups: members can update"
   USING (is_group_member(id))
   WITH CHECK (is_group_member(id));
 
--- invites: any member can create/delete invite links
-DROP POLICY IF EXISTS "invites: group admins can create" ON invites;
-CREATE POLICY "invites: group members can create"
-  ON invites FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    created_by = auth.uid() AND
-    is_group_member(group_id)
-  );
-
+-- invites: any member can delete invite links (INSERT already open to members via migration 05)
 DROP POLICY IF EXISTS "invites: group admins can delete" ON invites;
 CREATE POLICY "invites: group members can delete"
   ON invites FOR DELETE

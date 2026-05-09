@@ -42,9 +42,14 @@ function RegistroForm() {
     });
     setLoading(false);
     if (authError) {
-      setError(authError.message === "User already registered"
-        ? "Ya existe una cuenta con ese email. ¿Querés entrar?"
-        : "No se pudo crear la cuenta. Intentá de nuevo.");
+      console.error("[registro] signUp error:", authError.message, authError.status);
+      if (authError.message === "User already registered") {
+        setError("Ya existe una cuenta con ese email. ¿Querés entrar?");
+      } else if (authError.message?.toLowerCase().includes("already")) {
+        setError("Ya existe una cuenta con ese email. ¿Querés entrar?");
+      } else {
+        setError(`No se pudo crear la cuenta: ${authError.message}`);
+      }
       return;
     }
     if (data.session) {

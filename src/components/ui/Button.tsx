@@ -41,7 +41,7 @@ export function Button({
       disabled={disabled || loading}
       className={`
         inline-flex items-center justify-center gap-2 font-body font-semibold cursor-pointer
-        transition-transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed
+        transition-all active:scale-95 active:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed
         ${isBig ? "px-8 py-4 text-base" : "px-6 py-3 text-[15px]"}
         ${isFullWidth ? "w-full" : ""}
         ${isDanger

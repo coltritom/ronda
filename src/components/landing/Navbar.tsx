@@ -22,13 +22,13 @@ export function Navbar() {
         <div className="md:hidden flex items-center gap-2">
           <button
             onClick={() => router.push("/login")}
-            className="px-4 py-2 text-sm font-medium text-niebla border border-white/20 rounded-xl hover:border-white/40 hover:text-humo transition-colors"
+            className="px-4 py-2 text-sm font-medium text-niebla border border-white/20 rounded-xl hover:border-white/40 hover:text-humo transition-all active:scale-95 active:opacity-80"
           >
             Entrá
           </button>
           <button
             onClick={() => router.push("/registro")}
-            className="px-4 py-2 text-sm font-semibold text-white bg-fuego border border-fuego rounded-xl hover:opacity-90 transition-opacity"
+            className="px-4 py-2 text-sm font-semibold text-white bg-fuego border border-fuego rounded-xl hover:opacity-90 transition-all active:scale-95 active:opacity-80"
           >
             Empezar
           </button>
@@ -47,13 +47,13 @@ export function Navbar() {
           ))}
           <button
             onClick={() => router.push("/login")}
-            className="px-4 py-2 text-sm font-medium text-niebla border border-white/20 rounded-xl hover:border-white/40 hover:text-humo transition-colors"
+            className="px-4 py-2 text-sm font-medium text-niebla border border-white/20 rounded-xl hover:border-white/40 hover:text-humo transition-all active:scale-95 active:opacity-80"
           >
             Entrá
           </button>
           <button
             onClick={() => router.push("/registro")}
-            className="px-4 py-2 text-sm font-semibold text-white bg-fuego border border-fuego rounded-xl hover:opacity-90 transition-opacity"
+            className="px-4 py-2 text-sm font-semibold text-white bg-fuego border border-fuego rounded-xl hover:opacity-90 transition-all active:scale-95 active:opacity-80"
           >
             Empezar
           </button>

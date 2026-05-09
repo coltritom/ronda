@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import type { GroupWithMeta } from '@/types'
 import { GroupCard } from '@/components/groups/GroupCard'
 import { CreateGroupModal } from '@/components/groups/CreateGroupModal'
+import { JoinGroupModal } from '@/components/groups/JoinGroupModal'
 import { GroupsEmptyState } from '@/components/groups/GroupsEmptyState'
 
 export default async function GroupsPage() {
@@ -44,9 +45,9 @@ export default async function GroupsPage() {
     <div className="p-5 lg:p-8 max-w-2xl">
 
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display text-2xl font-bold text-humo lg:text-3xl">
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-bold text-humo lg:text-3xl whitespace-nowrap">
             Mis grupos
           </h1>
           <p className="mt-1 font-body text-sm text-niebla">
@@ -60,7 +61,12 @@ export default async function GroupsPage() {
         {/* Solo mostrar el botón/FAB del header cuando ya hay grupos.
             Cuando la lista está vacía, el CTA vive dentro de GroupsEmptyState
             para evitar duplicar el FAB en mobile. */}
-        {groups.length > 0 && <CreateGroupModal />}
+        {groups.length > 0 && (
+          <div className="flex items-center gap-2 shrink-0">
+            <JoinGroupModal variant="button" />
+            <CreateGroupModal />
+          </div>
+        )}
       </div>
 
       {/* Lista o empty state */}

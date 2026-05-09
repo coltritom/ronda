@@ -93,20 +93,21 @@ export async function updateExpense(
   if (amount > 100_000_000) return { error: 'El monto no puede superar $100.000.000.' }
   if (splitUserIds.length === 0) return { error: 'Debe haber al menos un participante.' }
 
-  type ExpenseWithEvent = { event_id: string; paid_by: string; events: { group_id: string } | null }
-  const expResult = await supabase
+  const { data: expenseData } = await supabase
     .from('expenses')
-    .select('event_id, paid_by, events ( group_id )')
+    .select('event_id, paid_by')
     .eq('id', expenseId)
     .maybeSingle()
-  const expenseData = expResult.data as ExpenseWithEvent | null
-
   if (!expenseData) return { error: 'Gasto no encontrado.' }
 
-  const groupId = expenseData.events?.group_id
-  if (!groupId) return { error: 'No se pudo verificar el grupo.' }
+  const { data: eventData } = await supabase
+    .from('events')
+    .select('group_id')
+    .eq('id', expenseData.event_id)
+    .maybeSingle()
+  if (!eventData) return { error: 'No se pudo verificar el evento.' }
 
-  const memberError = await assertGroupMember(supabase, groupId, user.id)
+  const memberError = await assertGroupMember(supabase, eventData.group_id, user.id)
   if (memberError) return memberError
 
   if (expenseData.paid_by !== user.id) return { error: 'Solo quien pagó puede editar este gasto.' }
@@ -122,9 +123,16 @@ export async function updateExpense(
     is_settled: false,
   }))
 
-  await supabase.from('expense_splits').delete().eq('expense_id', expenseId)
+  const { createAdminClient } = await import('@/lib/supabase/server')
+  const admin = createAdminClient()
 
-  const { error: updateError } = await supabase
+  const { error: splitsDelErr } = await admin.from('expense_splits').delete().eq('expense_id', expenseId)
+  if (splitsDelErr) {
+    console.error('Error deleting splits:', splitsDelErr.message)
+    return { error: 'No se pudo actualizar el gasto.' }
+  }
+
+  const { error: updateError } = await admin
     .from('expenses')
     .update({ description, amount, paid_by: paidBy, split_type: splitType })
     .eq('id', expenseId)
@@ -133,15 +141,13 @@ export async function updateExpense(
     return { error: 'No se pudo actualizar el gasto.' }
   }
 
-  const { error: splitsError } = await supabase
-    .from('expense_splits')
-    .insert(newSplits)
-  if (splitsError) {
-    console.error('Error inserting splits:', splitsError.message)
+  const { error: splitsInsErr } = await admin.from('expense_splits').insert(newSplits)
+  if (splitsInsErr) {
+    console.error('Error inserting splits:', splitsInsErr.message)
     return { error: 'No se pudo actualizar el gasto.' }
   }
 
-  revalidatePath(`/groups/${groupId}/events/${expenseData.event_id}`)
+  revalidatePath(`/groups/${eventData.group_id}/events/${expenseData.event_id}`)
   return null
 }
 
@@ -153,35 +159,34 @@ export async function deleteExpense(
 
   if (!user) return { error: 'No autenticado.' }
 
-  /* Resolver el group_id a través de expenses → events */
-  type ExpenseWithEvent = { event_id: string; events: { group_id: string } | null }
-  const result = await supabase
+  const { data: expenseData } = await supabase
     .from('expenses')
-    .select('event_id, events ( group_id )')
+    .select('event_id, paid_by')
     .eq('id', expenseId)
     .maybeSingle()
-  const expenseData = result.data as ExpenseWithEvent | null
-
   if (!expenseData) return { error: 'Gasto no encontrado.' }
 
-  const groupId = expenseData.events?.group_id
-  if (!groupId) return { error: 'No se pudo verificar el grupo.' }
+  const { data: eventData } = await supabase
+    .from('events')
+    .select('group_id')
+    .eq('id', expenseData.event_id)
+    .maybeSingle()
+  if (!eventData) return { error: 'No se pudo verificar el evento.' }
 
-  const memberError = await assertGroupMember(supabase, groupId, user.id)
+  const memberError = await assertGroupMember(supabase, eventData.group_id, user.id)
   if (memberError) return memberError
 
-  await supabase.from('expense_splits').delete().eq('expense_id', expenseId)
+  const { createAdminClient } = await import('@/lib/supabase/server')
+  const admin = createAdminClient()
 
-  const { error } = await supabase
-    .from('expenses')
-    .delete()
-    .eq('id', expenseId)
+  await admin.from('expense_splits').delete().eq('expense_id', expenseId)
 
+  const { error } = await admin.from('expenses').delete().eq('id', expenseId)
   if (error) {
     console.error('Error deleting expense:', error.message)
     return { error: 'No se pudo eliminar el gasto.' }
   }
 
-  revalidatePath(`/groups/${groupId}/events/${expenseData.event_id}`)
+  revalidatePath(`/groups/${eventData.group_id}/events/${expenseData.event_id}`)
   return null
 }

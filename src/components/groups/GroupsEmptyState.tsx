@@ -1,6 +1,7 @@
 'use client'
 
 import { CreateGroupModal } from './CreateGroupModal'
+import { JoinGroupModal } from './JoinGroupModal'
 
 export function GroupsEmptyState() {
   return (
@@ -26,6 +27,10 @@ export function GroupsEmptyState() {
 
       <div className="mt-6">
         <CreateGroupModal />
+      </div>
+
+      <div className="mt-4">
+        <JoinGroupModal variant="link" />
       </div>
     </div>
   )

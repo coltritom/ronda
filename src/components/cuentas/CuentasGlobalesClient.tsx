@@ -1,0 +1,223 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { ChevronLeft } from 'lucide-react'
+import { Avatar } from '@/components/ui/Avatar'
+import { Button } from '@/components/ui/Button'
+import { fmtARS } from '@/lib/utils'
+import { ConfirmPagoModal } from '@/components/juntada/ConfirmPagoModal'
+import { createClient } from '@/lib/supabase/clients'
+import type { UIMember, UIDebt } from '@/types'
+
+interface Props {
+  groupId:         string
+  groupName:       string
+  members:         UIMember[]
+  initialDeudas:   UIDebt[]
+  expensesByPayer: Record<string, string[]>
+  currentUserId:   string
+}
+
+export function CuentasGlobalesClient({
+  groupId, groupName, members, initialDeudas, expensesByPayer, currentUserId,
+}: Props) {
+  const router = useRouter()
+  const [deudas, setDeudas] = useState<UIDebt[]>(initialDeudas)
+  const [confirmDeuda, setConfirmDeuda] = useState<UIDebt | null>(null)
+
+  const handleConfirmPaid = async () => {
+    if (!confirmDeuda) return
+    const { fromId, toId } = confirmDeuda
+    const supabase = createClient()
+
+    const expensesOfTo   = expensesByPayer[toId]   ?? []
+    const expensesOfFrom = expensesByPayer[fromId]  ?? []
+
+    await Promise.all([
+      expensesOfTo.length > 0
+        ? supabase.from('expense_splits').update({ is_settled: true }).eq('user_id', fromId).in('expense_id', expensesOfTo)
+        : Promise.resolve(),
+      expensesOfFrom.length > 0
+        ? supabase.from('expense_splits').update({ is_settled: true }).eq('user_id', toId).in('expense_id', expensesOfFrom)
+        : Promise.resolve(),
+    ])
+
+    setDeudas((prev) =>
+      prev.map((d) =>
+        d.fromId === fromId && d.toId === toId ? { ...d, paid: true } : d
+      )
+    )
+    setConfirmDeuda(null)
+  }
+
+  const pendientes      = deudas.filter((d) => !d.paid)
+  const pagadas         = deudas.filter((d) => d.paid)
+  const totalPendiente  = pendientes.reduce((s, d) => s + d.amount, 0)
+  const allClear        = deudas.length === 0 || pendientes.length === 0
+
+  return (
+    <div className="max-w-2xl mx-auto pb-8">
+      <div className="px-4 md:px-6 pt-4 pb-2">
+        <button
+          onClick={() => router.push(`/groups/${groupId}`)}
+          className="flex items-center gap-1 text-fuego text-[13px] font-semibold bg-transparent border-none cursor-pointer p-0 mb-3"
+        >
+          <ChevronLeft size={16} />
+          {groupName}
+        </button>
+        <h1 className="font-display font-bold text-[22px] text-humo">Cuentas del grupo</h1>
+        <p className="text-sm text-niebla mt-1">Así quedaron los números.</p>
+      </div>
+
+      <div className="px-4 md:px-6 flex flex-col gap-3 mt-2">
+        {allClear ? (
+          <div className="bg-noche-media rounded-2xl p-6 text-center">
+            <div className="w-14 h-14 rounded-full bg-menta/[0.12] flex items-center justify-center mx-auto mb-3">
+              <span className="text-2xl">✓</span>
+            </div>
+            <p className="font-semibold text-base text-humo">Todo cerrado</p>
+            <p className="text-sm text-niebla mt-1">No hay cuentas pendientes. Amistad preservada.</p>
+          </div>
+        ) : (
+          <div className="bg-noche-media rounded-2xl p-4 text-center">
+            <p className="text-[13px] text-niebla">Cuentas pendientes</p>
+            <p className="font-display font-bold text-[28px] text-humo mt-1">
+              ${fmtARS(totalPendiente)}
+            </p>
+            <p className="text-[13px] text-niebla mt-0.5">
+              {pendientes.length} transferencia{pendientes.length > 1 ? 's' : ''} pendiente{pendientes.length > 1 ? 's' : ''}
+            </p>
+          </div>
+        )}
+
+        <PersonalSummary deudas={deudas} myId={currentUserId} />
+
+        {pendientes.length > 0 && (
+          <>
+            <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mt-2">
+              Pendientes
+            </p>
+            {pendientes.map((d, i) => {
+              const from = members.find((m) => m.id === d.fromId)
+              const to   = members.find((m) => m.id === d.toId)
+              if (!from || !to) return null
+              return (
+                <DeudaCard
+                  key={`p-${i}`}
+                  deuda={d}
+                  from={from}
+                  to={to}
+                  onMarkPaid={() => setConfirmDeuda(d)}
+                />
+              )
+            })}
+          </>
+        )}
+
+        {pagadas.length > 0 && (
+          <>
+            <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mt-4">
+              Cerradas
+            </p>
+            {pagadas.map((d, i) => {
+              const from = members.find((m) => m.id === d.fromId)
+              const to   = members.find((m) => m.id === d.toId)
+              if (!from || !to) return null
+              return <DeudaCard key={`c-${i}`} deuda={d} from={from} to={to} />
+            })}
+          </>
+        )}
+
+        <p className="text-xs text-niebla text-center mt-2">
+          Ronda simplificó las cuentas para que haya menos transferencias.
+        </p>
+      </div>
+
+      {confirmDeuda && (() => {
+        const from = members.find((m) => m.id === confirmDeuda.fromId)
+        const to   = members.find((m) => m.id === confirmDeuda.toId)
+        if (!from || !to) return null
+        return (
+          <ConfirmPagoModal
+            open
+            onClose={() => setConfirmDeuda(null)}
+            onConfirm={handleConfirmPaid}
+            from={from}
+            to={to}
+            amountLabel={`$${fmtARS(confirmDeuda.amount)}`}
+          />
+        )
+      })()}
+    </div>
+  )
+}
+
+function PersonalSummary({ deudas, myId }: { deudas: UIDebt[]; myId: string }) {
+  const myDebts   = deudas.filter((d) => d.fromId === myId && !d.paid)
+  const myCredits = deudas.filter((d) => d.toId   === myId && !d.paid)
+  const totalDebt   = myDebts.reduce((s, d) => s + d.amount, 0)
+  const totalCredit = myCredits.reduce((s, d) => s + d.amount, 0)
+
+  if (totalDebt === 0 && totalCredit === 0) return null
+
+  return (
+    <div className="bg-noche-media rounded-2xl p-4">
+      <p className="text-[11px] font-semibold text-niebla uppercase tracking-wider mb-3">
+        Tu resumen
+      </p>
+      <div className="flex gap-4">
+        {totalDebt > 0 && (
+          <div className="flex-1 bg-noche rounded-xl p-3 text-center">
+            <p className="text-xs text-niebla mb-0.5">Debés</p>
+            <p className="font-bold text-lg text-humo">${fmtARS(totalDebt)}</p>
+          </div>
+        )}
+        {totalCredit > 0 && (
+          <div className="flex-1 bg-noche rounded-xl p-3 text-center">
+            <p className="text-xs text-niebla mb-0.5">Te deben</p>
+            <p className="font-bold text-lg text-humo">${fmtARS(totalCredit)}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function DeudaCard({
+  deuda, from, to, onMarkPaid,
+}: {
+  deuda:       UIDebt
+  from:        UIMember
+  to:          UIMember
+  onMarkPaid?: () => void
+}) {
+  return (
+    <div className={`bg-noche-media rounded-2xl p-4 ${deuda.paid ? 'opacity-50' : ''}`}>
+      <div className="flex items-center gap-2 mb-3">
+        <Avatar name={from.name} colorIndex={from.colorIndex} />
+        <span className="text-lg text-niebla">→</span>
+        <Avatar name={to.name} colorIndex={to.colorIndex} />
+      </div>
+
+      {deuda.paid ? (
+        <div className="flex items-center gap-1.5">
+          <span className="text-menta text-base">✓</span>
+          <span className="text-sm font-semibold text-menta">Cuenta cerrada. Estás en paz.</span>
+        </div>
+      ) : (
+        <>
+          <p className="font-semibold text-[15px] text-humo">
+            {from.name} le debe a {to.name}
+          </p>
+          <p className="font-bold text-[22px] text-humo mt-1 mb-3">
+            ${fmtARS(deuda.amount)}
+          </p>
+          <Button primary={false} full onClick={onMarkPaid}>
+            Marcar como pagado
+          </Button>
+        </>
+      )}
+    </div>
+  )
+}

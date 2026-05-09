@@ -9,7 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/clients";
 import { useAuth } from "@/lib/supabase/auth-context";
 import { getOrCreateInvite } from "@/lib/actions/invites";
-import { promoteToAdmin } from "@/lib/actions/groups";
+import { promoteToAdmin, removeMember } from "@/lib/actions/groups";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
@@ -224,11 +224,9 @@ export default function GroupSettingsPage({
 
   const handleLeave = async () => {
     setLeaving(true);
-    const supabase = createClient();
-    const { error } = await supabase.from("group_members")
-      .delete().eq("group_id", id).eq("user_id", currentUserId!);
+    const result = await removeMember(id, currentUserId!);
     setLeaving(false);
-    if (error) { toast.error("No se pudo salir del grupo."); return; }
+    if (result?.error) { toast.error(result.error); return; }
     toast.success("Saliste del grupo.");
     router.push("/groups");
   };

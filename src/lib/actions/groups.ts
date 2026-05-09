@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdminClient } from '@/lib/supabase/server'
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>
 
@@ -31,8 +31,9 @@ export async function createGroup(
   if (!user) return { error: 'No autenticado.' }
 
   const groupId = crypto.randomUUID()
+  const admin = createAdminClient()
 
-  const { error: groupError } = await supabase
+  const { error: groupError } = await admin
     .from('groups')
     .insert({ id: groupId, name, description, created_by: user.id, ...(emoji ? { emoji } : {}) })
 
@@ -41,7 +42,7 @@ export async function createGroup(
     return { error: 'No se pudo crear el grupo. Intentá de nuevo.' }
   }
 
-  const { error: memberError } = await supabase
+  const { error: memberError } = await admin
     .from('group_members')
     .insert({ group_id: groupId, user_id: user.id, role: 'admin' })
 
@@ -124,7 +125,6 @@ export async function promoteToAdmin(
   const permError = await assertAdmin(supabase, groupId, user.id)
   if (permError) return permError
 
-  const { createAdminClient } = await import('@/lib/supabase/server')
   const admin = createAdminClient()
   const { error } = await admin
     .from('group_members')

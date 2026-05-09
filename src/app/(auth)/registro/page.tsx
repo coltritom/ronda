@@ -32,7 +32,7 @@ function RegistroForm() {
     setLoading(true);
     const supabase = createClient();
     const base = process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin;
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -45,6 +45,10 @@ function RegistroForm() {
       setError(authError.message === "User already registered"
         ? "Ya existe una cuenta con ese email. ¿Querés entrar?"
         : "No se pudo crear la cuenta. Intentá de nuevo.");
+      return;
+    }
+    if (data.session) {
+      router.push(next);
       return;
     }
     setSuccess(true);

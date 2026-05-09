@@ -30,20 +30,20 @@ export async function createGroup(
 
   if (!user) return { error: 'No autenticado.' }
 
-  const { data: group, error: groupError } = await supabase
-    .from('groups')
-    .insert({ name, description, created_by: user.id, ...(emoji ? { emoji } : {}) })
-    .select('id')
-    .single()
+  const groupId = crypto.randomUUID()
 
-  if (groupError || !group) {
-    console.error('Error creating group:', groupError?.message)
+  const { error: groupError } = await supabase
+    .from('groups')
+    .insert({ id: groupId, name, description, created_by: user.id, ...(emoji ? { emoji } : {}) })
+
+  if (groupError) {
+    console.error('Error creating group:', groupError.message)
     return { error: 'No se pudo crear el grupo. Intentá de nuevo.' }
   }
 
   const { error: memberError } = await supabase
     .from('group_members')
-    .insert({ group_id: group.id, user_id: user.id, role: 'admin' })
+    .insert({ group_id: groupId, user_id: user.id, role: 'admin' })
 
   if (memberError) {
     console.error('Error adding member:', memberError.message)
@@ -51,7 +51,7 @@ export async function createGroup(
   }
 
   revalidatePath('/groups')
-  return { groupId: group.id }
+  return { groupId }
 }
 
 export async function removeMember(

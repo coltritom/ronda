@@ -7,6 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { LogOut, ChevronRight, MessageSquare, HelpCircle, Eye, EyeOff, Pencil } from "lucide-react";
 import { createClient } from "@/lib/supabase/clients";
+import { updateProfile } from "@/lib/actions/profile";
 
 const AVATAR_EMOJIS = [
   "🙋‍♂️","🙋‍♀️","🧑","👦","👧","🧔","👱","🧓","🧑‍🦰","🧑‍🦱","🧑‍🦳","🧑‍🦲",
@@ -89,10 +90,9 @@ export function PerfilPageClient({ initialName, email: initialEmail, initialAvat
   const handleSaveName = async () => {
     if (!tmpName.trim()) { setFieldError("El nombre no puede estar vacío."); return; }
     setSaving(true);
-    const supabase = createClient();
-    const { error } = await supabase.auth.updateUser({ data: { full_name: tmpName.trim() } });
+    const result = await updateProfile(tmpName.trim());
     setSaving(false);
-    if (error) { setFieldError("No se pudo guardar. Intentá de nuevo."); return; }
+    if (result?.error) { setFieldError("No se pudo guardar. Intentá de nuevo."); return; }
     setDisplayName(tmpName.trim());
     closeModal();
   };

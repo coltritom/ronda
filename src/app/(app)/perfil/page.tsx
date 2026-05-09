@@ -7,10 +7,10 @@ export default async function PerfilPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  const { data: memberships } = await supabase
-    .from("group_members")
-    .select("groups(id, name, emoji)")
-    .eq("user_id", user.id);
+  const [{ data: profile }, { data: memberships }] = await Promise.all([
+    supabase.from("profiles").select("name").eq("id", user.id).single(),
+    supabase.from("group_members").select("groups(id, name, emoji)").eq("user_id", user.id),
+  ]);
 
   const groups = (memberships ?? [])
     .map((m) => {
@@ -25,7 +25,7 @@ export default async function PerfilPage() {
     })
     .filter((g): g is { id: string; name: string; emoji: string } => g !== null);
 
-  const initialName = (user.user_metadata?.full_name as string | undefined) ?? "";
+  const initialName = profile?.name ?? (user.user_metadata?.full_name as string | undefined) ?? "";
   const initialAvatarEmoji = (user.user_metadata?.avatar_emoji as string | undefined) ?? "🙋‍♂️";
 
   return (

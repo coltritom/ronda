@@ -7,12 +7,19 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://ordenalaronda.com"),
   title: "Ronda — La memoria de tus juntadas",
   description: "Registrá juntadas, cerrá cuentas, exponé al fantasma del grupo y guardá la historia.",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Ronda",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#E06347",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

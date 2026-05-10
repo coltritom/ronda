@@ -12,6 +12,10 @@ export const metadata: Metadata = {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Ronda",
+    startupImage: "/icon-512.png",
+  },
+  icons: {
+    apple: "/icon-192.png",
   },
 };
 

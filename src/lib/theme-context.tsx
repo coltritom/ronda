@@ -1,33 +1,22 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-
-type Theme = "dark" | "light";
+import { createContext, useContext, useEffect, ReactNode } from "react";
 
 interface ThemeContextType {
-  theme: Theme;
+  theme: "dark";
   toggle: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType>({ theme: "dark", toggle: () => {} });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("dark");
-
   useEffect(() => {
-    const saved = localStorage.getItem("ronda-theme") as Theme | null;
-    if (saved) setTheme(saved);
+    document.documentElement.classList.add("dark");
+    localStorage.removeItem("ronda-theme");
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    localStorage.setItem("ronda-theme", theme);
-  }, [theme]);
-
-  const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
-
   return (
-    <ThemeContext.Provider value={{ theme, toggle }}>
+    <ThemeContext.Provider value={{ theme: "dark", toggle: () => {} }}>
       {children}
     </ThemeContext.Provider>
   );

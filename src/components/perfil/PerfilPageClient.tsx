@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useTheme } from "@/lib/theme-context";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { LogOut, ChevronRight, MessageSquare, HelpCircle, Eye, EyeOff, Pencil } from "lucide-react";
@@ -48,8 +47,6 @@ interface PerfilPageClientProps {
 
 export function PerfilPageClient({ initialName, email: initialEmail, initialAvatarEmoji, initialGroups }: PerfilPageClientProps) {
   const router = useRouter();
-  const { theme, toggle } = useTheme();
-
   const [displayName, setDisplayName] = useState(initialName);
   const [email, setEmail] = useState(initialEmail);
   const [avatarEmoji, setAvatarEmoji] = useState(initialAvatarEmoji);
@@ -148,31 +145,6 @@ export function PerfilPageClient({ initialName, email: initialEmail, initialAvat
       </div>
 
       <div className="px-4 flex flex-col gap-3">
-        <div className="bg-noche-media rounded-2xl p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-semibold text-[15px] text-humo">Modo oscuro</p>
-              <p className="text-[13px] text-niebla mt-0.5">
-                {theme === "dark" ? "Activado" : "Desactivado"}
-              </p>
-            </div>
-            <button
-              onClick={toggle}
-              className={`
-                w-12 h-7 rounded-full border-none cursor-pointer relative transition-colors
-                ${theme === "dark" ? "bg-fuego" : "bg-niebla/40"}
-              `}
-            >
-              <div
-                className={`
-                  w-[22px] h-[22px] rounded-full bg-white absolute top-[3px] transition-[left]
-                  ${theme === "dark" ? "left-[23px]" : "left-[3px]"}
-                `}
-              />
-            </button>
-          </div>
-        </div>
-
         <div className="bg-noche-media rounded-2xl px-4 divide-y divide-white/[0.06]">
           <SettingRow label="Nombre" value={displayName} onClick={() => openModal("nombre")} />
           <SettingRow label="Email" value={email} onClick={() => openModal("email")} />

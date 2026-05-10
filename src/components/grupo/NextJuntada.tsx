@@ -82,9 +82,17 @@ export function NextJuntada({
   const currentChip = CHIPS.find((c) => c.id === status);
 
   const getUpdatedCounts = () => {
-    const c = confirmed + (status === "going" ? 1 : 0);
-    const u = unsure + (status === "maybe" ? 1 : 0);
-    const n = Math.max(0, noResponse - 1);
+    // Server counts already include the user's initialRsvp.
+    // Compute the delta: remove the old bucket, add the new one.
+    let c = confirmed;
+    let u = unsure;
+    let n = noResponse;
+    if (initialRsvp === "going")  c = Math.max(0, c - 1);
+    else if (initialRsvp === "maybe") u = Math.max(0, u - 1);
+    else if (initialRsvp === "none")  n = Math.max(0, n - 1);
+    if (status === "going")  c += 1;
+    else if (status === "maybe") u += 1;
+    else if (status === "none")  n += 1;
     return { c, u, n };
   };
 
@@ -156,7 +164,7 @@ export function NextJuntada({
         <p className="text-[13px] text-niebla mt-1 mb-3">
           {confirmed} van
           {unsure > 0 ? ` · ${unsure} no sabe${unsure > 1 ? "n" : ""}` : ""}
-          {" "}· {noResponse} sin respuesta
+          {noResponse > 0 ? ` · ${noResponse} sin respuesta` : ""}
         </p>
         <div className="flex gap-2">
           {CHIPS.map((chip) => {

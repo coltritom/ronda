@@ -159,20 +159,6 @@ export function GrupoPageClient({
           </div>
         </div>
 
-        {pastJuntadas.length > 0 && (
-          <div className="flex justify-between items-center mt-1">
-            <span className="font-display font-semibold text-base text-humo">
-              Últimas juntadas
-            </span>
-            <button
-              onClick={() => router.push(`/groups/${groupId}/historial`)}
-              className="bg-transparent border-none text-fuego font-semibold text-xs cursor-pointer p-0"
-            >
-              Historial →
-            </button>
-          </div>
-        )}
-
         {juntadas.length === 0 && (
           <p className="text-sm text-niebla text-center py-4">
             Todavía no hay juntadas.{" "}
@@ -185,26 +171,45 @@ export function GrupoPageClient({
           </p>
         )}
 
-        {(showAllPast ? pastJuntadas : pastJuntadas.slice(0, PAST_PREVIEW)).map((j) => (
-          <JuntadaCard
-            key={j.id}
-            id={j.id}
-            date={j.date}
-            name={j.name}
-            attendees={j.attendees}
-            totalSpent={j.totalSpent}
-            closed={j.closed}
-            groupId={groupId}
-          />
-        ))}
-
-        {!showAllPast && pastJuntadas.length > PAST_PREVIEW && (
-          <button
-            onClick={() => setShowAllPast(true)}
-            className="w-full py-3 text-sm font-semibold text-fuego bg-transparent border-none cursor-pointer text-center"
-          >
-            Ver todas ({pastJuntadas.length}) →
-          </button>
+        {pastJuntadas.length > 0 && (
+          <div className="bg-noche-media rounded-2xl p-4">
+            <div className="flex justify-between items-center mb-4">
+              <p className="text-[11px] text-fuego font-semibold uppercase tracking-[0.08em]">
+                Últimas juntadas
+              </p>
+              <button
+                onClick={() => router.push(`/groups/${groupId}/historial`)}
+                className="bg-transparent border-none text-fuego font-semibold text-xs cursor-pointer p-0"
+              >
+                Historial →
+              </button>
+            </div>
+            {(showAllPast ? pastJuntadas : pastJuntadas.slice(0, PAST_PREVIEW)).map((j, idx) => (
+              <div key={j.id}>
+                {idx > 0 && <div className="border-t border-white/[0.06] my-3" />}
+                <JuntadaCard
+                  id={j.id}
+                  date={j.date}
+                  name={j.name}
+                  attendees={j.attendees}
+                  totalSpent={j.totalSpent}
+                  closed={j.closed}
+                  groupId={groupId}
+                  bare
+                />
+              </div>
+            ))}
+            {!showAllPast && pastJuntadas.length > PAST_PREVIEW && (
+              <div className="border-t border-white/[0.06] mt-3 pt-3">
+                <button
+                  onClick={() => setShowAllPast(true)}
+                  className="w-full py-1 text-sm font-semibold text-fuego bg-transparent border-none cursor-pointer text-center"
+                >
+                  Ver todas ({pastJuntadas.length}) →
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         <div className="bg-noche-media rounded-2xl p-4 text-center mt-1">

@@ -14,9 +14,10 @@ interface JuntadaCardProps {
   lugarId?: string;
   hostName?: string;
   groupId?: string;
+  bare?: boolean;
 }
 
-export function JuntadaCard({ id, date, name, attendees, totalSpent, closed, lugarId, hostName, groupId }: JuntadaCardProps) {
+export function JuntadaCard({ id, date, name, attendees, totalSpent, closed, lugarId, hostName, groupId, bare }: JuntadaCardProps) {
   const router = useRouter();
   const lugar = LUGAR_OPTIONS.find((l) => l.id === lugarId);
 
@@ -28,7 +29,7 @@ export function JuntadaCard({ id, date, name, attendees, totalSpent, closed, lug
   return (
     <button
       onClick={handleClick}
-      className="w-full text-left bg-noche-media rounded-2xl p-4 border-none cursor-pointer transition-all active:scale-[0.98] hover:opacity-90"
+      className={`w-full text-left border-none cursor-pointer transition-all active:scale-[0.98] hover:opacity-90 ${bare ? "" : "bg-noche-media rounded-2xl p-4"}`}
     >
       <div className="flex justify-between items-start">
         <div className="min-w-0 flex-1">

@@ -12,7 +12,7 @@ interface Guest { id: string; name: string }
 interface Props {
   eventId:       string
   currentUserId: string
-  myAttendance:  boolean
+  myAttendance:  boolean | null
   attendees:     Attendee[]
   guests:        Guest[]
 }
@@ -20,7 +20,7 @@ interface Props {
 export function AttendanceSection({ eventId, currentUserId, myAttendance, attendees, guests: initialGuests }: Props) {
   const router = useRouter()
 
-  const [attended, setAttended] = useState<boolean | null>(myAttendance ? true : null)
+  const [attended, setAttended] = useState<boolean | null>(myAttendance)
   const [pending, setPending]   = useState(false)
   const [error, setError]       = useState<string | null>(null)
 
@@ -44,7 +44,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
         setError(result.error)
         toast.error(result.error)
       } else {
-        toast.success(value ? 'Asistencia registrada' : 'Asistencia eliminada')
+        toast.success(value ? 'Asistencia registrada' : 'Marcado como no asististe')
         router.refresh()
       }
     } catch (err) {

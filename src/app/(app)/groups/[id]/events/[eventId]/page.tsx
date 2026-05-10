@@ -62,14 +62,14 @@ export default async function EventDetailPage({ params }: PageProps) {
     .select('response, user_id')
     .eq('event_id', eventId)
 
-  let attendanceRaw: { user_id: string }[] = []
+  let attendanceRaw: { user_id: string; attended: boolean }[] = []
   let guestsRaw: { id: string; name: string }[] = []
   if (isPast) {
     const [{ data: attData }, { data: guestData }] = await Promise.all([
-      supabase.from('event_attendance').select('user_id').eq('event_id', eventId),
+      supabase.from('event_attendance').select('user_id, attended').eq('event_id', eventId),
       supabase.from('event_guests').select('id, name').eq('event_id', eventId).order('created_at', { ascending: true }),
     ])
-    attendanceRaw = attData ?? []
+    attendanceRaw = (attData ?? []).map((a) => ({ user_id: a.user_id, attended: a.attended ?? true }))
     guestsRaw = guestData ?? []
   }
 
@@ -140,13 +140,13 @@ export default async function EventDetailPage({ params }: PageProps) {
   const currentUserName = profileMap[user.id] ?? 'Yo'
 
   let attendanceList: { user_id: string; name: string }[] = []
-  let myAttendance = false
+  let myAttendance: boolean | null = null
   if (isPast) {
-    attendanceList = attendanceRaw.map((a) => ({
-      user_id: a.user_id,
-      name: profileMap[a.user_id] ?? 'Usuario',
-    }))
-    myAttendance = attendanceList.some((a) => a.user_id === user.id)
+    attendanceList = attendanceRaw
+      .filter((a) => a.attended)
+      .map((a) => ({ user_id: a.user_id, name: profileMap[a.user_id] ?? 'Usuario' }))
+    const myRecord = attendanceRaw.find((a) => a.user_id === user.id)
+    myAttendance = myRecord !== undefined ? myRecord.attended : null
   }
 
   type ContributionEnriched = {

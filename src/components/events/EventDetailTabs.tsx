@@ -60,7 +60,7 @@ interface Props {
   canAdd:          boolean
   myRsvp:          RsvpStatus | null
   rsvps:           RsvpEnriched[]
-  myAttendance:    boolean
+  myAttendance:    boolean | null
   attendees:       { user_id: string; name: string }[]
   guests:          { id: string; name: string }[]
   goingAttendees:  { user_id: string; name: string }[]

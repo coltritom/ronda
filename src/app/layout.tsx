@@ -22,6 +22,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
   viewportFit: "cover",
   themeColor: "#E06347",
 };
@@ -29,7 +31,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className="dark">
-      <body className="antialiased" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <body className="antialiased" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <ThemeProvider>{children}</ThemeProvider>
         <Toaster position="bottom-center" theme="dark" richColors />
       </body>

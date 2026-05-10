@@ -188,7 +188,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     {
       id:    'asistencia',
       label: 'Asistencia',
-      count: isPast ? attendanceList.length + guestsRaw.length : going.length + maybe.length,
+      count: going.length + maybe.length,
     },
     { id: 'aportes', label: 'Aportes', count: contributions.length },
     { id: 'gastos',  label: 'Gastos',  count: expenses.length },

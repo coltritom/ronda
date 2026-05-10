@@ -125,44 +125,45 @@ export function EventDetailTabs({
                 guests={guests}
               />
             )}
-            {!isPast && (
-              <div className="flex flex-col gap-4">
-                {[
-                  { label: 'Van',     list: going,    color: 'text-menta' },
-                  { label: 'Tal vez', list: maybe,    color: 'text-niebla' },
-                  { label: 'No van',  list: notGoing, color: 'text-error' },
-                ]
-                  .filter(({ list }) => list.length > 0)
-                  .map(({ label, list, color }) => (
-                    <div key={label}>
-                      <p className={`mb-2 text-xs font-semibold uppercase tracking-wider ${color}`}>
-                        {label} ({list.length})
-                      </p>
-                      <div className="flex flex-wrap gap-2">
-                        {list.map((rsvp) => (
-                          <div
-                            key={rsvp.user_id}
-                            className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
-                          >
-                            <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 text-[10px] font-bold text-fuego">
-                              {(rsvp.profiles?.name ?? '?').charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-sm text-humo">
-                              {rsvp.profiles?.name ?? 'Usuario'}
-                              {rsvp.user_id === currentUserId && (
-                                <span className="ml-1 text-xs text-niebla">(vos)</span>
-                              )}
-                            </span>
+            <div className="flex flex-col gap-4">
+              {[
+                { label: 'Van',     list: going,    color: 'text-menta' },
+                { label: 'Tal vez', list: maybe,    color: 'text-niebla' },
+                { label: 'No van',  list: notGoing, color: 'text-error' },
+              ]
+                .filter(({ list }) => list.length > 0)
+                .map(({ label, list, color }) => (
+                  <div key={label}>
+                    <p className={`mb-2 text-xs font-semibold uppercase tracking-wider ${color}`}>
+                      {label} ({list.length})
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {list.map((rsvp) => (
+                        <div
+                          key={rsvp.user_id}
+                          className="flex items-center gap-2 rounded-full bg-noche-media px-3 py-1.5"
+                        >
+                          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-fuego/20 text-[10px] font-bold text-fuego">
+                            {(rsvp.profiles?.name ?? '?').charAt(0).toUpperCase()}
                           </div>
-                        ))}
-                      </div>
+                          <span className="text-sm text-humo">
+                            {rsvp.profiles?.name ?? 'Usuario'}
+                            {rsvp.user_id === currentUserId && (
+                              <span className="ml-1 text-xs text-niebla">(vos)</span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                {rsvps.length === 0 && (
-                  <p className="text-sm text-niebla">Nadie confirmó todavía. ¡Sé el primero!</p>
-                )}
-              </div>
-            )}
+                  </div>
+                ))}
+              {rsvps.length === 0 && !isPast && (
+                <p className="text-sm text-niebla">Nadie confirmó todavía. ¡Sé el primero!</p>
+              )}
+              {rsvps.length === 0 && isPast && (
+                <p className="text-sm text-niebla">Nadie había confirmado asistencia.</p>
+              )}
+            </div>
           </div>
         )}
 

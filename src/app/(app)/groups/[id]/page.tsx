@@ -52,16 +52,17 @@ export default async function GrupoPage({ params }: { params: Promise<{ id: stri
   }));
 
   const memberCount = memberList.length;
-  const TODAY = new Date().toISOString().slice(0, 10);
+  const TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
 
   const mappedJuntadas: JuntadaItem[] = (result.events ?? []).map((e) => {
     const noResponse = Math.max(0, memberCount - e.going - e.maybe - e.not_going);
+    const d = new Date(e.date);
     const formattedDate = new Intl.DateTimeFormat("es-AR", {
       weekday: "short", day: "numeric", month: "short",
       timeZone: "America/Argentina/Buenos_Aires",
-    }).format(new Date(e.date));
+    }).format(d);
     return {
-      id: e.id, isoDate: e.date.slice(0, 10), date: formattedDate, name: e.name,
+      id: e.id, isoDate: d.toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }), date: formattedDate, name: e.name,
       attendees: e.attendance_count, totalSpent: e.total_spent,
       closed: e.status === "completed", confirmed: e.going, unsure: e.maybe, noResponse,
     };

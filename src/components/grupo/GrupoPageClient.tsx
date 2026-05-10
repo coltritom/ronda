@@ -79,7 +79,7 @@ export function GrupoPageClient({
     copyTimeoutRef.current = setTimeout(() => setCopied(false), 2000);
   };
 
-  const TODAY = new Date().toISOString().slice(0, 10);
+  const TODAY = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
   const upcomingJuntadas = juntadas
     .filter((j) => j.isoDate >= TODAY)
     .sort((a, b) => a.isoDate.localeCompare(b.isoDate));

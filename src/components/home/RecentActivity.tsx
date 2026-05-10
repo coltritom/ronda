@@ -41,6 +41,7 @@ export function RecentActivity({ items: allItems }: { items: ActivityItem[] }) {
 
   const visible = showAll ? items : items.slice(0, INITIAL);
   const hasMore = !showAll && items.length > INITIAL;
+  const hasLess = showAll && items.length > INITIAL;
 
   return (
     <div className="px-4 md:px-6 mb-3">
@@ -83,13 +84,13 @@ export function RecentActivity({ items: allItems }: { items: ActivityItem[] }) {
           );
         })}
 
-        {hasMore && (
+        {(hasMore || hasLess) && (
           <div className="border-t border-white/[0.04] dark:border-white/[0.04] border-black/[0.04]">
             <button
-              onClick={() => setShowAll(true)}
+              onClick={() => setShowAll((v) => !v)}
               className="w-full py-2.5 text-[13px] font-semibold text-fuego bg-transparent border-none cursor-pointer"
             >
-              Ver más ({items.length - INITIAL})
+              {hasMore ? `Ver más (${items.length - INITIAL})` : "Ver menos"}
             </button>
           </div>
         )}

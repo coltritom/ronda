@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Trash2, Pencil } from 'lucide-react'
+import { Trash2, Pencil, Plus } from 'lucide-react'
 import { deleteExpense, settleDebt } from '@/lib/actions/expenses'
 import { AddExpenseSheet } from './AddExpenseSheet'
 import { calcBalances, calcSettlement } from '@/lib/utils/debt'
@@ -94,25 +94,45 @@ export function ExpensesSection({
   const balances   = calcBalances(expenses, settlements, displayName)
   const settlement = calcSettlement(balances)
 
+  if (expenses.length === 0) {
+    return (
+      <>
+        <div className="text-center py-10">
+          <p className="text-sm text-niebla mb-1">Nadie agregó gastos todavía.</p>
+          <p className="text-xs text-niebla/60 mb-4">Registrá lo que cada uno gastó para dividir cuentas.</p>
+          <button
+            onClick={() => setSheetOpen(true)}
+            className="flex items-center gap-2 mx-auto rounded-full border border-dashed border-fuego/40 px-4 py-2 text-[13px] font-semibold text-fuego hover:bg-fuego/5 transition-colors"
+          >
+            <Plus size={14} />
+            Agregar gasto
+          </button>
+        </div>
+        <AddExpenseSheet
+          open={sheetOpen || editingExpense !== null}
+          onClose={() => { setSheetOpen(false); setEditingExpense(null) }}
+          onCreated={() => router.refresh()}
+          eventId={eventId}
+          currentUserId={currentUserId}
+          currentUserName={currentUserName}
+          attendees={allAttendees}
+          expenseId={editingExpense?.id}
+          initialAmount={editingExpense?.amount}
+          initialPaidBy={editingExpense?.paid_by}
+          initialSplitIds={editingExpense?.expense_splits.map((s) => s.user_id)}
+          initialDescription={editingExpense?.description ?? undefined}
+        />
+      </>
+    )
+  }
+
   return (
     <div className="flex flex-col gap-4">
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-wider text-niebla">Gastos</p>
-        <button
-          onClick={() => setSheetOpen(true)}
-          className="text-[13px] font-semibold text-fuego bg-transparent border-none cursor-pointer"
-        >
-          + Agregar
-        </button>
-      </div>
 
       {deleteError && <p className="text-xs text-error">{deleteError}</p>}
 
       {/* Lista de gastos */}
-      {expenses.length > 0 ? (
-        <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2">
           {expenses.map((exp) => {
             const payerLabel = exp.paid_by === currentUserId ? 'Yo' : (exp.profiles?.name ?? 'Alguien')
             const splitCount = exp.expense_splits.length
@@ -200,10 +220,15 @@ export function ExpensesSection({
               <p className="text-xs text-niebla">Todos están al día ✓</p>
             )}
           </div>
-        </div>
-      ) : (
-        <p className="text-sm text-niebla">Nadie agregó gastos todavía.</p>
-      )}
+      </div>
+
+      <button
+        onClick={() => setSheetOpen(true)}
+        className="flex items-center justify-center gap-2 w-full rounded-full border border-dashed border-fuego/40 px-4 py-2.5 text-[13px] font-semibold text-fuego hover:bg-fuego/5 transition-colors"
+      >
+        <Plus size={14} />
+        Agregar gasto
+      </button>
 
       <AddExpenseSheet
         open={sheetOpen || editingExpense !== null}

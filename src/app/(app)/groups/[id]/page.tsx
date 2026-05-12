@@ -61,10 +61,12 @@ export default async function GrupoPage({ params }: { params: Promise<{ id: stri
       weekday: "short", day: "numeric", month: "short",
       timeZone: "America/Argentina/Buenos_Aires",
     }).format(d);
+    const isoDate = d.toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' });
     return {
-      id: e.id, isoDate: d.toLocaleDateString('en-CA', { timeZone: 'America/Argentina/Buenos_Aires' }), date: formattedDate, name: e.name,
+      id: e.id, isoDate, date: formattedDate, name: e.name,
       attendees: e.attendance_count, totalSpent: e.total_spent,
-      closed: e.status === "completed", confirmed: e.going, unsure: e.maybe, noResponse,
+      closed: e.status === "completed" || (e.status === "upcoming" && isoDate < TODAY),
+      confirmed: e.going, unsure: e.maybe, noResponse,
     };
   });
 

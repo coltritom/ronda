@@ -63,14 +63,18 @@ export default async function EventDetailPage({ params }: PageProps) {
     .eq('event_id', eventId)
 
   let attendanceRaw: { user_id: string; attended: boolean }[] = []
-  let guestsRaw: { id: string; name: string }[] = []
+  const { data: guestData } = await supabase
+    .from('event_guests')
+    .select('id, name')
+    .eq('event_id', eventId)
+    .order('created_at', { ascending: true })
+  const guestsRaw: { id: string; name: string }[] = guestData ?? []
   if (isPast) {
-    const [{ data: attData }, { data: guestData }] = await Promise.all([
-      supabase.from('event_attendance').select('user_id, attended').eq('event_id', eventId),
-      supabase.from('event_guests').select('id, name').eq('event_id', eventId).order('created_at', { ascending: true }),
-    ])
+    const { data: attData } = await supabase
+      .from('event_attendance')
+      .select('user_id, attended')
+      .eq('event_id', eventId)
     attendanceRaw = (attData ?? []).map((a) => ({ user_id: a.user_id, attended: a.attended ?? true }))
-    guestsRaw = guestData ?? []
   }
 
   const { data: contributionsRaw } = await supabase

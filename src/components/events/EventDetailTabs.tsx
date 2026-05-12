@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { RsvpButtons }          from '@/components/events/RsvpButtons'
 import { AttendanceSection }    from '@/components/events/AttendanceSection'
+import { GuestSection }         from '@/components/events/GuestSection'
 import { ContributionsSection } from '@/components/events/ContributionsSection'
 import { ExpensesSection }      from '@/components/events/ExpensesSection'
 import { CuentasSection }       from '@/components/events/CuentasSection'
@@ -116,7 +117,12 @@ export function EventDetailTabs({
 
         {activeTab === 'asistencia' && (
           <div className="flex flex-col gap-4">
-            {!isPast && <RsvpButtons eventId={eventId} currentStatus={myRsvp} />}
+            {!isPast && (
+              <>
+                <RsvpButtons eventId={eventId} currentStatus={myRsvp} />
+                <GuestSection eventId={eventId} initialGuests={guests} />
+              </>
+            )}
             {isPast && (
               <AttendanceSection
                 eventId={eventId}

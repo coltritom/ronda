@@ -129,9 +129,9 @@ export function EventDetailTabs({
             )}
             <div className="flex flex-col gap-4">
               {[
-                { label: 'Van',     list: going,    color: 'text-menta' },
-                { label: 'Tal vez', list: maybe,    color: 'text-niebla' },
-                { label: 'No van',  list: notGoing, color: 'text-error' },
+                { label: isPast ? 'Fueron'          : 'Van',     list: going,    color: 'text-menta' },
+                { label: isPast ? 'No respondieron' : 'Tal vez', list: maybe,    color: 'text-niebla' },
+                { label: isPast ? 'No fueron'       : 'No van',  list: notGoing, color: 'text-error' },
               ]
                 .filter(({ list }) => list.length > 0)
                 .map(({ label, list, color }) => (

@@ -10,19 +10,21 @@ interface Attendee { user_id: string; name: string }
 interface Guest { id: string; name: string }
 
 interface Props {
-  eventId:       string
-  currentUserId: string
-  myAttendance:  boolean | null
-  attendees:     Attendee[]
-  guests:        Guest[]
+  eventId:              string
+  currentUserId:        string
+  myAttendance:         boolean | null
+  suggestedAttendance?: boolean | null
+  attendees:            Attendee[]
+  guests:               Guest[]
 }
 
-export function AttendanceSection({ eventId, currentUserId, myAttendance, attendees, guests: initialGuests }: Props) {
+export function AttendanceSection({ eventId, currentUserId, myAttendance, suggestedAttendance, attendees, guests: initialGuests }: Props) {
   const router = useRouter()
 
-  const [attended, setAttended] = useState<boolean | null>(myAttendance)
-  const [pending, setPending]   = useState(false)
-  const [error, setError]       = useState<string | null>(null)
+  const [attended, setAttended]     = useState<boolean | null>(myAttendance ?? suggestedAttendance ?? null)
+  const [isConfirmed, setConfirmed] = useState<boolean>(myAttendance !== null)
+  const [pending, setPending]       = useState(false)
+  const [error, setError]           = useState<string | null>(null)
 
   const [guests, setGuests]           = useState<Guest[]>(initialGuests)
   const [addingGuest, setAddingGuest] = useState(false)
@@ -32,7 +34,8 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
   const [removingId, setRemovingId]   = useState<string | null>(null)
 
   async function handleToggle(value: boolean) {
-    if (pending || value === attended) return
+    if (pending) return
+    if (isConfirmed && value === attended) return
     setError(null)
     const prev = attended
     setAttended(value)
@@ -44,6 +47,7 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
         setError(result.error)
         toast.error(result.error)
       } else {
+        setConfirmed(true)
         toast.success(value ? 'Asistencia registrada' : 'Marcado como no asististe')
         router.refresh()
       }
@@ -102,31 +106,42 @@ export function AttendanceSection({ eventId, currentUserId, myAttendance, attend
   return (
     <div className="flex flex-col gap-4">
 
-      <div className="flex items-center justify-between rounded-2xl bg-noche-media px-4 py-3.5">
-        <span className="text-sm text-humo">¿Fuiste a esta juntada?</span>
-        <div className="flex gap-2">
-          <button
-            onClick={() => handleToggle(true)}
-            disabled={pending}
-            className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
-              attended === true
-                ? 'bg-menta/[0.15] text-menta ring-1 ring-menta/30'
-                : 'bg-white/5 text-niebla'
-            }`}
-          >
-            Fui
-          </button>
-          <button
-            onClick={() => handleToggle(false)}
-            disabled={pending}
-            className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
-              attended === false
-                ? 'bg-error/[0.12] text-error ring-1 ring-error/20'
-                : 'bg-white/5 text-niebla'
-            }`}
-          >
-            No fui
-          </button>
+      <div className="rounded-2xl bg-noche-media px-4 py-3.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-sm text-humo">¿Fuiste a esta juntada?</span>
+            {!isConfirmed && attended !== null && (
+              <p className="text-[11px] text-niebla mt-0.5">Basado en tu RSVP · tocá para confirmar</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => handleToggle(true)}
+              disabled={pending}
+              className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
+                attended === true
+                  ? isConfirmed
+                    ? 'bg-menta/[0.15] text-menta ring-1 ring-menta/30'
+                    : 'ring-1 ring-menta/40 text-menta/70'
+                  : 'bg-white/5 text-niebla'
+              }`}
+            >
+              Fui
+            </button>
+            <button
+              onClick={() => handleToggle(false)}
+              disabled={pending}
+              className={`rounded-xl px-4 min-h-[44px] text-sm font-semibold transition-colors disabled:opacity-50 ${
+                attended === false
+                  ? isConfirmed
+                    ? 'bg-error/[0.12] text-error ring-1 ring-error/20'
+                    : 'ring-1 ring-error/30 text-error/70'
+                  : 'bg-white/5 text-niebla'
+              }`}
+            >
+              No fui
+            </button>
+          </div>
         </div>
       </div>
 

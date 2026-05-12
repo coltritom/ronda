@@ -149,6 +149,12 @@ export default async function EventDetailPage({ params }: PageProps) {
     myAttendance = myRecord !== undefined ? myRecord.attended : null
   }
 
+  const suggestedAttendance: boolean | null =
+    myAttendance !== null  ? null :
+    myRsvp === 'going'     ? true :
+    myRsvp === 'not_going' ? false :
+    null
+
   type ContributionEnriched = {
     id: string; category: AporteId; description: string | null
     quantity: number; user_id: string; profiles: { name: string }
@@ -262,6 +268,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           myRsvp={myRsvp}
           rsvps={rsvps}
           myAttendance={myAttendance}
+          suggestedAttendance={suggestedAttendance}
           attendees={attendanceList}
           guests={guestsRaw}
           goingAttendees={goingAttendees}

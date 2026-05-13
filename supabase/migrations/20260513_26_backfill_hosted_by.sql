@@ -4,7 +4,8 @@
 
 UPDATE events e
 SET hosted_by = p.id
-FROM profiles p
-JOIN group_members gm ON gm.user_id = p.id AND gm.group_id = e.group_id
-WHERE e.location = ('🏠 En lo de ' || p.name)
+FROM profiles p, group_members gm
+WHERE gm.user_id = p.id
+  AND gm.group_id = e.group_id
+  AND e.location = ('🏠 En lo de ' || p.name)
   AND e.hosted_by IS NULL;

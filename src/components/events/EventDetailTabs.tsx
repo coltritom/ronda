@@ -22,12 +22,14 @@ interface ContributionEnriched {
   category:    AporteId
   description: string | null
   quantity:    number
-  user_id:     string
+  user_id:     string | null
+  guest_name:  string | null
   profiles:    { name: string }
 }
 
 interface ExpenseSplitEnriched {
-  user_id:    string
+  user_id:    string | null
+  guest_name: string | null
   amount:     number
   is_settled: boolean
   profiles:   { name: string }

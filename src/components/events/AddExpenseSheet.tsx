@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { ChevronLeft } from 'lucide-react'
-import { createExpense, updateExpense } from '@/lib/actions/expenses'
+import { ChevronLeft, X, UserPlus } from 'lucide-react'
+import { createExpense, updateExpense, type SplitParticipant } from '@/lib/actions/expenses'
 import { toast } from 'sonner'
 
 interface Attendee { user_id: string; name: string }
@@ -20,6 +20,7 @@ interface Props {
   initialAmount?: number
   initialPaidBy?: string
   initialSplitIds?: string[]
+  initialGuestSplitNames?: string[]
   initialDescription?: string
 }
 
@@ -31,7 +32,10 @@ const COLORS = [
   { bg: 'bg-rosa/20',  text: 'text-rosa' },
 ]
 
-export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUserId, currentUserName, attendees, expenseId, initialAmount, initialPaidBy, initialSplitIds, initialDescription }: Props) {
+export function AddExpenseSheet({
+  open, onClose, onCreated, eventId, currentUserId, currentUserName, attendees,
+  expenseId, initialAmount, initialPaidBy, initialSplitIds, initialGuestSplitNames, initialDescription,
+}: Props) {
   const allAttendees = useMemo<Attendee[]>(
     () => attendees.some((a) => a.user_id === currentUserId)
       ? attendees
@@ -39,12 +43,13 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
     [attendees, currentUserId, currentUserName]
   )
 
-  const [amount, setAmount]           = useState('') // raw digits only
-  const [paidBy, setPaidBy]           = useState(currentUserId)
-  const [splitIds, setSplitIds]       = useState<string[]>(allAttendees.map((a) => a.user_id))
-  const [description, setDescription] = useState('')
-  const [loading, setLoading]         = useState(false)
-  const [error, setError]             = useState<string | null>(null)
+  const [amount, setAmount]               = useState('')
+  const [paidBy, setPaidBy]               = useState(currentUserId)
+  const [splitIds, setSplitIds]           = useState<string[]>(allAttendees.map((a) => a.user_id))
+  const [guestSplitNames, setGuestSplitNames] = useState<string[]>([])
+  const [description, setDescription]     = useState('')
+  const [loading, setLoading]             = useState(false)
+  const [error, setError]                 = useState<string | null>(null)
 
   const prevOpenRef = useRef(false)
   useEffect(() => {
@@ -52,11 +57,12 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
       setAmount(initialAmount ? String(Math.round(initialAmount)) : '')
       setPaidBy(initialPaidBy ?? currentUserId)
       setSplitIds(initialSplitIds ?? allAttendees.map((a) => a.user_id))
+      setGuestSplitNames(initialGuestSplitNames ?? [])
       setDescription(initialDescription ?? '')
       setError(null)
     }
     prevOpenRef.current = open
-  }, [open, currentUserId, allAttendees, initialAmount, initialPaidBy, initialSplitIds, initialDescription])
+  }, [open, currentUserId, allAttendees, initialAmount, initialPaidBy, initialSplitIds, initialGuestSplitNames, initialDescription])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
@@ -69,34 +75,49 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
     )
   }
 
-  const allSelected = splitIds.length === allAttendees.length
+  const allMembersSelected = splitIds.length === allAttendees.length
 
   function toggleAll() {
-    setSplitIds(allSelected ? [] : allAttendees.map((a) => a.user_id))
+    setSplitIds(allMembersSelected ? [] : allAttendees.map((a) => a.user_id))
   }
 
-  const amtNum    = parseInt(amount, 10) || 0
-  const perPerson = splitIds.length > 0 ? amtNum / splitIds.length : 0
+  function addGuestToSplit(name: string) {
+    setGuestSplitNames((prev) => [...prev, name])
+  }
+
+  function removeGuestFromSplit(idx: number) {
+    setGuestSplitNames((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  const amtNum           = parseInt(amount, 10) || 0
+  const totalParticipants = splitIds.length + guestSplitNames.length
+  const perPerson        = totalParticipants > 0 ? amtNum / totalParticipants : 0
 
   function handleAmountChange(e: React.ChangeEvent<HTMLInputElement>) {
     const digits = e.target.value.replace(/\D/g, '')
     setAmount(digits)
   }
 
-  const displayAmount = amount ? parseInt(amount, 10).toLocaleString('es-AR') : ''
+  const displayAmount  = amount ? parseInt(amount, 10).toLocaleString('es-AR') : ''
   const amountFontSize = displayAmount.length > 9 ? 30 : displayAmount.length > 6 ? 40 : 52
   const signFontSize   = Math.round(amountFontSize * 0.6)
 
   async function handleSubmit() {
     const amt = parseInt(amount, 10)
     if (!amt || amt <= 0) return
-    const ids       = splitIds.length > 0 ? splitIds : [paidBy]
-    const splitType = ids.length === allAttendees.length ? 'equal_all' : 'equal_some'
+
+    const participants: SplitParticipant[] = [
+      ...splitIds.map((uid) => ({ userId: uid })),
+      ...guestSplitNames.map((name) => ({ guestName: name })),
+    ]
+    if (participants.length === 0) return
+
+    const splitType = (allMembersSelected && guestSplitNames.length === 0) ? 'equal_all' : 'equal_some'
     setLoading(true)
     setError(null)
     const result = expenseId
-      ? await updateExpense(expenseId, description.trim() || null, amt, paidBy, splitType, ids)
-      : await createExpense(eventId, description.trim() || null, amt, paidBy, splitType, ids)
+      ? await updateExpense(expenseId, description.trim() || null, amt, paidBy, splitType, participants)
+      : await createExpense(eventId, description.trim() || null, amt, paidBy, splitType, participants)
     setLoading(false)
     if (!result) {
       toast.success(expenseId ? 'Gasto actualizado' : 'Gasto agregado')
@@ -168,7 +189,10 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
             splitIds={splitIds}
             onToggle={toggleMember}
             onToggleAll={toggleAll}
-            allSelected={allSelected}
+            allMembersSelected={allMembersSelected}
+            guestSplitNames={guestSplitNames}
+            onAddGuest={addGuestToSplit}
+            onRemoveGuest={removeGuestFromSplit}
           />
 
           {/* Partes iguales */}
@@ -200,7 +224,7 @@ export function AddExpenseSheet({ open, onClose, onCreated, eventId, currentUser
         >
           <button
             onClick={handleSubmit}
-            disabled={loading || !amount || parseInt(amount, 10) <= 0 || splitIds.length === 0}
+            disabled={loading || !amount || parseInt(amount, 10) <= 0 || totalParticipants === 0}
             className="w-full rounded-2xl bg-fuego py-4 text-base font-bold text-white transition-colors hover:bg-fuego/90 disabled:opacity-50"
           >
             {loading ? 'Guardando…' : expenseId ? 'Guardar cambios' : 'Agregar gasto'}
@@ -247,14 +271,28 @@ function PayerSelector({ allAttendees, currentUserId, paidBy, onSelect }: {
   )
 }
 
-function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onToggleAll, allSelected }: {
+function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onToggleAll, allMembersSelected, guestSplitNames, onAddGuest, onRemoveGuest }: {
   allAttendees: Attendee[]
   currentUserId: string
   splitIds: string[]
   onToggle: (uid: string) => void
   onToggleAll: () => void
-  allSelected: boolean
+  allMembersSelected: boolean
+  guestSplitNames: string[]
+  onAddGuest: (name: string) => void
+  onRemoveGuest: (idx: number) => void
 }) {
+  const [addingGuest, setAddingGuest] = useState(false)
+  const [guestInput, setGuestInput]   = useState('')
+
+  function commitGuest() {
+    const name = guestInput.trim()
+    if (!name) return
+    onAddGuest(name)
+    setGuestInput('')
+    setAddingGuest(false)
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -264,7 +302,7 @@ function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onTogg
           onClick={onToggleAll}
           className="text-xs font-semibold text-fuego bg-transparent border-none cursor-pointer p-0"
         >
-          {allSelected ? 'Todos ✓' : 'Todos'}
+          {allMembersSelected ? 'Todos ✓' : 'Todos'}
         </button>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -290,8 +328,62 @@ function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onTogg
             </button>
           )
         })}
+        {guestSplitNames.map((name, i) => (
+          <button
+            key={`guest-${i}`}
+            type="button"
+            onClick={() => onRemoveGuest(i)}
+            className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold bg-uva/20 text-uva"
+          >
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
+              {name.charAt(0).toUpperCase()}
+            </span>
+            {name.split(' ')[0]}
+            <X size={12} className="ml-0.5 opacity-60" />
+          </button>
+        ))}
       </div>
-      {splitIds.length === 0 && (
+      {addingGuest ? (
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Nombre del invitado"
+            value={guestInput}
+            onChange={(e) => setGuestInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitGuest()
+              if (e.key === 'Escape') { setAddingGuest(false); setGuestInput('') }
+            }}
+            autoFocus
+            className="flex-1 rounded-xl bg-noche px-3 py-2 text-sm text-humo placeholder:text-niebla border border-white/[0.08] focus:outline-none focus:border-fuego/40"
+          />
+          <button
+            type="button"
+            onClick={commitGuest}
+            disabled={!guestInput.trim()}
+            className="rounded-xl bg-uva/20 text-uva px-3 py-2 text-xs font-semibold disabled:opacity-40"
+          >
+            Agregar
+          </button>
+          <button
+            type="button"
+            onClick={() => { setAddingGuest(false); setGuestInput('') }}
+            className="rounded-xl bg-white/5 text-niebla px-3 py-2 text-xs font-semibold"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setAddingGuest(true)}
+          className="flex items-center gap-1.5 text-xs font-semibold text-niebla bg-transparent border-none cursor-pointer p-0 self-start"
+        >
+          <UserPlus size={13} />
+          Sin cuenta
+        </button>
+      )}
+      {(splitIds.length + guestSplitNames.length) === 0 && (
         <p className="text-xs text-alerta">Seleccioná al menos una persona para dividir el gasto.</p>
       )}
     </div>

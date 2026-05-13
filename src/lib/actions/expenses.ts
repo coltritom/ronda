@@ -4,22 +4,23 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { assertGroupMember } from '@/lib/supabase/auth-utils'
 
+export type SplitParticipant = { userId?: string; guestName?: string }
+
 export async function createExpense(
   eventId: string,
   description: string | null,
   amount: number,
   paidBy: string,
   splitType: 'equal_all' | 'equal_some',
-  splitUserIds: string[]
+  participants: SplitParticipant[]
 ): Promise<{ error: string } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) return { error: 'No autenticado.' }
-
   if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
   if (amount > 100_000_000) return { error: 'El monto no puede superar $100.000.000.' }
-  if (splitUserIds.length === 0) return { error: 'Debe haber al menos un participante.' }
+  if (participants.length === 0) return { error: 'Debe haber al menos un participante.' }
 
   const { data: ev } = await supabase.from('events').select('group_id').eq('id', eventId).single()
   if (!ev) return { error: 'Evento no encontrado.' }
@@ -27,23 +28,40 @@ export async function createExpense(
   const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
   if (memberError) return memberError
 
-  const { data: expenseId, error } = await supabase
-    .rpc('create_expense_with_splits', {
-      p_event_id:       eventId,
-      p_description:    description,
-      p_amount:         amount,
-      p_paid_by:        paidBy,
-      p_split_type:     splitType,
-      p_split_user_ids: splitUserIds,
-    })
+  const { createAdminClient } = await import('@/lib/supabase/server')
+  const admin = createAdminClient()
 
-  if (error || !expenseId) {
-    console.error('Error creating expense:', error?.message)
+  const { data: expense, error: expErr } = await admin
+    .from('expenses')
+    .insert({ event_id: eventId, description, amount, paid_by: paidBy, split_type: splitType })
+    .select('id')
+    .single()
+
+  if (expErr || !expense) {
+    console.error('Error creating expense:', expErr?.message)
+    return { error: 'No se pudo agregar el gasto.' }
+  }
+
+  const n = participants.length
+  const perPerson = Math.round((amount / n) * 100) / 100
+  const splits = participants.map((p, i) => ({
+    expense_id: expense.id,
+    user_id:    p.userId   ?? null,
+    guest_name: p.guestName ?? null,
+    amount: i === n - 1
+      ? Math.round((amount - perPerson * (n - 1)) * 100) / 100
+      : perPerson,
+    is_settled: false,
+  }))
+
+  const { error: splitsErr } = await admin.from('expense_splits').insert(splits)
+  if (splitsErr) {
+    console.error('Error creating splits:', splitsErr.message)
+    await admin.from('expenses').delete().eq('id', expense.id)
     return { error: 'No se pudo agregar el gasto.' }
   }
 
   revalidatePath(`/groups/${ev.group_id}/events/${eventId}`)
-
   return null
 }
 
@@ -83,7 +101,7 @@ export async function updateExpense(
   amount: number,
   paidBy: string,
   splitType: 'equal_all' | 'equal_some',
-  splitUserIds: string[]
+  participants: SplitParticipant[]
 ): Promise<{ error: string } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -91,7 +109,7 @@ export async function updateExpense(
   if (!user) return { error: 'No autenticado.' }
   if (amount <= 0) return { error: 'El monto debe ser mayor a cero.' }
   if (amount > 100_000_000) return { error: 'El monto no puede superar $100.000.000.' }
-  if (splitUserIds.length === 0) return { error: 'Debe haber al menos un participante.' }
+  if (participants.length === 0) return { error: 'Debe haber al menos un participante.' }
 
   const { data: expenseData } = await supabase
     .from('expenses')
@@ -112,11 +130,12 @@ export async function updateExpense(
 
   if (expenseData.paid_by !== user.id) return { error: 'Solo quien pagó puede editar este gasto.' }
 
-  const n = splitUserIds.length
+  const n = participants.length
   const perPerson = Math.round((amount / n) * 100) / 100
-  const newSplits = splitUserIds.map((uid, i) => ({
+  const newSplits = participants.map((p, i) => ({
     expense_id: expenseId,
-    user_id: uid,
+    user_id:    p.userId   ?? null,
+    guest_name: p.guestName ?? null,
     amount: i === n - 1
       ? Math.round((amount - perPerson * (n - 1)) * 100) / 100
       : perPerson,

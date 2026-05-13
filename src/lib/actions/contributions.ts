@@ -10,6 +10,7 @@ export async function createContribution(
   category: AporteId,
   description: string | null,
   quantity: number,
+  guestName?: string,
 ): Promise<{ error: string } | null> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -22,9 +23,13 @@ export async function createContribution(
   const memberError = await assertGroupMember(supabase, ev.group_id, user.id)
   if (memberError) return memberError
 
+  const row = guestName
+    ? { event_id: eventId, user_id: null,    guest_name: guestName, category, description, quantity }
+    : { event_id: eventId, user_id: user.id, guest_name: null,      category, description, quantity }
+
   const { error } = await supabase
     .from('contributions')
-    .insert({ event_id: eventId, user_id: user.id, category, description, quantity })
+    .insert(row)
 
   if (error) {
     console.error('Error creating contribution:', error.message)

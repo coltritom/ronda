@@ -13,7 +13,8 @@ interface ExpenseForBalance {
   amount: number
   profiles: { name: string } | null
   expense_splits: Array<{
-    user_id: string
+    user_id: string | null
+    guest_name?: string | null
     amount: number
     profiles: { name: string } | null
   }>
@@ -37,12 +38,14 @@ export function calcBalances(
   }
 
   for (const exp of expenses) {
-    ensure(exp.paid_by, exp.profiles?.name ?? 'Alguien')
-    map[exp.paid_by].net += exp.amount
+    let guestTotal = 0
     for (const s of exp.expense_splits) {
-      ensure(s.user_id, s.profiles?.name ?? 'Alguien')
+      if (!s.user_id) { guestTotal += s.amount; continue }
+      ensure(s.user_id, s.profiles?.name ?? s.guest_name ?? 'Alguien')
       map[s.user_id].net -= s.amount
     }
+    ensure(exp.paid_by, exp.profiles?.name ?? 'Alguien')
+    map[exp.paid_by].net += (exp.amount - guestTotal)
   }
   for (const s of settlements) {
     ensure(s.from_user, 'Alguien')

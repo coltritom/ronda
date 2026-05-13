@@ -12,7 +12,8 @@ interface Contribution {
   category: AporteId
   description: string | null
   quantity: number
-  user_id: string
+  user_id: string | null
+  guest_name: string | null
   profiles: { name: string } | null
 }
 
@@ -25,18 +26,22 @@ interface ContributionsSectionProps {
 
 function groupByMember(contributions: Contribution[]) {
   const order: string[] = []
-  const map: Record<string, { name: string; items: Contribution[]; score: number }> = {}
+  const map: Record<string, { name: string; items: Contribution[]; score: number; isGuest: boolean }> = {}
   for (const c of contributions) {
-    if (!map[c.user_id]) {
-      order.push(c.user_id)
-      map[c.user_id] = { name: c.profiles?.name ?? 'Alguien', items: [], score: 0 }
+    const key = c.user_id ?? `__guest__${c.guest_name}`
+    if (!map[key]) {
+      order.push(key)
+      map[key] = {
+        name: c.user_id ? (c.profiles?.name ?? 'Alguien') : (c.guest_name ?? 'Invitado'),
+        items: [], score: 0, isGuest: !c.user_id,
+      }
     }
     const cat = APORTE_CATEGORIES.find((a) => a.id === c.category)
-    map[c.user_id].items.push(c)
-    map[c.user_id].score += (cat?.weight ?? 1) * (c.quantity ?? 1)
+    map[key].items.push(c)
+    map[key].score += (cat?.weight ?? 1) * (c.quantity ?? 1)
   }
   return order
-    .map((uid, i) => ({ userId: uid, colorIndex: i, ...map[uid] }))
+    .map((key, i) => ({ userId: key, colorIndex: i, ...map[key] }))
     .sort((a, b) => b.score - a.score)
 }
 
@@ -52,6 +57,8 @@ export function ContributionsSection({
   const [catOpen, setCatOpen] = useState(false)
   const [category, setCategory] = useState<AporteId>(APORTE_CATEGORIES[0].id)
   const [description, setDescription] = useState('')
+  const [forGuest, setForGuest] = useState(false)
+  const [guestInput, setGuestInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
 
@@ -67,13 +74,17 @@ export function ContributionsSection({
     setEditingContribution(null)
     setDescription('')
     setCategory(APORTE_CATEGORIES[0].id)
+    setForGuest(false)
+    setGuestInput('')
   }
 
   async function handleAdd() {
+    if (forGuest && !guestInput.trim()) return
     setLoading(true)
+    const guest = forGuest ? guestInput.trim() : undefined
     const error = editingContribution
       ? await updateContribution(editingContribution.id, category, description.trim() || null, editingContribution.quantity)
-      : await createContribution(eventId, category, description.trim() || null, 1)
+      : await createContribution(eventId, category, description.trim() || null, 1, guest)
     setLoading(false)
     if (!error) {
       toast.success(editingContribution ? 'Aporte actualizado' : 'Aporte agregado')
@@ -146,14 +157,16 @@ export function ContributionsSection({
                     <span className="text-[10px] text-niebla/50 ml-auto">
                       +{(cat?.weight ?? 1) * (item.quantity ?? 1)}
                     </span>
-                    {item.user_id === currentUserId && (
+                    {(item.user_id === currentUserId || !item.user_id) && (
                       <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => openEdit(item)}
-                          className="text-niebla hover:text-humo transition-colors"
-                        >
-                          <Pencil size={13} />
-                        </button>
+                        {item.user_id === currentUserId && (
+                          <button
+                            onClick={() => openEdit(item)}
+                            className="text-niebla hover:text-humo transition-colors"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                        )}
                         <button
                           onClick={() => handleDelete(item.id)}
                           disabled={deleting === item.id}
@@ -240,6 +253,43 @@ export function ContributionsSection({
                 </div>
               )}
             </div>
+
+            {/* ¿Para quién? */}
+            {!editingContribution && (
+              <div>
+                <p className="text-xs text-niebla mb-1.5">¿Para quién?</p>
+                <div className="flex gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setForGuest(false)}
+                    className={`flex-1 rounded-[10px] py-2 text-sm font-semibold transition-colors border ${
+                      !forGuest ? 'bg-fuego/10 text-fuego border-fuego/30' : 'bg-transparent text-niebla border-white/[0.08]'
+                    }`}
+                  >
+                    Yo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForGuest(true)}
+                    className={`flex-1 rounded-[10px] py-2 text-sm font-semibold transition-colors border ${
+                      forGuest ? 'bg-uva/10 text-uva border-uva/30' : 'bg-transparent text-niebla border-white/[0.08]'
+                    }`}
+                  >
+                    Invitado
+                  </button>
+                </div>
+                {forGuest && (
+                  <input
+                    type="text"
+                    value={guestInput}
+                    onChange={(e) => setGuestInput(e.target.value)}
+                    placeholder="Nombre del invitado"
+                    autoFocus
+                    className="w-full px-3.5 py-2.5 rounded-[10px] border-[1.5px] border-uva/30 bg-noche text-sm text-humo placeholder:text-niebla/50 outline-none focus:border-uva/50 transition-colors"
+                  />
+                )}
+              </div>
+            )}
 
             {/* Detalle */}
             <input

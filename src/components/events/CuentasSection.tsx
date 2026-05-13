@@ -9,7 +9,7 @@ import { calcBalances, calcSettlement } from '@/lib/utils/debt'
 
 interface Attendee   { user_id: string; name: string }
 interface Settlement { from_user: string; to_user: string; amount: number }
-interface Split      { user_id: string; amount: number; is_settled: boolean; profiles: { name: string } | null }
+interface Split      { user_id: string | null; guest_name?: string | null; amount: number; is_settled: boolean; profiles: { name: string } | null }
 interface Expense {
   id: string
   amount: number

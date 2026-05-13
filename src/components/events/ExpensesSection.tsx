@@ -19,7 +19,8 @@ interface Settlement {
 }
 
 interface Split {
-  user_id: string
+  user_id: string | null
+  guest_name?: string | null
   amount: number
   is_settled: boolean
   profiles: { name: string } | null
@@ -119,7 +120,8 @@ export function ExpensesSection({
           expenseId={editingExpense?.id}
           initialAmount={editingExpense?.amount}
           initialPaidBy={editingExpense?.paid_by}
-          initialSplitIds={editingExpense?.expense_splits.map((s) => s.user_id)}
+          initialSplitIds={editingExpense?.expense_splits.filter(s => s.user_id).map((s) => s.user_id!)}
+          initialGuestSplitNames={editingExpense?.expense_splits.filter(s => !s.user_id && s.guest_name).map((s) => s.guest_name!)}
           initialDescription={editingExpense?.description ?? undefined}
         />
       </>

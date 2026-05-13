@@ -79,11 +79,11 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   const { data: contributionsRaw } = await supabase
     .from('contributions')
-    .select('id, category, description, quantity, user_id')
+    .select('id, category, description, quantity, user_id, guest_name')
     .eq('event_id', eventId)
     .order('created_at', { ascending: true })
 
-  type ExpenseSplitRow = { user_id: string; amount: number; is_settled: boolean }
+  type ExpenseSplitRow = { user_id: string | null; guest_name: string | null; amount: number; is_settled: boolean }
   type ExpenseQueryRow = {
     id: string; description: string | null; amount: number
     paid_by: string; split_type: string | null
@@ -93,7 +93,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     .from('expenses')
     .select(`
       id, description, amount, paid_by, split_type,
-      expense_splits ( user_id, amount, is_settled )
+      expense_splits ( user_id, guest_name, amount, is_settled )
     `)
     .eq('event_id', eventId)
     .order('created_at', { ascending: true })
@@ -114,9 +114,9 @@ export default async function EventDetailPage({ params }: PageProps) {
   const allUserIds = new Set<string>([
     ...(rsvpsRaw ?? []).map(r => r.user_id),
     ...attendanceRaw.map(a => a.user_id),
-    ...(contributionsRaw ?? []).map(c => c.user_id),
+    ...(contributionsRaw ?? []).filter(c => c.user_id).map(c => c.user_id!),
     ...expensesTyped.map(e => e.paid_by),
-    ...expensesTyped.flatMap(e => e.expense_splits.map(s => s.user_id)),
+    ...expensesTyped.flatMap(e => e.expense_splits.filter(s => s.user_id).map(s => s.user_id!)),
   ])
   const { data: profilesData } = allUserIds.size > 0
     ? await supabase.from('profiles').select('id, name').in('id', [...allUserIds])
@@ -161,7 +161,7 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   type ContributionEnriched = {
     id: string; category: AporteId; description: string | null
-    quantity: number; user_id: string; profiles: { name: string }
+    quantity: number; user_id: string | null; guest_name: string | null; profiles: { name: string }
   }
   const contributions: ContributionEnriched[] = (contributionsRaw ?? []).map(c => ({
     id: c.id,
@@ -169,21 +169,22 @@ export default async function EventDetailPage({ params }: PageProps) {
     description: c.description,
     quantity: c.quantity,
     user_id: c.user_id,
-    profiles: { name: profileMap[c.user_id] ?? 'Usuario' },
+    guest_name: c.guest_name ?? null,
+    profiles: { name: c.user_id ? (profileMap[c.user_id] ?? 'Usuario') : (c.guest_name ?? 'Invitado') },
   }))
 
   type ExpenseEnriched = {
     id: string; description: string | null; amount: number
     paid_by: string; split_type: string | null
     profiles: { name: string }
-    expense_splits: { user_id: string; amount: number; is_settled: boolean; profiles: { name: string } }[]
+    expense_splits: { user_id: string | null; guest_name: string | null; amount: number; is_settled: boolean; profiles: { name: string } }[]
   }
   const expenses: ExpenseEnriched[] = expensesTyped.map(e => ({
     ...e,
     profiles: { name: profileMap[e.paid_by] ?? 'Usuario' },
     expense_splits: e.expense_splits.map(s => ({
       ...s,
-      profiles: { name: profileMap[s.user_id] ?? 'Usuario' },
+      profiles: { name: s.user_id ? (profileMap[s.user_id] ?? 'Usuario') : (s.guest_name ?? 'Invitado') },
     })),
   }))
 

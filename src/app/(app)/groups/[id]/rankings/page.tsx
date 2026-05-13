@@ -127,7 +127,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const asistenciasRanked = [...members]
       .map((m) => ({ ...m, count: attendanceCounts[m.userId] ?? 0 }))
-      .sort((a, b) => b.count - a.count)
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .map((m) => ({
         name: m.name,
         colorIndex: m.colorIndex,
@@ -136,7 +136,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const aportesRanked = [...members]
       .map((m) => ({ ...m, pts: contributionScores[m.userId] ?? 0 }))
-      .sort((a, b) => b.pts - a.pts)
+      .sort((a, b) => b.pts - a.pts || a.name.localeCompare(b.name))
       .map((m) => ({
         name: m.name,
         colorIndex: m.colorIndex,
@@ -145,11 +145,11 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const anfitrionRanked = [...members]
       .map((m) => ({ ...m, count: hostCounts[m.userId] ?? 0 }))
-      .sort((a, b) => b.count - a.count)
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .map((m) => ({
         name: m.name,
         colorIndex: m.colorIndex,
-        score: `${m.count} vez${m.count !== 1 ? "es" : ""}`,
+        score: `${m.count} ${m.count !== 1 ? "veces" : "vez"}`,
       }));
 
     setAsistencias(asistenciasRanked);

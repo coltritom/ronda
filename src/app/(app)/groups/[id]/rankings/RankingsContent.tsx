@@ -104,20 +104,28 @@ export default function RankingsContent({ groupName, rankings, destacados, datos
 
       {/* Podio */}
       {podium.length > 0 ? (
-        <div className="flex items-end justify-center gap-3 px-6 pt-2 pb-6">
-          {podium.map((p) => {
-            const isFirst = p.position === 1;
+        <div className="flex items-end justify-center gap-2 px-6 pt-2 pb-0">
+          {[podium[1], podium[0], podium[2]].filter(Boolean).map((p) => {
+            const isFirst  = p.position === 1;
+            const isSecond = p.position === 2;
+            const isThird  = p.position === 3;
+
+            const stepH    = isFirst ? "h-24" : isSecond ? "h-14" : "h-10";
+            const stepBg   = isFirst
+              ? "bg-ambar/[0.15] border border-ambar/30 text-ambar"
+              : "bg-noche-media border border-white/[0.06] text-niebla";
+            const nameColor  = isFirst ? "text-ambar" : "text-humo";
+            const scoreColor = isFirst ? "text-ambar font-semibold" : "text-niebla";
+
             return (
-              <div key={p.position} className="text-center flex-1 flex flex-col items-center">
-                {isFirst && <span className="text-sm mb-0.5">👑</span>}
+              <div key={p.position} className="flex-1 flex flex-col items-center">
+                {isFirst && <span className="text-base mb-1">👑</span>}
                 <Avatar name={p.name} colorIndex={p.colorIndex} size={isFirst ? "lg" : "md"} />
-                <p className={`font-semibold text-sm mt-1.5 ${isFirst ? "text-ambar" : "text-humo"}`}>{p.name}</p>
-                <p className={`text-xs mt-0.5 ${isFirst ? "text-ambar font-semibold" : "text-niebla"}`}>{p.score}</p>
+                <p className={`font-semibold text-sm mt-1.5 text-center leading-tight ${nameColor}`}>{p.name}</p>
+                <p className={`text-xs mt-0.5 ${scoreColor}`}>{p.score}</p>
                 <div className={`
-                  w-full mt-2 rounded-t-lg font-display font-bold
-                  ${isFirst ? "bg-ambar/[0.15] border border-ambar/30 py-6 text-2xl text-ambar" : "bg-noche-media text-niebla"}
-                  ${p.position === 2 ? "py-4 text-xl" : ""}
-                  ${p.position === 3 ? "py-3 text-xl" : ""}
+                  w-full mt-2 rounded-t-xl flex items-center justify-center
+                  font-display font-bold text-lg ${stepH} ${stepBg}
                 `}>
                   {p.position}°
                 </div>

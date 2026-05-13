@@ -184,6 +184,7 @@ export function EventDetailTabs({
             currentUserId={currentUserId}
             contributions={contributions}
             canAdd={canAdd}
+            guests={guests}
           />
         )}
 
@@ -196,6 +197,7 @@ export function EventDetailTabs({
             expenses={expenses}
             attendees={goingAttendees}
             settlements={settlements}
+            guests={guests}
           />
         )}
 

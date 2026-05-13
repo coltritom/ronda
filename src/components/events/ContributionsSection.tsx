@@ -22,6 +22,7 @@ interface ContributionsSectionProps {
   currentUserId: string
   contributions: Contribution[]
   canAdd: boolean
+  guests: { id: string; name: string }[]
 }
 
 function groupByMember(contributions: Contribution[]) {
@@ -50,6 +51,7 @@ export function ContributionsSection({
   currentUserId,
   contributions,
   canAdd,
+  guests,
 }: ContributionsSectionProps) {
   const router = useRouter()
   const [adding, setAdding] = useState(false)
@@ -278,13 +280,34 @@ export function ContributionsSection({
                     Invitado
                   </button>
                 </div>
+                {forGuest && guests.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {guests.map((g) => (
+                      <button
+                        key={g.id}
+                        type="button"
+                        onClick={() => setGuestInput(guestInput === g.name ? '' : g.name)}
+                        className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+                          guestInput === g.name
+                            ? 'bg-uva/20 text-uva ring-1 ring-uva/40'
+                            : 'bg-white/5 text-niebla'
+                        }`}
+                      >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-uva/20 text-[10px] font-bold text-uva">
+                          {g.name.charAt(0).toUpperCase()}
+                        </span>
+                        {g.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 {forGuest && (
                   <input
                     type="text"
                     value={guestInput}
                     onChange={(e) => setGuestInput(e.target.value)}
-                    placeholder="Nombre del invitado"
-                    autoFocus
+                    placeholder={guests.length > 0 ? 'O escribí otro nombre' : 'Nombre del invitado'}
+                    autoFocus={guests.length === 0}
                     className="w-full px-3.5 py-2.5 rounded-[10px] border-[1.5px] border-uva/30 bg-noche text-sm text-humo placeholder:text-niebla/50 outline-none focus:border-uva/50 transition-colors"
                   />
                 )}

@@ -7,6 +7,8 @@ import { toast } from 'sonner'
 
 interface Attendee { user_id: string; name: string }
 
+interface Guest { id: string; name: string }
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -15,6 +17,7 @@ interface Props {
   currentUserId: string
   currentUserName: string
   attendees: Attendee[]
+  guests: Guest[]
   // Edit mode
   expenseId?: string
   initialAmount?: number
@@ -34,7 +37,7 @@ const COLORS = [
 ]
 
 export function AddExpenseSheet({
-  open, onClose, onCreated, eventId, currentUserId, currentUserName, attendees,
+  open, onClose, onCreated, eventId, currentUserId, currentUserName, attendees, guests,
   expenseId, initialAmount, initialPaidBy, initialPaidByGuest, initialSplitIds, initialGuestSplitNames, initialDescription,
 }: Props) {
   const allAttendees = useMemo<Attendee[]>(
@@ -188,6 +191,7 @@ export function AddExpenseSheet({
 
           <PayerSelector
             allAttendees={allAttendees}
+            guests={guests}
             currentUserId={currentUserId}
             paidBy={paidBy}
             paidByGuest={paidByGuest}
@@ -197,6 +201,7 @@ export function AddExpenseSheet({
 
           <SplitSelector
             allAttendees={allAttendees}
+            guests={guests}
             currentUserId={currentUserId}
             splitIds={splitIds}
             onToggle={toggleMember}
@@ -248,8 +253,9 @@ export function AddExpenseSheet({
   )
 }
 
-function PayerSelector({ allAttendees, currentUserId, paidBy, paidByGuest, onSelectMember, onSelectGuest }: {
+function PayerSelector({ allAttendees, guests, currentUserId, paidBy, paidByGuest, onSelectMember, onSelectGuest }: {
   allAttendees: Attendee[]
+  guests: Guest[]
   currentUserId: string
   paidBy: string
   paidByGuest: string | null
@@ -258,6 +264,9 @@ function PayerSelector({ allAttendees, currentUserId, paidBy, paidByGuest, onSel
 }) {
   const [showGuestInput, setShowGuestInput] = useState(false)
   const [guestInput, setGuestInput]         = useState('')
+
+  const registeredGuestNames = new Set(guests.map((g) => g.name))
+  const hasCustomPayer = paidByGuest !== null && !registeredGuestNames.has(paidByGuest)
 
   function commitGuest() {
     const name = guestInput.trim()
@@ -291,28 +300,50 @@ function PayerSelector({ allAttendees, currentUserId, paidBy, paidByGuest, onSel
             </button>
           )
         })}
-        {paidByGuest ? (
+        {guests.map((g) => {
+          const sel = paidByGuest === g.name
+          return (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => onSelectGuest(sel ? null : g.name)}
+              className="flex flex-col items-center gap-1.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
+            >
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-base transition-all bg-uva/20 text-uva ${sel ? 'ring-2 ring-fuego ring-offset-2 ring-offset-noche-media' : ''}`}>
+                {g.name.charAt(0).toUpperCase()}
+              </div>
+              <span className={`text-xs font-semibold ${sel ? 'text-fuego' : 'text-niebla'}`}>
+                {g.name.split(' ')[0]}
+              </span>
+            </button>
+          )
+        })}
+        {hasCustomPayer ? (
           <button
             type="button"
             onClick={() => onSelectGuest(null)}
             className="flex flex-col items-center gap-1.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
           >
             <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base bg-uva/20 text-uva ring-2 ring-fuego ring-offset-2 ring-offset-noche-media">
-              {paidByGuest.charAt(0).toUpperCase()}
+              {paidByGuest!.charAt(0).toUpperCase()}
             </div>
-            <span className="text-xs font-semibold text-fuego">{paidByGuest.split(' ')[0]}</span>
+            <span className="text-xs font-semibold text-fuego">{paidByGuest!.split(' ')[0]}</span>
           </button>
         ) : (
-          <button
-            type="button"
-            onClick={() => setShowGuestInput(true)}
-            className="flex flex-col items-center gap-1.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
-          >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base bg-white/5 text-niebla">
-              <UserPlus size={16} />
-            </div>
-            <span className="text-xs font-semibold text-niebla">Invitado</span>
-          </button>
+          !paidByGuest && (
+            <button
+              type="button"
+              onClick={() => setShowGuestInput(true)}
+              className="flex flex-col items-center gap-1.5 shrink-0 bg-transparent border-none cursor-pointer p-0"
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-base bg-white/5 text-niebla">
+                <UserPlus size={16} />
+              </div>
+              <span className="text-xs font-semibold text-niebla">
+                {guests.length > 0 ? 'Otro' : 'Invitado'}
+              </span>
+            </button>
+          )
         )}
       </div>
       {showGuestInput && (
@@ -350,8 +381,9 @@ function PayerSelector({ allAttendees, currentUserId, paidBy, paidByGuest, onSel
   )
 }
 
-function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onToggleAll, allMembersSelected, guestSplitNames, onAddGuest, onRemoveGuest }: {
+function SplitSelector({ allAttendees, guests, currentUserId, splitIds, onToggle, onToggleAll, allMembersSelected, guestSplitNames, onAddGuest, onRemoveGuest }: {
   allAttendees: Attendee[]
+  guests: Guest[]
   currentUserId: string
   splitIds: string[]
   onToggle: (uid: string) => void
@@ -363,6 +395,11 @@ function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onTogg
 }) {
   const [addingGuest, setAddingGuest] = useState(false)
   const [guestInput, setGuestInput]   = useState('')
+
+  const registeredGuestNames = new Set(guests.map((g) => g.name))
+  const manualGuests = guestSplitNames
+    .map((name, i) => ({ name, originalIndex: i }))
+    .filter(({ name }) => !registeredGuestNames.has(name))
 
   function commitGuest() {
     const name = guestInput.trim()
@@ -407,11 +444,34 @@ function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onTogg
             </button>
           )
         })}
-        {guestSplitNames.map((name, i) => (
+        {guests.map((g) => {
+          const sel = guestSplitNames.includes(g.name)
+          return (
+            <button
+              key={g.id}
+              type="button"
+              onClick={() => {
+                if (sel) onRemoveGuest(guestSplitNames.indexOf(g.name))
+                else onAddGuest(g.name)
+              }}
+              className={`flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold transition-all ${
+                sel ? 'bg-uva/20 text-uva' : 'bg-white/5 text-niebla'
+              }`}
+            >
+              <span className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
+                sel ? 'bg-white/20' : 'bg-white/10 text-niebla'
+              }`}>
+                {g.name.charAt(0).toUpperCase()}
+              </span>
+              {g.name.split(' ')[0]}
+            </button>
+          )
+        })}
+        {manualGuests.map(({ name, originalIndex }) => (
           <button
-            key={`guest-${i}`}
+            key={`manual-${originalIndex}`}
             type="button"
-            onClick={() => onRemoveGuest(i)}
+            onClick={() => onRemoveGuest(originalIndex)}
             className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold bg-uva/20 text-uva"
           >
             <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/20 text-[10px] font-bold">
@@ -459,7 +519,7 @@ function SplitSelector({ allAttendees, currentUserId, splitIds, onToggle, onTogg
           className="flex items-center gap-1.5 text-xs font-semibold text-niebla bg-transparent border-none cursor-pointer p-0 self-start"
         >
           <UserPlus size={13} />
-          Sin cuenta
+          {guests.length > 0 ? 'Otro sin cuenta' : 'Sin cuenta'}
         </button>
       )}
       {(splitIds.length + guestSplitNames.length) === 0 && (

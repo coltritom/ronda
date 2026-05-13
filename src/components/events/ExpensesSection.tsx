@@ -45,6 +45,7 @@ interface ExpensesSectionProps {
   expenses: Expense[]
   attendees: Attendee[]
   settlements: Settlement[]
+  guests: { id: string; name: string }[]
 }
 
 export function ExpensesSection({
@@ -55,6 +56,7 @@ export function ExpensesSection({
   expenses,
   attendees,
   settlements,
+  guests,
 }: ExpensesSectionProps) {
   const router = useRouter()
   const [sheetOpen, setSheetOpen]       = useState(false)
@@ -118,6 +120,7 @@ export function ExpensesSection({
           currentUserId={currentUserId}
           currentUserName={currentUserName}
           attendees={allAttendees}
+          guests={guests}
           expenseId={editingExpense?.id}
           initialAmount={editingExpense?.amount}
           initialPaidBy={editingExpense?.paid_by ?? undefined}
@@ -244,6 +247,7 @@ export function ExpensesSection({
         currentUserId={currentUserId}
         currentUserName={currentUserName}
         attendees={allAttendees}
+        guests={guests}
         expenseId={editingExpense?.id}
         initialAmount={editingExpense?.amount}
         initialPaidBy={editingExpense?.paid_by ?? undefined}

@@ -145,7 +145,6 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const anfitrionRanked = [...members]
       .map((m) => ({ ...m, count: hostCounts[m.userId] ?? 0 }))
-      .filter((m) => m.count > 0)
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .map((m) => ({
         name: m.name,

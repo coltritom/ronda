@@ -106,6 +106,8 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
     const isoDate = time ? `${date}T${time}:00` : `${date}T12:00:00`;
     const location = buildLocation();
 
+    const hostedBy = (lugar === "casa" && hostId && hostId !== "otro") ? hostId : null;
+
     const { data: event, error: insertError } = await supabase
       .from("events")
       .insert({
@@ -115,6 +117,7 @@ export function CreateJuntadaSheet({ open, onClose, groupId, groupName, onCreate
         created_by: user.id,
         status: "upcoming",
         ...(location ? { location } : {}),
+        ...(hostedBy ? { hosted_by: hostedBy } : {}),
       })
       .select("id")
       .single();

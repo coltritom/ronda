@@ -51,7 +51,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const { data: eventsRaw } = await supabase
       .from("events")
-      .select("id, created_by")
+      .select("id, created_by, hosted_by")
       .eq("group_id", id)
       .neq("status", "cancelled");
 
@@ -60,8 +60,8 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     if (!eventIds.length) {
       setAsistencias(members.map((m) => ({ name: m.name, colorIndex: m.colorIndex, score: "0 juntadas" })));
-      setAportes(members.map((m) => ({ name: m.name, colorIndex: m.colorIndex, score: "$0" })));
-      setAnfitrion(members.map((m) => ({ name: m.name, colorIndex: m.colorIndex, score: "0 veces" })));
+      setAportes(members.map((m) => ({ name: m.name, colorIndex: m.colorIndex, score: "0 pts" })));
+      setAnfitrion([]);
       setLoading(false);
       return;
     }
@@ -105,8 +105,8 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const hostCounts: Record<string, number> = {};
     for (const e of eventsRaw ?? []) {
-      if (e.created_by) {
-        hostCounts[e.created_by] = (hostCounts[e.created_by] ?? 0) + 1;
+      if (e.hosted_by) {
+        hostCounts[e.hosted_by] = (hostCounts[e.hosted_by] ?? 0) + 1;
       }
     }
 
@@ -145,6 +145,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
 
     const anfitrionRanked = [...members]
       .map((m) => ({ ...m, count: hostCounts[m.userId] ?? 0 }))
+      .filter((m) => m.count > 0)
       .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
       .map((m) => ({
         name: m.name,

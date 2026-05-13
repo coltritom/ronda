@@ -36,13 +36,14 @@ interface ExpenseSplitEnriched {
 }
 
 interface ExpenseEnriched {
-  id:             string
-  description:    string | null
-  amount:         number
-  paid_by:        string
-  split_type:     string | null
-  profiles:       { name: string }
-  expense_splits: ExpenseSplitEnriched[]
+  id:                  string
+  description:         string | null
+  amount:              number
+  paid_by:             string | null
+  paid_by_guest_name:  string | null
+  split_type:          string | null
+  profiles:            { name: string }
+  expense_splits:      ExpenseSplitEnriched[]
 }
 
 interface Tab {

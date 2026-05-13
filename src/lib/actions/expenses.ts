@@ -10,7 +10,8 @@ export async function createExpense(
   eventId: string,
   description: string | null,
   amount: number,
-  paidBy: string,
+  paidBy: string | null,
+  paidByGuestName: string | null,
   splitType: 'equal_all' | 'equal_some',
   participants: SplitParticipant[]
 ): Promise<{ error: string } | null> {
@@ -33,7 +34,7 @@ export async function createExpense(
 
   const { data: expense, error: expErr } = await admin
     .from('expenses')
-    .insert({ event_id: eventId, description, amount, paid_by: paidBy, split_type: splitType })
+    .insert({ event_id: eventId, description, amount, paid_by: paidBy, paid_by_guest_name: paidByGuestName, split_type: splitType })
     .select('id')
     .single()
 
@@ -99,7 +100,8 @@ export async function updateExpense(
   expenseId: string,
   description: string | null,
   amount: number,
-  paidBy: string,
+  paidBy: string | null,
+  paidByGuestName: string | null,
   splitType: 'equal_all' | 'equal_some',
   participants: SplitParticipant[]
 ): Promise<{ error: string } | null> {
@@ -128,7 +130,7 @@ export async function updateExpense(
   const memberError = await assertGroupMember(supabase, eventData.group_id, user.id)
   if (memberError) return memberError
 
-  if (expenseData.paid_by !== user.id) return { error: 'Solo quien pagó puede editar este gasto.' }
+  if (expenseData.paid_by !== null && expenseData.paid_by !== user.id) return { error: 'Solo quien pagó puede editar este gasto.' }
 
   const n = participants.length
   const perPerson = Math.round((amount / n) * 100) / 100
@@ -153,7 +155,7 @@ export async function updateExpense(
 
   const { error: updateError } = await admin
     .from('expenses')
-    .update({ description, amount, paid_by: paidBy, split_type: splitType })
+    .update({ description, amount, paid_by: paidBy, paid_by_guest_name: paidByGuestName, split_type: splitType })
     .eq('id', expenseId)
   if (updateError) {
     console.error('Error updating expense:', updateError.message)

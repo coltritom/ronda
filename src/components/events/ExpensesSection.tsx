@@ -30,7 +30,8 @@ interface Expense {
   id: string
   description: string | null
   amount: number
-  paid_by: string
+  paid_by: string | null
+  paid_by_guest_name: string | null
   split_type: string | null
   profiles: { name: string } | null
   expense_splits: Split[]
@@ -119,7 +120,8 @@ export function ExpensesSection({
           attendees={allAttendees}
           expenseId={editingExpense?.id}
           initialAmount={editingExpense?.amount}
-          initialPaidBy={editingExpense?.paid_by}
+          initialPaidBy={editingExpense?.paid_by ?? undefined}
+          initialPaidByGuest={editingExpense?.paid_by_guest_name ?? undefined}
           initialSplitIds={editingExpense?.expense_splits.filter(s => s.user_id).map((s) => s.user_id!)}
           initialGuestSplitNames={editingExpense?.expense_splits.filter(s => !s.user_id && s.guest_name).map((s) => s.guest_name!)}
           initialDescription={editingExpense?.description ?? undefined}
@@ -136,7 +138,9 @@ export function ExpensesSection({
       {/* Lista de gastos */}
       <div className="flex flex-col gap-2">
           {expenses.map((exp) => {
-            const payerLabel = exp.paid_by === currentUserId ? 'Yo' : (exp.profiles?.name ?? 'Alguien')
+            const payerLabel = exp.paid_by_guest_name
+              ? exp.paid_by_guest_name
+              : exp.paid_by === currentUserId ? 'Yo' : (exp.profiles?.name ?? 'Alguien')
             const splitCount = exp.expense_splits.length
             const perPerson  = splitCount > 0 ? exp.amount / splitCount : exp.amount
 
@@ -162,7 +166,7 @@ export function ExpensesSection({
                     )}
                   </p>
                 </div>
-                {exp.paid_by === currentUserId && (
+                {(exp.paid_by === currentUserId || exp.paid_by === null) && (
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => setEditingExpense(exp)}
@@ -242,7 +246,8 @@ export function ExpensesSection({
         attendees={allAttendees}
         expenseId={editingExpense?.id}
         initialAmount={editingExpense?.amount}
-        initialPaidBy={editingExpense?.paid_by}
+        initialPaidBy={editingExpense?.paid_by ?? undefined}
+        initialPaidByGuest={editingExpense?.paid_by_guest_name ?? undefined}
         initialSplitIds={editingExpense?.expense_splits.filter(s => s.user_id).map((s) => s.user_id!)}
         initialGuestSplitNames={editingExpense?.expense_splits.filter(s => !s.user_id && s.guest_name).map((s) => s.guest_name!)}
         initialDescription={editingExpense?.description ?? undefined}

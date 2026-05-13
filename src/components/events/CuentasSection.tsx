@@ -13,7 +13,8 @@ interface Split      { user_id: string | null; guest_name?: string | null; amoun
 interface Expense {
   id: string
   amount: number
-  paid_by: string
+  paid_by: string | null
+  paid_by_guest_name?: string | null
   profiles: { name: string } | null
   expense_splits: Split[]
 }

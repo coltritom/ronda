@@ -86,13 +86,13 @@ export default async function EventDetailPage({ params }: PageProps) {
   type ExpenseSplitRow = { user_id: string | null; guest_name: string | null; amount: number; is_settled: boolean }
   type ExpenseQueryRow = {
     id: string; description: string | null; amount: number
-    paid_by: string; split_type: string | null
+    paid_by: string | null; paid_by_guest_name: string | null; split_type: string | null
     expense_splits: ExpenseSplitRow[]
   }
   const { data: expensesRaw } = await supabase
     .from('expenses')
     .select(`
-      id, description, amount, paid_by, split_type,
+      id, description, amount, paid_by, paid_by_guest_name, split_type,
       expense_splits ( user_id, guest_name, amount, is_settled )
     `)
     .eq('event_id', eventId)
@@ -102,6 +102,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     description: e.description,
     amount: e.amount,
     paid_by: e.paid_by,
+    paid_by_guest_name: e.paid_by_guest_name,
     split_type: e.split_type,
     expense_splits: Array.isArray(e.expense_splits) ? e.expense_splits : [],
   }))
@@ -115,7 +116,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     ...(rsvpsRaw ?? []).map(r => r.user_id),
     ...attendanceRaw.map(a => a.user_id),
     ...(contributionsRaw ?? []).filter(c => c.user_id).map(c => c.user_id!),
-    ...expensesTyped.map(e => e.paid_by),
+    ...expensesTyped.filter(e => e.paid_by).map(e => e.paid_by!),
     ...expensesTyped.flatMap(e => e.expense_splits.filter(s => s.user_id).map(s => s.user_id!)),
   ])
   const { data: profilesData } = allUserIds.size > 0
@@ -175,13 +176,13 @@ export default async function EventDetailPage({ params }: PageProps) {
 
   type ExpenseEnriched = {
     id: string; description: string | null; amount: number
-    paid_by: string; split_type: string | null
+    paid_by: string | null; paid_by_guest_name: string | null; split_type: string | null
     profiles: { name: string }
     expense_splits: { user_id: string | null; guest_name: string | null; amount: number; is_settled: boolean; profiles: { name: string } }[]
   }
   const expenses: ExpenseEnriched[] = expensesTyped.map(e => ({
     ...e,
-    profiles: { name: profileMap[e.paid_by] ?? 'Usuario' },
+    profiles: { name: e.paid_by ? (profileMap[e.paid_by] ?? 'Usuario') : (e.paid_by_guest_name ?? 'Invitado') },
     expense_splits: e.expense_splits.map(s => ({
       ...s,
       profiles: { name: s.user_id ? (profileMap[s.user_id] ?? 'Usuario') : (s.guest_name ?? 'Invitado') },

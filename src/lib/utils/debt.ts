@@ -9,7 +9,8 @@ export type DebtTransaction = {
 }
 
 interface ExpenseForBalance {
-  paid_by: string
+  paid_by: string | null
+  paid_by_guest_name?: string | null
   amount: number
   profiles: { name: string } | null
   expense_splits: Array<{
@@ -38,6 +39,7 @@ export function calcBalances(
   }
 
   for (const exp of expenses) {
+    if (!exp.paid_by) continue // guest payer — debt is settled offline
     let guestTotal = 0
     for (const s of exp.expense_splits) {
       if (!s.user_id) { guestTotal += s.amount; continue }

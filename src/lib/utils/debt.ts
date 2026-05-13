@@ -40,14 +40,18 @@ export function calcBalances(
 
   for (const exp of expenses) {
     if (!exp.paid_by) continue // guest payer — debt is settled offline
-    let guestTotal = 0
-    for (const s of exp.expense_splits) {
-      if (!s.user_id) { guestTotal += s.amount; continue }
-      ensure(s.user_id, s.profiles?.name ?? s.guest_name ?? 'Alguien')
-      map[s.user_id].net -= s.amount
-    }
     ensure(exp.paid_by, exp.profiles?.name ?? 'Alguien')
-    map[exp.paid_by].net += (exp.amount - guestTotal)
+    map[exp.paid_by].net += exp.amount
+    for (const s of exp.expense_splits) {
+      if (s.user_id) {
+        ensure(s.user_id, s.profiles?.name ?? 'Alguien')
+        map[s.user_id].net -= s.amount
+      } else {
+        const guestKey = `__guest__${s.guest_name ?? 'Invitado'}`
+        if (!map[guestKey]) map[guestKey] = { name: s.guest_name ?? 'Invitado', net: 0 }
+        map[guestKey].net -= s.amount
+      }
+    }
   }
   for (const s of settlements) {
     ensure(s.from_user, 'Alguien')

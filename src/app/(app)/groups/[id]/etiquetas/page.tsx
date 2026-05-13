@@ -14,7 +14,7 @@ interface Tag {
   color: string
 }
 
-/* ── Definición de las 11 etiquetas ──────────────────────────── */
+/* ── Definición de las etiquetas ──────────────────────────── */
 const TAG_DEFS = {
   veterano:    { label: 'El Veterano',         emoji: '🏆', description: 'El que más tiempo lleva en el grupo',      color: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30' },
   nuevo:       { label: 'El Nuevo',            emoji: '🌱', description: 'El último en sumarse',                     color: 'bg-green-500/10 text-green-600 border-green-500/30' },
@@ -38,6 +38,7 @@ function assignTags(
     joinedAt: string
     attendance: number
     maybeCount: number
+    totalRsvps: number
     eventsCreated: number
     contributions: number
     expensesPaid: number
@@ -61,15 +62,15 @@ function assignTags(
     if (member.joinedAt === group.newestJoin)  tags.push('nuevo')
   }
 
-  /* Organizador */
+  /* Organizador — el que más eventos creó */
   if (member.eventsCreated > 0 && member.eventsCreated === group.maxEventsCreated)
     tags.push('organizador')
 
-  /* Provisto */
+  /* Provisto — el que más aportes hizo */
   if (member.contributions > 0 && member.contributions === group.maxContributions)
     tags.push('provisto')
 
-  /* Mecenas */
+  /* Mecenas — el que más pagó en gastos */
   if (member.expensesPaid > 0 && member.expensesPaid === group.maxExpensesPaid)
     tags.push('mecenas')
 
@@ -81,20 +82,17 @@ function assignTags(
   if (totalEvents >= 3 && member.attendance / totalEvents <= 0.2)
     tags.push('fantasma')
 
-  /* Ausente digital — nunca confirmó asistencia (con al menos 2 eventos) */
-  if (totalEvents >= 2 && member.attendance === 0 && member.maybeCount === 0)
+  /* Ausente digital — nunca respondió ningún RSVP (con al menos 2 eventos) */
+  if (totalEvents >= 2 && member.attendance === 0 && member.totalRsvps === 0)
     tags.push('ausente')
 
-  /* Indeciso — ≥ 3 maybe y es el que más maybe tiene */
+  /* Indeciso — ≥ 3 "capaz que voy" */
   if (member.maybeCount >= 3)
     tags.push('indeciso')
 
   /* Cara dura — fue a ≥ 2 juntadas pero $0 gastos y 0 aportes */
   if (member.attendance >= 2 && member.expensesPaid === 0 && member.contributions === 0)
     tags.push('caradura')
-
-  /* MVP — score compuesto: asistencia normalizada + aportes norm + gastos norm */
-  /* Se asigna al final si no tiene otras etiquetas positivas, o siempre al top */
 
   return tags
 }
@@ -134,46 +132,60 @@ export default async function EtiquetasPage({ params }: PageProps) {
     joinedAt: m.created_at as string,
   }))
 
-  /* ── Eventos del grupo ─────────────────────────────────────── */
+  /* ── Eventos del grupo (no cancelados) ─────────────────────── */
   const { data: eventsRaw } = await supabase
     .from('events')
-    .select('id, created_by')
+    .select('id, created_by, date')
     .eq('group_id', groupId)
+    .neq('status', 'cancelled')
 
-  const events     = eventsRaw ?? []
-  const eventIds   = events.map((e) => e.id)
+  const events      = eventsRaw ?? []
+  const eventIds    = events.map((e) => e.id)
   const totalEvents = events.length
 
   /* ── Datos agregados ───────────────────────────────────────── */
   const attendanceMap:    Record<string, number> = {}
   const maybeMap:         Record<string, number> = {}
+  const totalRsvpMap:     Record<string, number> = {}
   const eventsCreatedMap: Record<string, number> = {}
   const contributionsMap: Record<string, number> = {}
   const expensesMap:      Record<string, number> = {}
 
   /* Eventos creados */
   for (const e of events)
-    eventsCreatedMap[e.created_by] = (eventsCreatedMap[e.created_by] ?? 0) + 1
+    if (e.created_by) eventsCreatedMap[e.created_by] = (eventsCreatedMap[e.created_by] ?? 0) + 1
 
   if (eventIds.length > 0) {
     const [{ data: attendance }, { data: rsvps }, { data: contribs }, { data: expenses }] = await Promise.all([
-      supabase.from('event_attendance').select('user_id').in('event_id', eventIds),
-      supabase.from('event_rsvps').select('user_id, response').in('event_id', eventIds),
+      supabase.from('event_attendance').select('event_id, user_id').eq('attended', true).in('event_id', eventIds),
+      supabase.from('event_rsvps').select('event_id, user_id, response').in('event_id', eventIds),
       supabase.from('contributions').select('user_id').in('event_id', eventIds),
       supabase.from('expenses').select('paid_by, amount').in('event_id', eventIds),
     ])
+
+    const eventsWithAttendance = new Set((attendance ?? []).map(r => r.event_id))
+    const eventDateMap = Object.fromEntries(events.map(e => [e.id, e.date]))
+    const now = new Date()
 
     for (const r of attendance ?? [])
       attendanceMap[r.user_id] = (attendanceMap[r.user_id] ?? 0) + 1
 
     for (const r of rsvps ?? []) {
+      // RSVP fallback: treat "going" as attendance for past events with no recorded attendance
+      if (r.response === 'going' && !eventsWithAttendance.has(r.event_id)) {
+        const evDate = eventDateMap[r.event_id]
+        if (evDate && new Date(evDate) < now)
+          attendanceMap[r.user_id] = (attendanceMap[r.user_id] ?? 0) + 1
+      }
       if (r.response === 'maybe')
         maybeMap[r.user_id] = (maybeMap[r.user_id] ?? 0) + 1
+      totalRsvpMap[r.user_id] = (totalRsvpMap[r.user_id] ?? 0) + 1
     }
+
     for (const c of contribs ?? [])
-      contributionsMap[c.user_id] = (contributionsMap[c.user_id] ?? 0) + 1
+      if (c.user_id) contributionsMap[c.user_id] = (contributionsMap[c.user_id] ?? 0) + 1
     for (const e of expenses ?? [])
-      expensesMap[e.paid_by] = (expensesMap[e.paid_by] ?? 0) + Number(e.amount)
+      if (e.paid_by) expensesMap[e.paid_by] = (expensesMap[e.paid_by] ?? 0) + Number(e.amount)
   }
 
   /* ── Máximos del grupo ─────────────────────────────────────── */
@@ -198,12 +210,12 @@ export default async function EtiquetasPage({ params }: PageProps) {
     ...m,
     attendance:    attendanceMap[m.userId]    ?? 0,
     maybeCount:    maybeMap[m.userId]         ?? 0,
+    totalRsvps:    totalRsvpMap[m.userId]     ?? 0,
     eventsCreated: eventsCreatedMap[m.userId] ?? 0,
     contributions: contributionsMap[m.userId] ?? 0,
     expensesPaid:  expensesMap[m.userId]      ?? 0,
   }))
 
-  /* Score normalizado 0-1 por categoría, promediado */
   const maxAttendance = Math.max(1, ...memberStats.map((m) => m.attendance))
   const mvpScores = memberStats.map((m) => ({
     userId: m.userId,

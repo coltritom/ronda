@@ -67,25 +67,36 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
     }
 
     const [attendanceResult, expensesResult, rsvpResult, contributionsResult] = await Promise.all([
-      supabase.from("event_attendance").select("event_id, user_id").in("event_id", eventIds),
+      supabase.from("event_attendance").select("event_id, user_id").eq("attended", true).in("event_id", eventIds),
       supabase.from("expenses").select("id, paid_by, amount").in("event_id", eventIds),
       supabase.from("event_rsvps").select("event_id, user_id, response").in("event_id", eventIds),
       supabase.from("contributions").select("user_id, category, quantity").in("event_id", eventIds),
     ]);
 
+    // Events that have at least one attended=true record
+    const eventsWithAttendance = new Set((attendanceResult.data ?? []).map((a) => a.event_id));
+
     const attendanceCounts: Record<string, number> = {};
     for (const a of attendanceResult.data ?? []) {
       attendanceCounts[a.user_id] = (attendanceCounts[a.user_id] ?? 0) + 1;
     }
+    // RSVP "going" fallback for past events with no attendance records
+    for (const r of rsvpResult.data ?? []) {
+      if (r.response === "going" && !eventsWithAttendance.has(r.event_id)) {
+        attendanceCounts[r.user_id] = (attendanceCounts[r.user_id] ?? 0) + 1;
+      }
+    }
 
     const paidAmounts: Record<string, number> = {};
     for (const e of expensesResult.data ?? []) {
+      if (!e.paid_by) continue; // guest payer — no user_id
       paidAmounts[e.paid_by] = (paidAmounts[e.paid_by] ?? 0) + (e.amount ?? 0);
     }
     const totalPaid = Object.values(paidAmounts).reduce((s, v) => s + v, 0);
 
     const contributionScores: Record<string, number> = {};
     for (const c of contributionsResult.data ?? []) {
+      if (!c.user_id) continue; // guest contribution
       const cat = APORTE_CATEGORIES.find((a) => a.id === c.category);
       const pts = (cat?.weight ?? 1) * (c.quantity ?? 1);
       contributionScores[c.user_id] = (contributionScores[c.user_id] ?? 0) + pts;
@@ -99,12 +110,17 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
       }
     }
 
+    // Ghost: said "going" but not attended — only for events where attendance was recorded
     const attendedSet = new Set(
       (attendanceResult.data ?? []).map((a) => `${a.event_id}:${a.user_id}`)
     );
     const ghostCounts: Record<string, number> = {};
     for (const r of rsvpResult.data ?? []) {
-      if (r.response === "going" && !attendedSet.has(`${r.event_id}:${r.user_id}`)) {
+      if (
+        r.response === "going" &&
+        eventsWithAttendance.has(r.event_id) &&
+        !attendedSet.has(`${r.event_id}:${r.user_id}`)
+      ) {
         ghostCounts[r.user_id] = (ghostCounts[r.user_id] ?? 0) + 1;
       }
     }
@@ -115,7 +131,7 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
       .map((m) => ({
         name: m.name,
         colorIndex: m.colorIndex,
-        score: `${m.count}/${totalEvents} juntadas`,
+        score: `${m.count} juntada${m.count !== 1 ? "s" : ""}`,
       }));
 
     const aportesRanked = [...members]

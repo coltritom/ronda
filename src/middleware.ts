@@ -29,10 +29,12 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh the session
+  // Read session from cookie — no Auth server round-trip needed for redirect logic.
+  // Server components still call getUser() for actual data operations.
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   // Rutas públicas: no requieren sesión
   const publicPaths = ["/login", "/registro", "/forgot", "/onboarding", "/auth", "/invite", "/crear-grupo"]

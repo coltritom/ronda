@@ -12,8 +12,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (mounted) setUser(user ?? undefined);
+    // getSession() reads from cookie — no network round-trip, fast initial load.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (mounted) setUser(session?.user ?? undefined);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) setUser(session?.user ?? undefined);

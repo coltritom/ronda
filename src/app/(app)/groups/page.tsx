@@ -7,7 +7,8 @@ import { GroupsEmptyState } from '@/components/groups/GroupsEmptyState'
 
 export default async function GroupsPage() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user ?? null
   if (!user) return null
 
   const { data: memberships, error } = await supabase

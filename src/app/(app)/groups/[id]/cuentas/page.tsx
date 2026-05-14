@@ -39,7 +39,8 @@ function simplifyDebts(
 export default async function CuentasGlobalesPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { data: { session } } = await supabase.auth.getSession()
+  const user = session?.user ?? null
   if (!user) redirect('/login')
 
   // Round 1 — all depend only on groupId

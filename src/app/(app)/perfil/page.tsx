@@ -4,7 +4,8 @@ import { PerfilPageClient } from "@/components/perfil/PerfilPageClient";
 
 export default async function PerfilPage() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/login");
 
   const [{ data: profile }, { data: memberships }] = await Promise.all([

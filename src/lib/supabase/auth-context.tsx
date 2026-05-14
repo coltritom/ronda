@@ -6,16 +6,12 @@ import { createClient } from "@/lib/supabase/clients";
 
 const AuthContext = createContext<User | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | undefined>(undefined);
+export function AuthProvider({ children, initialUser }: { children: React.ReactNode; initialUser?: User }) {
+  const [user, setUser] = useState<User | undefined>(initialUser);
 
   useEffect(() => {
     let mounted = true;
     const supabase = createClient();
-    // getSession() reads from cookie — no network round-trip, fast initial load.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (mounted) setUser(session?.user ?? undefined);
-    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (mounted) setUser(session?.user ?? undefined);
     });

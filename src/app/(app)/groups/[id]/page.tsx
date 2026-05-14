@@ -7,7 +7,7 @@ type MemberRpcItem = { user_id: string; name: string }
 type EventRpcItem = {
   id: string; name: string; date: string; location: string | null; status: string
   going: number; maybe: number; not_going: number
-  attendance_count: number; total_spent: number
+  guest_count: number; attendance_count: number; total_spent: number
 }
 type GroupPageRpcResult = {
   error?: string
@@ -67,7 +67,7 @@ export default async function GrupoPage({ params }: { params: Promise<{ id: stri
       id: e.id, isoDate, date: formattedDate, name: e.name,
       attendees: e.attendance_count, totalSpent: e.total_spent,
       closed: e.status === "completed" || (e.status === "upcoming" && isoDate < TODAY),
-      confirmed: e.going, unsure: e.maybe, noResponse,
+      confirmed: e.going + (e.guest_count ?? 0), unsure: e.maybe, noResponse,
     };
   });
 

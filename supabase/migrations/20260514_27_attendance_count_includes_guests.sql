@@ -1,5 +1,5 @@
 -- attendance_count in get_group_page_data now includes event_guests for past events.
--- Guests are always attending by definition; only count them once the event has passed.
+-- guest_count is added as a separate field so the group page can show guests in the "van" count.
 
 CREATE OR REPLACE FUNCTION get_group_page_data(p_group_id uuid, p_user_id uuid)
 RETURNS jsonb
@@ -49,6 +49,7 @@ BEGIN
       'going',            COALESCE(r.going,     0),
       'maybe',            COALESCE(r.maybe,     0),
       'not_going',        COALESCE(r.not_going, 0),
+      'guest_count',      COALESCE(g.cnt,       0),
       'attendance_count', COALESCE(a.cnt, 0) + CASE WHEN e.date < NOW() THEN COALESCE(g.cnt, 0) ELSE 0 END,
       'total_spent',      COALESCE(x.total,     0)
     )
@@ -94,9 +95,6 @@ BEGIN
     AND es.user_id    = p_user_id
     AND es.is_settled = false;
 
-  -- Per-member count for the ranking widget.
-  -- Uses explicit attendance (attended=true) when recorded;
-  -- falls back to RSVP "going" for past events with no attendance records.
   SELECT COALESCE(
     jsonb_object_agg(sub.user_id::text, sub.cnt),
     '{}'::jsonb
@@ -105,7 +103,6 @@ BEGIN
   FROM (
     SELECT uid AS user_id, COUNT(*)::int AS cnt
     FROM (
-      -- Explicitly recorded attendance
       SELECT ea.user_id AS uid
       FROM event_attendance ea
       JOIN events ev ON ev.id = ea.event_id
@@ -113,7 +110,6 @@ BEGIN
 
       UNION ALL
 
-      -- RSVP "going" fallback: only for past events with zero attendance records
       SELECT er.user_id AS uid
       FROM event_rsvps er
       JOIN events ev ON ev.id = er.event_id

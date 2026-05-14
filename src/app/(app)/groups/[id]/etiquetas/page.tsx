@@ -133,12 +133,24 @@ export default async function EtiquetasPage({ params }: PageProps) {
     joinedAt: m.created_at as string,
   }))
 
-  /* ── Eventos del grupo (no cancelados) ─────────────────────── */
+  /* ── Eventos del grupo ─────────────────────────────────────── */
+  const now    = new Date()
+  const nowIso = now.toISOString()
+
+  // Todos los eventos (incl. cancelados) — solo para saber si el usuario alguna vez respondió un RSVP
+  const { data: allEventsRaw } = await supabase
+    .from('events')
+    .select('id')
+    .eq('group_id', groupId)
+  const allEventIds = (allEventsRaw ?? []).map((e) => e.id)
+
+  // Eventos pasados no cancelados — para asistencia, aportes, gastos y totalEvents
   const { data: eventsRaw } = await supabase
     .from('events')
     .select('id, created_by, date')
     .eq('group_id', groupId)
     .neq('status', 'cancelled')
+    .lte('date', nowIso)
 
   const events      = eventsRaw ?? []
   const eventIds    = events.map((e) => e.id)
@@ -156,31 +168,41 @@ export default async function EtiquetasPage({ params }: PageProps) {
   for (const e of events)
     if (e.created_by) eventsCreatedMap[e.created_by] = (eventsCreatedMap[e.created_by] ?? 0) + 1
 
+  // Una sola consulta de RSVPs para todos los eventos del grupo (incl. cancelados)
+  // → totalRsvpMap y maybeMap reflejan cualquier respuesta que dio el usuario
+  // → el fallback de asistencia se aplica solo a eventos pasados no cancelados (via eventDateMap)
+  const allRsvps = allEventIds.length > 0
+    ? ((await supabase.from('event_rsvps').select('event_id, user_id, response').in('event_id', allEventIds)).data ?? [])
+    : []
+
+  const eventIdSet           = new Set(eventIds)
+  const eventDateMap         = Object.fromEntries(events.map(e => [e.id, e.date]))
+
+  for (const r of allRsvps) {
+    if (r.response === 'maybe')
+      maybeMap[r.user_id] = (maybeMap[r.user_id] ?? 0) + 1
+    totalRsvpMap[r.user_id] = (totalRsvpMap[r.user_id] ?? 0) + 1
+  }
+
   if (eventIds.length > 0) {
-    const [{ data: attendance }, { data: rsvps }, { data: contribs }, { data: expenses }] = await Promise.all([
+    const [{ data: attendance }, { data: contribs }, { data: expenses }] = await Promise.all([
       supabase.from('event_attendance').select('event_id, user_id').eq('attended', true).in('event_id', eventIds),
-      supabase.from('event_rsvps').select('event_id, user_id, response').in('event_id', eventIds),
       supabase.from('contributions').select('user_id').in('event_id', eventIds),
       supabase.from('expenses').select('paid_by, amount').in('event_id', eventIds),
     ])
 
     const eventsWithAttendance = new Set((attendance ?? []).map(r => r.event_id))
-    const eventDateMap = Object.fromEntries(events.map(e => [e.id, e.date]))
-    const now = new Date()
 
     for (const r of attendance ?? [])
       attendanceMap[r.user_id] = (attendanceMap[r.user_id] ?? 0) + 1
 
-    for (const r of rsvps ?? []) {
-      // RSVP fallback: treat "going" as attendance for past events with no recorded attendance
-      if (r.response === 'going' && !eventsWithAttendance.has(r.event_id)) {
+    // Fallback: RSVP "going" cuenta como asistencia para eventos pasados sin registros de attendance
+    for (const r of allRsvps) {
+      if (r.response === 'going' && eventIdSet.has(r.event_id) && !eventsWithAttendance.has(r.event_id)) {
         const evDate = eventDateMap[r.event_id]
         if (evDate && new Date(evDate) < now)
           attendanceMap[r.user_id] = (attendanceMap[r.user_id] ?? 0) + 1
       }
-      if (r.response === 'maybe')
-        maybeMap[r.user_id] = (maybeMap[r.user_id] ?? 0) + 1
-      totalRsvpMap[r.user_id] = (totalRsvpMap[r.user_id] ?? 0) + 1
     }
 
     for (const c of contribs ?? [])

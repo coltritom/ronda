@@ -49,11 +49,13 @@ export default function GroupRankingsPage({ params }: { params: Promise<{ id: st
       colorIndex: i,
     }));
 
+    const now = new Date().toISOString();
     const { data: eventsRaw } = await supabase
       .from("events")
       .select("id, created_by, hosted_by")
       .eq("group_id", id)
-      .neq("status", "cancelled");
+      .neq("status", "cancelled")
+      .lte("date", now);
 
     const eventIds = (eventsRaw ?? []).map((e) => e.id);
     const totalEvents = eventIds.length;

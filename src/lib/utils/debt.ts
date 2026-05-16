@@ -39,9 +39,13 @@ export function calcBalances(
   }
 
   for (const exp of expenses) {
-    if (!exp.paid_by) continue // guest payer — debt is settled offline
-    ensure(exp.paid_by, exp.profiles?.name ?? 'Alguien')
-    map[exp.paid_by].net += exp.amount
+    const payerKey  = exp.paid_by ?? `__guest__${exp.paid_by_guest_name ?? 'Invitado'}`
+    const payerName = exp.paid_by
+      ? (exp.profiles?.name ?? 'Alguien')
+      : (exp.paid_by_guest_name ?? 'Invitado')
+    if (!map[payerKey]) map[payerKey] = { name: payerName, net: 0 }
+    map[payerKey].net += exp.amount
+
     for (const s of exp.expense_splits) {
       if (s.user_id) {
         ensure(s.user_id, s.profiles?.name ?? 'Alguien')

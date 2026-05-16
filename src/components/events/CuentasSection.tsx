@@ -126,7 +126,8 @@ export function CuentasSection({
         {settlement.length > 0 ? (
           <div className="flex flex-col gap-2">
             {settlement.map((t, i) => {
-              const isMyDebt = t.fromUserId === currentUserId
+              const isMyDebt      = t.fromUserId === currentUserId
+              const creditorGuest = t.toUserId.startsWith('__guest__')
 
               return (
                 <div
@@ -147,9 +148,12 @@ export function CuentasSection({
                     <span className="font-semibold">
                       {t.toUserId === currentUserId ? 'vos' : t.toName}
                     </span>
+                    {creditorGuest && (
+                      <span className="text-niebla text-xs"> (invitado · pagar en efectivo)</span>
+                    )}
                   </p>
 
-                  {isMyDebt && (
+                  {isMyDebt && !creditorGuest && (
                     confirmIdx === i ? (
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button

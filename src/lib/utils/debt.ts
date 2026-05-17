@@ -34,34 +34,35 @@ export function calcBalances(
 ): BalanceEntry[] {
   const map: Record<string, { name: string; net: number }> = {}
 
-  const ensure = (uid: string, fallback: string) => {
-    if (!map[uid]) map[uid] = { name: nameFor(uid, fallback), net: 0 }
+  function entry(key: string, name: string) {
+    if (!map[key]) map[key] = { name, net: 0 }
+    return map[key]
   }
 
   for (const exp of expenses) {
     const payerKey  = exp.paid_by ?? `__guest__${exp.paid_by_guest_name ?? 'Invitado'}`
     const payerName = exp.paid_by
-      ? (exp.profiles?.name ?? 'Alguien')
+      ? nameFor(exp.paid_by, exp.profiles?.name ?? 'Alguien')
       : (exp.paid_by_guest_name ?? 'Invitado')
-    if (!map[payerKey]) map[payerKey] = { name: payerName, net: 0 }
-    map[payerKey].net += exp.amount
+    const payer = entry(payerKey, payerName)
 
     for (const s of exp.expense_splits) {
-      if (s.user_id) {
-        ensure(s.user_id, s.profiles?.name ?? 'Alguien')
-        map[s.user_id].net -= s.amount
-      } else {
-        const guestKey = `__guest__${s.guest_name ?? 'Invitado'}`
-        if (!map[guestKey]) map[guestKey] = { name: s.guest_name ?? 'Invitado', net: 0 }
-        map[guestKey].net -= s.amount
-      }
+      const partKey  = s.user_id ?? `__guest__${s.guest_name ?? 'Invitado'}`
+      const partName = s.user_id
+        ? nameFor(s.user_id, s.profiles?.name ?? 'Alguien')
+        : (s.guest_name ?? 'Invitado')
+      const part = entry(partKey, partName)
+
+      // Credit payer for exactly what each participant owes — this guarantees
+      // the ledger sums to zero even if expense.amount ≠ sum(splits).
+      payer.net += s.amount
+      part.net  -= s.amount
     }
   }
+
   for (const s of settlements) {
-    ensure(s.from_user, 'Alguien')
-    map[s.from_user].net += s.amount
-    ensure(s.to_user, 'Alguien')
-    map[s.to_user].net -= s.amount
+    entry(s.from_user, nameFor(s.from_user, 'Alguien')).net += s.amount
+    entry(s.to_user,   nameFor(s.to_user,   'Alguien')).net -= s.amount
   }
 
   return Object.entries(map).map(([userId, v]) => ({ userId, name: v.name, net: v.net }))

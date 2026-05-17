@@ -210,7 +210,7 @@ export function ExpensesSection({
                         {t.toUserId === currentUserId ? 'vos' : t.toName}
                       </span>
                     </p>
-                    {t.fromUserId === currentUserId && (
+                    {t.fromUserId === currentUserId && !t.toUserId.startsWith('__guest__') && (
                       <button
                         onClick={() => handleSettle(t.toUserId, t.amount)}
                         disabled={settling}

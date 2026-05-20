@@ -169,8 +169,7 @@ export function ExpensesSection({
                     )}
                   </p>
                 </div>
-                {(exp.paid_by === currentUserId || exp.paid_by === null) && (
-                  <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => setEditingExpense(exp)}
                       className="text-niebla hover:text-humo transition-colors"
@@ -185,7 +184,6 @@ export function ExpensesSection({
                       <Trash2 size={14} />
                     </button>
                   </div>
-                )}
               </div>
             )
           })}

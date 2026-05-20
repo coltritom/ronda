@@ -130,8 +130,6 @@ export async function updateExpense(
   const memberError = await assertGroupMember(supabase, eventData.group_id, user.id)
   if (memberError) return memberError
 
-  if (expenseData.paid_by !== null && expenseData.paid_by !== user.id) return { error: 'Solo quien pagó puede editar este gasto.' }
-
   const n = participants.length
   const perPerson = Math.round((amount / n) * 100) / 100
   const newSplits = participants.map((p, i) => ({

@@ -58,10 +58,11 @@ export default async function EventDetailPage({ params }: PageProps) {
   const effectiveStatus = isPast && event.status === 'upcoming' ? 'completed' : event.status
   const badge = STATUS_BADGE[effectiveStatus] ?? STATUS_BADGE.upcoming
 
-  const { data: rsvpsRaw } = await supabase
-    .from('event_rsvps')
-    .select('response, user_id')
-    .eq('event_id', eventId)
+  const [{ data: rsvpsRaw }, { data: membersRaw }] = await Promise.all([
+    supabase.from('event_rsvps').select('response, user_id').eq('event_id', eventId),
+    supabase.from('group_members').select('user_id').eq('group_id', groupId),
+  ])
+  const memberIds = (membersRaw ?? []).map((m) => m.user_id)
 
   let attendanceRaw: { user_id: string; attended: boolean }[] = []
   const { data: guestData } = await supabase
@@ -114,6 +115,7 @@ export default async function EventDetailPage({ params }: PageProps) {
     .eq('event_id', eventId)
 
   const allUserIds = new Set<string>([
+    ...memberIds,
     ...(rsvpsRaw ?? []).map(r => r.user_id),
     ...attendanceRaw.map(a => a.user_id),
     ...(contributionsRaw ?? []).filter(c => c.user_id).map(c => c.user_id!),
@@ -138,9 +140,9 @@ export default async function EventDetailPage({ params }: PageProps) {
   const going  = rsvps.filter((r) => r.response === 'going')
   const maybe  = rsvps.filter((r) => r.response === 'maybe')
 
-  const goingAttendees = going.map((r) => ({
-    user_id: r.user_id,
-    name:    r.profiles?.name ?? 'Usuario',
+  const allMembers = memberIds.map((uid) => ({
+    user_id: uid,
+    name:    profileMap[uid] ?? 'Usuario',
   }))
 
   const currentUserName = profileMap[user.id] ?? 'Yo'
@@ -280,7 +282,7 @@ export default async function EventDetailPage({ params }: PageProps) {
           suggestedAttendance={suggestedAttendance}
           attendees={attendanceList}
           guests={guestsRaw}
-          goingAttendees={goingAttendees}
+          members={allMembers}
           contributions={contributions}
           expenses={expenses}
           settlements={settlements}

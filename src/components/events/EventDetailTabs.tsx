@@ -68,7 +68,7 @@ interface Props {
   suggestedAttendance: boolean | null
   attendees:           { user_id: string; name: string }[]
   guests:          { id: string; name: string }[]
-  goingAttendees:  { user_id: string; name: string }[]
+  members:         { user_id: string; name: string }[]
   contributions:   ContributionEnriched[]
   expenses:        ExpenseEnriched[]
   settlements:     { from_user: string; to_user: string; amount: number }[]
@@ -77,7 +77,7 @@ interface Props {
 export function EventDetailTabs({
   tabs, defaultTab, isPast,
   eventId, groupId, currentUserId, currentUserName, canAdd,
-  myRsvp, rsvps, myAttendance, suggestedAttendance, attendees, guests, goingAttendees,
+  myRsvp, rsvps, myAttendance, suggestedAttendance, attendees, guests, members,
   contributions, expenses, settlements,
 }: Props) {
   const [activeTab, setActiveTab] = useState(defaultTab)
@@ -195,7 +195,7 @@ export function EventDetailTabs({
             currentUserId={currentUserId}
             currentUserName={currentUserName}
             expenses={expenses}
-            attendees={goingAttendees}
+            attendees={members}
             settlements={settlements}
             guests={guests}
           />
@@ -208,7 +208,7 @@ export function EventDetailTabs({
             currentUserId={currentUserId}
             currentUserName={currentUserName}
             expenses={expenses}
-            attendees={goingAttendees}
+            attendees={members}
             settlements={settlements}
           />
         )}

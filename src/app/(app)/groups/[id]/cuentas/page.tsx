@@ -80,22 +80,43 @@ export default async function CuentasGlobalesPage({ params }: { params: Promise<
     expensesByPayer[e.paid_by].push(e.id)
   }
 
-  // Round 3 — expense_splits (depends on expense IDs from round 2)
+  // Round 3 — expense_splits and settlements in parallel
   let initialDeudas: UIDebt[] = []
-  if (allExpenseIds.length > 0) {
-    const { data: splitsRaw } = await supabase
-      .from('expense_splits')
-      .select('expense_id, user_id, amount')
-      .in('expense_id', allExpenseIds)
-      .eq('is_settled', false)
+  if (allExpenseIds.length > 0 || eventIds.length > 0) {
+    const [{ data: splitsRaw }, { data: settlementsRaw }] = await Promise.all([
+      allExpenseIds.length > 0
+        ? supabase
+            .from('expense_splits')
+            .select('expense_id, user_id, amount')
+            .in('expense_id', allExpenseIds)
+            .eq('is_settled', false)
+        : Promise.resolve({ data: [] as { expense_id: string; user_id: string; amount: number }[] }),
+      eventIds.length > 0
+        ? supabase
+            .from('settlements')
+            .select('from_user, to_user, amount')
+            .in('event_id', eventIds)
+        : Promise.resolve({ data: [] as { from_user: string; to_user: string; amount: number }[] }),
+    ])
 
-    initialDeudas = simplifyDebts(
-      (splitsRaw ?? []).flatMap((s) => {
-        const paidBy = expenseMap[s.expense_id]
-        if (!paidBy || s.user_id === paidBy) return []
-        return [{ user_id: s.user_id, amount: s.amount ?? 0, paid_by: paidBy }]
-      })
-    )
+    // Regular expense splits (participant owes payer)
+    const expenseSplits = (splitsRaw ?? []).flatMap((s) => {
+      const paidBy = expenseMap[s.expense_id]
+      if (!paidBy || s.user_id === paidBy) return []
+      return [{ user_id: s.user_id, amount: s.amount ?? 0, paid_by: paidBy }]
+    })
+
+    // Settlements reduce outstanding balances.
+    // A settlement {from_user→to_user, amount} means from_user already paid to_user.
+    // Model as synthetic split {user_id: to_user, paid_by: from_user} so simplifyDebts
+    // credits from_user (debt reduced) and debits to_user (credit reduced).
+    const settlementSplits = (settlementsRaw ?? []).map((s) => ({
+      user_id: s.to_user,
+      amount:  s.amount,
+      paid_by: s.from_user,
+    }))
+
+    initialDeudas = simplifyDebts([...expenseSplits, ...settlementSplits])
   }
 
   return (

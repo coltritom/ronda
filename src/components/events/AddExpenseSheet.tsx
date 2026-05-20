@@ -68,7 +68,7 @@ export function AddExpenseSheet({
       setError(null)
     }
     prevOpenRef.current = open
-  }, [open, currentUserId, allAttendees, initialAmount, initialPaidBy, initialSplitIds, initialGuestSplitNames, initialDescription])
+  }, [open, currentUserId, allAttendees, initialAmount, initialPaidBy, initialPaidByGuest, initialSplitIds, initialGuestSplitNames, initialDescription])
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : ''
